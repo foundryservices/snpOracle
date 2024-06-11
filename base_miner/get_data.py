@@ -10,7 +10,8 @@ import ta
 from typing import Tuple
 import yfinance as yf
 
-def prep_data(drop_na:bool = True) -> DataFrame:
+
+def prep_data(drop_na: bool = True) -> DataFrame:
     """
     Prepare data by calling Yahoo Finance SDK & computing technical indicators.
 
@@ -41,18 +42,20 @@ def prep_data(drop_na:bool = True) -> DataFrame:
     data['RSI'] = ta.momentum.RSIIndicator(data['Close']).rsi()
     data['CCI'] = ta.trend.CCIIndicator(data['High'], data['Low'], data['Close']).cci()
     data['Momentum'] = ta.momentum.ROCIndicator(data['Close']).roc()
-    for i in range(1,7):
-        data[f'NextClose{i}'] = data['Close'].shift(-1*i)
+    data['LastIntervalReturn'] = data["LastIntervalReturn"] = (data['Close'].shift(-1) / data['Close'].shift(-2)) - 1
+    for i in range(1, 7):
+        data[f'NextClose{i}'] = data['Close'].shift(-1 * i)
 
     # Drop NaN values
-    if(drop_na):
+    if (drop_na):
         data.dropna(inplace=True)
 
     data.reset_index(inplace=True)
 
     return data
 
-def round_down_time(dt:datetime, interval_minutes:int = 5) -> datetime:
+
+def round_down_time(dt: datetime, interval_minutes: int = 5) -> str:
     """
     Find the time of the last started `interval_minutes`-min interval, given a datetime
 
@@ -75,9 +78,10 @@ def round_down_time(dt:datetime, interval_minutes:int = 5) -> datetime:
                                 seconds=dt.second,
                                 microseconds=dt.microsecond)
 
-    return rounded_dt
+    return rounded_dt.isoformat()  #
 
-def scale_data(data:DataFrame) -> Tuple[MinMaxScaler, np.ndarray, np.ndarray]:
+
+def scale_data(data: DataFrame) -> Tuple[MinMaxScaler, np.ndarray, np.ndarray]:
     """
     Normalize the data procured from yahoo finance between 0 & 1
 
@@ -96,7 +100,8 @@ def scale_data(data:DataFrame) -> Tuple[MinMaxScaler, np.ndarray, np.ndarray]:
                 - X_scaled : input/features to the model scaled (np.ndarray)
                 - y_scaled : target variable of the model scaled (np.ndarray)
     """
-    X = data[['Open', 'High', 'Low', 'Volume', 'SMA_50', 'SMA_200', 'RSI', 'CCI', 'Momentum']].values
+    X = data[
+        ['Open', 'High', 'Low', 'Volume', 'SMA_50', 'SMA_200', 'RSI', 'CCI', 'Momentum', 'LastIntervalReturn']].values
 
     # Prepare target variable
     y = data[['NextClose1', 'NextClose2', 'NextClose3', 'NextClose4', 'NextClose5', 'NextClose6']].values

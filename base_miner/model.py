@@ -4,15 +4,18 @@
 # Import necessary modules to use for model creation - can be downloaded using pip
 import joblib
 import numpy as np
+import tensorflow
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout
+from tensorflow.keras.layers import Input, LSTM, Dense, Dropout
 import os
 from dotenv import load_dotenv
 from huggingface_hub import HfApi
+
+tensorflow.compat.v1.disable_v2_behavior()
 
 load_dotenv()
 
@@ -20,7 +23,52 @@ if not os.getenv("HF_ACCESS_TOKEN"):
     print("Cannot find a Huggingface Access Token - unable to upload model to Huggingface.")
 token = os.getenv("HF_ACCESS_TOKEN")
 
-def create_and_save_base_model_lstm(scaler:MinMaxScaler, X_scaled:np.ndarray, y_scaled:np.ndarray) -> float:
+
+def create_base_model_lstm(X_scaled: np.ndarray, y_scaled: np.ndarray) -> dict:
+    """
+    For testing purposes only!
+    Args:
+        scaler:
+        X_scaled:
+        y_scaled:
+
+    Returns:
+        Model object
+    """
+
+    X_scaled = X_scaled.reshape((X_scaled.shape[0], 1, X_scaled.shape[1]))
+
+    # Split data into training and testing
+    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y_scaled, test_size=0.2, random_state=42)
+
+    # LSTM model - all hyperparameters are baseline params - should be changed according to your required
+    # architecture. LSTMs are also not the only way to do this, can be done using any algo deemed fit by
+    # the creators of the miner.
+    model = Sequential()
+    model.add(Input(shape=(X_scaled.shape[1], X_scaled.shape[2])))
+    model.add(LSTM(units=50, return_sequences=True, input_shape=(X_scaled.shape[1], X_scaled.shape[2])))
+    model.add(Dropout(0.2))
+    model.add(LSTM(units=50, return_sequences=False))
+    model.add(Dropout(0.2))
+    model.add(Dense(units=6))
+
+    # Compile the model
+    optimizer = tensorflow.keras.optimizers.Adam(learning_rate=0.0001)
+    model.compile(optimizer=optimizer, loss='mean_squared_error',
+                  metrics=[tensorflow.keras.metrics.RootMeanSquaredError()])
+
+    # Train the model
+    model.fit(X_train, y_train, epochs=100, batch_size=10, validation_data=(X_test, y_test))
+    return {
+        "model": model,
+        "X_train": X_train,
+        "X_test": X_test,
+        "y_train": y_train,
+        "y_test": y_test
+    }
+
+
+def create_and_save_base_model_lstm(scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled: np.ndarray) -> float:
     """
     Base model that can be created for predicting the S&P 500 close price
 
@@ -55,6 +103,7 @@ def create_and_save_base_model_lstm(scaler:MinMaxScaler, X_scaled:np.ndarray, y_
     # architecture. LSTMs are also not the only way to do this, can be done using any algo deemed fit by
     # the creators of the miner.
     model = Sequential()
+    model.add(Input(shape=(X_scaled.shape[1], X_scaled.shape[2])))
     model.add(LSTM(units=50, return_sequences=True, input_shape=(X_scaled.shape[1], X_scaled.shape[2])))
     model.add(Dropout(0.2))
     model.add(LSTM(units=50, return_sequences=False))
@@ -62,10 +111,12 @@ def create_and_save_base_model_lstm(scaler:MinMaxScaler, X_scaled:np.ndarray, y_
     model.add(Dense(units=6))
 
     # Compile the model
-    model.compile(optimizer='adam', loss='mean_squared_error')
+    optimizer = tensorflow.keras.optimizers.Adam(learning_rate=0.0001)
+    model.compile(optimizer=optimizer, loss='mean_squared_error',
+                  metrics=[tensorflow.keras.metrics.RootMeanSquaredError()])
 
     # Train the model
-    model.fit(X_train, y_train, epochs=100, batch_size=32)
+    model.fit(X_train, y_train, epochs=100, batch_size=10, validation_data=(X_test, y_test))
     model.save(f'{model_name}.h5')
 
     api = HfApi()
@@ -88,10 +139,11 @@ def create_and_save_base_model_lstm(scaler:MinMaxScaler, X_scaled:np.ndarray, y_
     # Evaluate
     mse = mean_squared_error(y_test_rescaled, predicted_prices)
     print(f'Mean Squared Error: {mse}')
-    
+
     return mse
 
-def create_and_save_base_model_regression(scaler:MinMaxScaler, X_scaled:np.ndarray, y_scaled:np.ndarray) -> float:
+
+def create_and_save_base_model_regression(scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled: np.ndarray) -> float:
     """
     Base model that can be created for predicting the S&P 500 close price
 
@@ -141,6 +193,5 @@ def create_and_save_base_model_regression(scaler:MinMaxScaler, X_scaled:np.ndarr
     # Evaluate
     mse = mean_squared_error(y_test_rescaled, predicted_prices)
     print(f'Mean Squared Error: {mse}')
-    
-    return mse
 
+    return mse
