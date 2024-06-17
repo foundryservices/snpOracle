@@ -22,10 +22,11 @@ import time
 import typing
 import bittensor as bt
 
+from base_miner.model import retrain_and_save
 from base_miner.predict import predict
 from base_miner.get_data import prep_data, scale_data
 
-#import predictionnet 
+# import predictionnet
 # Bittensor Miner Template:
 import predictionnet
 
@@ -33,8 +34,8 @@ import predictionnet
 from predictionnet.base.miner import BaseMinerNeuron
 
 # ML imports
-import tensorflow
-import numpy as np
+# import tensorflow
+# import numpy as np
 from tensorflow.keras.models import load_model
 from huggingface_hub import hf_hub_download
 
@@ -42,6 +43,7 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
+
 
 class Miner(BaseMinerNeuron):
     """
@@ -61,7 +63,7 @@ class Miner(BaseMinerNeuron):
             os.environ['CUDA_VISIBLE_DEVICES'] = '-1'  # This will force TensorFlow to use CPU only
 
     async def blacklist(
-        self, synapse: predictionnet.protocol.Challenge
+            self, synapse: predictionnet.protocol.Challenge
     ) -> typing.Tuple[bool, str]:
         """
         Determines whether an incoming request should be blacklisted and thus ignored. Your implementation should
@@ -93,14 +95,14 @@ class Miner(BaseMinerNeuron):
         Otherwise, allow the request to be processed further.
         """
         # TODO(developer): Define how miners should blacklist requests.
-        uid = self.metagraph.hotkeys.index( synapse.dendrite.hotkey)
+        uid = self.metagraph.hotkeys.index(synapse.dendrite.hotkey)
         if not self.config.blacklist.allow_non_registered and synapse.dendrite.hotkey not in self.metagraph.hotkeys:
             # Ignore requests from un-registered entities.
             bt.logging.trace(
                 f"Blacklisting un-registered hotkey {synapse.dendrite.hotkey}"
             )
             return True, "Unrecognized hotkey"
-        
+
         if self.config.blacklist.force_validator_permit:
             # If the config is set to force validator permit, then we should only allow requests from validators.
             if not self.metagraph.validator_permit[uid]:
@@ -108,8 +110,6 @@ class Miner(BaseMinerNeuron):
                     f"Blacklisting a request from non-validator hotkey {synapse.dendrite.hotkey}"
                 )
                 return True, "Non-validator hotkey"
-
-            
 
         bt.logging.trace(
             f"Not Blacklisting recognized hotkey {synapse.dendrite.hotkey}"
@@ -149,7 +149,7 @@ class Miner(BaseMinerNeuron):
         return prirority
 
     async def forward(
-        self, synapse: predictionnet.protocol.Challenge
+            self, synapse: predictionnet.protocol.Challenge
     ) -> predictionnet.protocol.Challenge:
         """
         Processes the incoming 'Challenge' synapse by performing a predefined operation on the input data.
@@ -171,31 +171,38 @@ class Miner(BaseMinerNeuron):
         timestamp = synapse.timestamp
 
         # Download the file
-        if(self.config.hf_repo_id=="LOCAL"):
+        if (self.config.hf_repo_id == "LOCAL"):
             model_path = f'./{self.config.model}'
-            bt.logging.info(f"Model weights file from a local folder will be loaded - Local weights file path: {self.config.model}")
+            bt.logging.info(
+                f"Model weights file from a local folder will be loaded - Local weights file path: {self.config.model}")
         else:
             if not os.getenv("HF_ACCESS_TOKEN"):
                 print("Cannot find a Huggingface Access Token - model download halted.")
             token = os.getenv("HF_ACCESS_TOKEN")
-            model_path = hf_hub_download(repo_id=self.config.hf_repo_id, filename=self.config.model, use_auth_token=token)
+            model_path = hf_hub_download(repo_id=self.config.hf_repo_id, filename=self.config.model,
+                                         use_auth_token=token)
             bt.logging.info(f"Model downloaded from huggingface at {model_path}")
 
-        model = load_model(model_path)
         data = prep_data()
-        scaler, _, _ = scale_data(data)
-        #mse = create_and_save_base_model_lstm(scaler, X, y)
+        scaler, X_scaled, y_scaled = scale_data(data)
+
+        if os.path.exists(model_path):
+            model = load_model(model_path)
+        else:
+            model = retrain_and_save(X_scaled, y_scaled)
+
+        # mse = create_and_save_base_model_lstm(scaler, X, y)
 
         # type needs to be changed based on the algo you're running
         # any algo specific change logic can be added to predict function in predict.py
-        prediction = predict(timestamp, scaler, model, type='lstm') 
-        
-        #pred_np_array = np.array(prediction).reshape(-1, 1)
+        prediction = predict(timestamp, scaler, X_scaled, y_scaled, model, type='lstm')
+
+        # pred_np_array = np.array(prediction).reshape(-1, 1)
 
         # logic to ensure that only past 20 day context exists in synapse
         synapse.prediction = list(prediction[0])
 
-        if(synapse.prediction != None):
+        if (synapse.prediction != None):
             bt.logging.success(
                 f"Predicted price 🎯: {synapse.prediction}"
             )
@@ -206,6 +213,7 @@ class Miner(BaseMinerNeuron):
 
     def save_state(self):
         pass
+
     def load_state(self):
         pass
 
@@ -225,10 +233,12 @@ class Miner(BaseMinerNeuron):
         )
         bt.logging.info(log)
 
+
 # This is the main function, which runs the miner.
 if __name__ == "__main__":
-    with Miner() as miner:
-        while True:
-            miner.print_info()
-            time.sleep(15)
+    # with Miner() as miner:
+    #     while True:
+    #         miner.print_info()
+    #         time.sleep(15)
 
+    print("test")

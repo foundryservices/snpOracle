@@ -15,7 +15,7 @@ import os
 from dotenv import load_dotenv
 from huggingface_hub import HfApi
 
-tensorflow.compat.v1.disable_v2_behavior()
+# tensorflow.compat.v1.disable_v2_behavior()
 
 load_dotenv()
 
@@ -24,7 +24,7 @@ if not os.getenv("HF_ACCESS_TOKEN"):
 token = os.getenv("HF_ACCESS_TOKEN")
 
 
-def create_base_model_lstm(X_scaled: np.ndarray, y_scaled: np.ndarray) -> dict:
+def retrain_and_save(X_scaled: np.ndarray, y_scaled: np.ndarray):
     """
     For testing purposes only!
     Args:
@@ -35,6 +35,7 @@ def create_base_model_lstm(X_scaled: np.ndarray, y_scaled: np.ndarray) -> dict:
     Returns:
         Model object
     """
+    model_name = "mining_models/base_lstm_new"
 
     X_scaled = X_scaled.reshape((X_scaled.shape[0], 1, X_scaled.shape[1]))
 
@@ -46,9 +47,9 @@ def create_base_model_lstm(X_scaled: np.ndarray, y_scaled: np.ndarray) -> dict:
     # the creators of the miner.
     model = Sequential()
     model.add(Input(shape=(X_scaled.shape[1], X_scaled.shape[2])))
-    model.add(LSTM(units=50, return_sequences=True, input_shape=(X_scaled.shape[1], X_scaled.shape[2])))
+    model.add(LSTM(units=100, return_sequences=True, input_shape=(X_scaled.shape[1], X_scaled.shape[2])))
     model.add(Dropout(0.2))
-    model.add(LSTM(units=50, return_sequences=False))
+    model.add(LSTM(units=100, return_sequences=False))
     model.add(Dropout(0.2))
     model.add(Dense(units=6))
 
@@ -57,15 +58,26 @@ def create_base_model_lstm(X_scaled: np.ndarray, y_scaled: np.ndarray) -> dict:
     model.compile(optimizer=optimizer, loss='mean_squared_error',
                   metrics=[tensorflow.keras.metrics.RootMeanSquaredError()])
 
+    early_stopping = tensorflow.keras.callbacks.EarlyStopping(monitor='val_loss',
+                                                              patience=3,
+                                                              mode='min')
+
     # Train the model
-    model.fit(X_train, y_train, epochs=100, batch_size=10, validation_data=(X_test, y_test))
-    return {
-        "model": model,
-        "X_train": X_train,
-        "X_test": X_test,
-        "y_train": y_train,
-        "y_test": y_test
-    }
+    model.fit(X_train, y_train, epochs=100, batch_size=10, validation_data=(X_test, y_test), callbacks=[early_stopping])
+    try:
+        model.save(f'{model_name}.h5')
+        print(f"Successfully saved model in: {model_name}.h5")
+    except Exception as e:
+        print(e)
+
+    return model
+    # return {
+    #     "model": model,
+    #     "X_train": X_train,
+    #     "X_test": X_test,
+    #     "y_train": y_train,
+    #     "y_test": y_test
+    # }
 
 
 def create_and_save_base_model_lstm(scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled: np.ndarray) -> float:
@@ -104,9 +116,9 @@ def create_and_save_base_model_lstm(scaler: MinMaxScaler, X_scaled: np.ndarray, 
     # the creators of the miner.
     model = Sequential()
     model.add(Input(shape=(X_scaled.shape[1], X_scaled.shape[2])))
-    model.add(LSTM(units=50, return_sequences=True, input_shape=(X_scaled.shape[1], X_scaled.shape[2])))
+    model.add(LSTM(units=100, return_sequences=True, input_shape=(X_scaled.shape[1], X_scaled.shape[2])))
     model.add(Dropout(0.2))
-    model.add(LSTM(units=50, return_sequences=False))
+    model.add(LSTM(units=100, return_sequences=False))
     model.add(Dropout(0.2))
     model.add(Dense(units=6))
 
@@ -115,31 +127,35 @@ def create_and_save_base_model_lstm(scaler: MinMaxScaler, X_scaled: np.ndarray, 
     model.compile(optimizer=optimizer, loss='mean_squared_error',
                   metrics=[tensorflow.keras.metrics.RootMeanSquaredError()])
 
+    early_stopping = tensorflow.keras.callbacks.EarlyStopping(monitor='val_loss',
+                                                              patience=3,
+                                                              mode='min')
+
     # Train the model
-    model.fit(X_train, y_train, epochs=100, batch_size=10, validation_data=(X_test, y_test))
+    model.fit(X_train, y_train, epochs=500, batch_size=10, validation_data=(X_test, y_test), callbacks=[early_stopping])
     model.save(f'{model_name}.h5')
 
-    api = HfApi()
-    api.upload_file(
-        path_or_fileobj="mining_models/base_lstm_new.h5",
-        path_in_repo=f"{model_name}.h5",
-        repo_id="foundryservices/bittensor-sn28-base-lstm",
-        repo_type="model",
-        token=token
-    )
+    # api = HfApi()
+    # api.upload_file(
+    #     path_or_fileobj="mining_models/base_lstm_new.h5",
+    #     path_in_repo=f"{model_name}.h5",
+    #     repo_id="foundryservices/bittensor-sn28-base-lstm",
+    #     repo_type="model",
+    #     token=token
+    # )
 
     # Predict the prices - this is just for a local test, this prediction just allows
     # miners to assess the performance of their models on real data.
     predicted_prices = model.predict(X_test)
-
-    # Rescale back to original range
+    #
+    # # Rescale back to original range
     predicted_prices = scaler.inverse_transform(predicted_prices)
     y_test_rescaled = scaler.inverse_transform(y_test.reshape(-1, 6))
-
-    # Evaluate
+    #
+    # # Evaluate
     mse = mean_squared_error(y_test_rescaled, predicted_prices)
     print(f'Mean Squared Error: {mse}')
-
+    #
     return mse
 
 

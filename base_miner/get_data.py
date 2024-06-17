@@ -1,10 +1,10 @@
 # developer: Foundry Digital
 # Copyright © 2023 Foundry Digital
-
+import os.path
 # Import required models
 from datetime import datetime, timedelta
 import numpy as np
-from pandas import DataFrame
+from pandas import DataFrame, read_csv
 from sklearn.preprocessing import MinMaxScaler
 import ta
 from typing import Tuple
@@ -42,7 +42,8 @@ def prep_data(drop_na: bool = True) -> DataFrame:
     data['RSI'] = ta.momentum.RSIIndicator(data['Close']).rsi()
     data['CCI'] = ta.trend.CCIIndicator(data['High'], data['Low'], data['Close']).cci()
     data['Momentum'] = ta.momentum.ROCIndicator(data['Close']).roc()
-    data['LastIntervalReturn'] = data["LastIntervalReturn"] = (data['Close'].shift(-1) / data['Close'].shift(-2)) - 1
+    data['LastIntervalReturn'] = (data['Close'].shift(-1) / data['Close'].shift(-2)) - 1
+    # data['VolumeChange'] = (data['Volume'].shift(-1) / data['Volume'].shift(-2)) - 1
     for i in range(1, 7):
         data[f'NextClose{i}'] = data['Close'].shift(-1 * i)
 
@@ -114,3 +115,26 @@ def scale_data(data: DataFrame) -> Tuple[MinMaxScaler, np.ndarray, np.ndarray]:
     y_scaled = scaler.fit_transform(y)
 
     return scaler, X_scaled, y_scaled
+
+
+def load_df(path: str = "GSPC.csv") -> DataFrame or None:
+    if os.path.exists(path):
+        return read_csv(path)
+    else:
+        print("There's no GSPC.csv file")
+        return None
+
+
+def save_df(df: DataFrame, path: str = "GSPC.csv") -> bool:
+    try:
+        df.to_csv(path, index=False)
+        return True
+    except Exception as e:
+        print(e)
+        return False
+
+
+def merge_dfs(df1: DataFrame, df2: DataFrame) -> DataFrame:
+    merged_df = df1.merge(df2, on=list(df1), how='outer')
+    merged_df.drop_duplicates(subset=['Datetime'], inplace=True, keep='last')
+    return merged_df.reset_index()
