@@ -236,9 +236,7 @@ class Miner(BaseMinerNeuron):
 
 # This is the main function, which runs the miner.
 if __name__ == "__main__":
-    # with Miner() as miner:
-    #     while True:
-    #         miner.print_info()
-    #         time.sleep(15)
-
-    print("test")
+    with Miner() as miner:
+        while True:
+            miner.print_info()
+            time.sleep(15)
