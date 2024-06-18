@@ -91,21 +91,21 @@ def predict(timestamp: str, scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled
 
 # Uncomment this section if you wanna do a local test without having to run the miner
 # on a subnet. This main block (kinda) mimics the actual validator response being sent
-# if (__name__ == '__main__'):
-#     from tensorflow.keras.models import load_model
-#
-#     data = prep_data(True)
-#     scaler, X, y = scale_data(data)
-#     # mse = create_and_save_base_model_regression(scaler, X, y)
-#     #
-#     # model = joblib.load('mining_models/base_linear_regression.joblib')
-#     #
-#     ny_timezone = timezone('America/New_York')
-#     current_time_ny = datetime.now(ny_timezone) + timedelta(days=-1)  # for testing purposes
-#     # timestamp = current_time_ny.isoformat()
-#     timestamp = "2024-06-13T10:05:00.386953-04:00"
-#     #
-#     from base_miner.model import create_and_save_base_model_lstm
-#
-#     model = create_and_save_base_model_lstm(scaler, X, y)
-#     prediction = predict(timestamp, scaler, X, y, model, type='lstm')
+if (__name__ == '__main__'):
+    from tensorflow.keras.models import load_model
+
+    data = prep_data(True)
+    scaler, X, y = scale_data(data)
+    # mse = create_and_save_base_model_regression(scaler, X, y)
+    #
+    # model = joblib.load('mining_models/base_linear_regression.joblib')
+    #
+    ny_timezone = timezone('America/New_York')
+    current_time_ny = datetime.now(ny_timezone) + timedelta(days=-1)  # for testing purposes
+    # timestamp = current_time_ny.isoformat()
+    timestamp = "2024-06-17T15:30:00.386953-04:00"
+    #
+    from base_miner.model import create_and_save_base_model_lstm
+
+    model = create_and_save_base_model_lstm(scaler, X, y)
+    # prediction = predict(timestamp, scaler, X, y, model, type='lstm')
