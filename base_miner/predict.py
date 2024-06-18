@@ -43,6 +43,7 @@ def predict(timestamp: str, scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled
     data = prep_data(drop_na=False)
     # Ensuring that the Datetime column in the data procured from yahoo finance is truly a datetime object
     data['Datetime'] = pd.to_datetime(data['Datetime'])
+    data['Datetime'] = data['Datetime'].dt.tz_convert("America/New_York")
 
     saved_data = load_df()
     merged_df = None
@@ -62,7 +63,7 @@ def predict(timestamp: str, scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled
 
     matching_row = data[data['Datetime'] == pred_time]
 
-    print(pred_time, matching_row)
+    # print(pred_time, matching_row)
 
     # Check if matching_row is empty
     if matching_row.empty:
@@ -80,8 +81,6 @@ def predict(timestamp: str, scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled
     prediction = model.predict(input)
     if (type != 'regression'):
         prediction = scaler.inverse_transform(prediction.reshape(1, -1))
-
-    print(prediction)
 
     t = Thread(target=retrain_and_save, args=(X_scaled, y_scaled))
     t.start()

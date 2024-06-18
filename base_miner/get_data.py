@@ -4,7 +4,8 @@ import os.path
 # Import required models
 from datetime import datetime, timedelta
 import numpy as np
-from pandas import DataFrame, read_csv
+import pandas as pd
+from pandas import DataFrame
 from sklearn.preprocessing import MinMaxScaler
 import ta
 from typing import Tuple
@@ -119,7 +120,9 @@ def scale_data(data: DataFrame) -> Tuple[MinMaxScaler, np.ndarray, np.ndarray]:
 
 def load_df(path: str = "GSPC.csv") -> DataFrame or None:
     if os.path.exists(path):
-        return read_csv(path)
+        df = pd.read_csv(path)
+        df['Datetime'] = pd.to_datetime(df['Datetime'])
+        df['Datetime'] = df['Datetime'].dt.tz_convert("America/New_York")
     else:
         print("There's no GSPC.csv file")
         return None
@@ -134,7 +137,8 @@ def save_df(df: DataFrame, path: str = "GSPC.csv") -> bool:
         return False
 
 
-def merge_dfs(df1: DataFrame, df2: DataFrame) -> DataFrame:
-    merged_df = df1.merge(df2, on=list(df1), how='outer')
-    merged_df.drop_duplicates(subset=['Datetime'], inplace=True, keep='last')
-    return merged_df.reset_index()
+def merge_dfs(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
+    df_diff = df2[~df2['Datetime'].isin(df1['Datetime'])]
+    merge_lst = [df1, df_diff]
+    merged_df = pd.concat(merge_lst, ignore_index=True)
+    return merged_df
