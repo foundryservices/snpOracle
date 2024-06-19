@@ -41,6 +41,7 @@ def predict(timestamp: str, scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled
     # calling this to get the data - the information passed by the validator contains
     # only a timestamp, it is on the miners to get the data and prepare is according to their requirements
     data = prep_data(drop_na=False)
+    print(data)
     # Ensuring that the Datetime column in the data procured from yahoo finance is truly a datetime object
     data['Datetime'] = pd.to_datetime(data['Datetime'])
     data['Datetime'] = data['Datetime'].dt.tz_convert("America/New_York")
@@ -57,6 +58,8 @@ def predict(timestamp: str, scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled
     if merged_df is not None:
         data = merged_df
 
+    data.fillna(0, inplace=True)
+
     # The timestamp sent by the validator need not be associated with an exact 5m interval
     # It's on the miners to ensure that the time is rounded down to the last completed 5 min candle
     pred_time = round_down_time(datetime.fromisoformat(timestamp))
@@ -67,8 +70,8 @@ def predict(timestamp: str, scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled
 
     # Check if matching_row is empty
     if matching_row.empty:
-        print("No matching row found for the given timestamp.")
-        return 0.0
+        print("No matching row found for the given timestamp. Took last one from dataframe.")
+        matching_row = data.tail(1)
 
     input = matching_row[['Open', 'High', 'Low', 'Volume', 'SMA_50', 'SMA_200', 'RSI', 'CCI', 'Momentum',
                           'LastIntervalReturn']]
@@ -76,7 +79,6 @@ def predict(timestamp: str, scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled
     if (type != 'regression'):
         input = np.array(input, dtype=np.float32).reshape(1, -1)
         input = np.reshape(input, (1, 1, input.shape[1]))
-        print(input)
 
     prediction = model.predict(input)
     if (type != 'regression'):
@@ -89,23 +91,27 @@ def predict(timestamp: str, scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled
 
     return prediction
 
+
 # Uncomment this section if you wanna do a local test without having to run the miner
 # on a subnet. This main block (kinda) mimics the actual validator response being sent
-if (__name__ == '__main__'):
-    from tensorflow.keras.models import load_model
-
-    data = prep_data(True)
-    scaler, X, y = scale_data(data)
-    # mse = create_and_save_base_model_regression(scaler, X, y)
-    #
-    # model = joblib.load('mining_models/base_linear_regression.joblib')
-    #
-    ny_timezone = timezone('America/New_York')
-    current_time_ny = datetime.now(ny_timezone) + timedelta(days=-1)  # for testing purposes
-    # timestamp = current_time_ny.isoformat()
-    timestamp = "2024-06-17T15:30:00.386953-04:00"
-    #
-    from base_miner.model import create_and_save_base_model_lstm
-
-    model = create_and_save_base_model_lstm(scaler, X, y)
-    # prediction = predict(timestamp, scaler, X, y, model, type='lstm')
+# if (__name__ == '__main__'):
+#     from tensorflow.keras.models import load_model
+#
+#     data = prep_data(True)
+#     print(data)
+#     scaler, X, y = scale_data(data)
+#     # # mse = create_and_save_base_model_regression(scaler, X, y)
+#     # #
+#     # # model = joblib.load('mining_models/base_linear_regression.joblib')
+#     # #
+#     # ny_timezone = timezone('America/New_York')
+#     # current_time_ny = datetime.now(ny_timezone) + timedelta(days=-1)  # for testing purposes
+#     # timestamp = current_time_ny.isoformat()
+#     timestamp = "2024-06-18T15:55:00.386953-04:00"
+#     # #
+#     # from base_miner.model import create_and_save_base_model_lstm
+#     #
+#     model = load_model("mining_models/base_lstm_new.h5")
+#     # model = create_and_save_base_model_lstm(scaler, X, y)
+#     prediction = predict(timestamp, scaler, X, y, model, type='lstm')
+#     print(prediction)

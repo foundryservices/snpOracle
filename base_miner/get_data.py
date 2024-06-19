@@ -123,6 +123,7 @@ def load_df(path: str = "GSPC.csv") -> DataFrame or None:
         df = pd.read_csv(path)
         df['Datetime'] = pd.to_datetime(df['Datetime'])
         df['Datetime'] = df['Datetime'].dt.tz_convert("America/New_York")
+        return df
     else:
         print("There's no GSPC.csv file")
         return None

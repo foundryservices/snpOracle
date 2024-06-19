@@ -47,7 +47,7 @@ def retrain_and_save(X_scaled: np.ndarray, y_scaled: np.ndarray):
     # the creators of the miner.
     model = Sequential()
     model.add(Input(shape=(X_scaled.shape[1], X_scaled.shape[2])))
-    model.add(LSTM(units=100, return_sequences=True, input_shape=(X_scaled.shape[1], X_scaled.shape[2])))
+    model.add(LSTM(units=100, return_sequences=True))
     model.add(Dropout(0.2))
     model.add(LSTM(units=100, return_sequences=False))
     model.add(Dropout(0.2))
@@ -116,7 +116,7 @@ def create_and_save_base_model_lstm(scaler: MinMaxScaler, X_scaled: np.ndarray, 
     # the creators of the miner.
     model = Sequential()
     model.add(Input(shape=(X_scaled.shape[1], X_scaled.shape[2])))
-    model.add(LSTM(units=100, return_sequences=True, input_shape=(X_scaled.shape[1], X_scaled.shape[2])))
+    model.add(LSTM(units=100, return_sequences=True))
     model.add(Dropout(0.2))
     model.add(LSTM(units=100, return_sequences=False))
     model.add(Dropout(0.2))
