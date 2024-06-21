@@ -24,3 +24,7 @@ def main():
                             daemon=True, name='Retraining model')
             daemon.start()
             print("Started model retraining.")
+
+
+if __name__ == '__main__':
+    main()
