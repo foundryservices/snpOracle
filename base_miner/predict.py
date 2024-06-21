@@ -5,6 +5,7 @@
 from datetime import datetime, timedelta
 from threading import Thread
 from base_miner.model import retrain_and_save
+import json
 import joblib
 import numpy as np
 import pandas as pd
@@ -14,6 +15,17 @@ from sklearn.preprocessing import MinMaxScaler
 
 # import custom defined files
 from base_miner.get_data import load_df, save_df, merge_dfs, prep_data, scale_data, round_down_time
+
+
+def save_model_retraining_args(X_scaled: np.ndarray, y_scaled: np.ndarray):
+    scaled_vars = {
+        "X_scaled": X_scaled.tolist(),
+        "y_scaled": y_scaled.tolist()
+    }
+    with open("scaled_vars.json", "w") as file:
+        json.dump(scaled_vars, file, indent=4)
+
+    print("Successfully saved scaled vars.")
 
 
 def predict(timestamp: str, scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled: np.ndarray, model, type) -> float:
@@ -41,7 +53,6 @@ def predict(timestamp: str, scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled
     # calling this to get the data - the information passed by the validator contains
     # only a timestamp, it is on the miners to get the data and prepare is according to their requirements
     data = prep_data(drop_na=False)
-    print(data)
     # Ensuring that the Datetime column in the data procured from yahoo finance is truly a datetime object
     data['Datetime'] = pd.to_datetime(data['Datetime'])
     data['Datetime'] = data['Datetime'].dt.tz_convert("America/New_York")
@@ -57,6 +68,10 @@ def predict(timestamp: str, scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled
 
     if merged_df is not None:
         data = merged_df
+
+    data[['NextClose1', 'NextClose2', 'NextClose3', 'NextClose4', 'NextClose5', 'NextClose6']] = data[
+        ['NextClose1', 'NextClose2', 'NextClose3', 'NextClose4', 'NextClose5', 'NextClose6']].interpolate(
+        method="ffill")
 
     data.fillna(0, inplace=True)
 
@@ -84,8 +99,9 @@ def predict(timestamp: str, scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled
     if (type != 'regression'):
         prediction = scaler.inverse_transform(prediction.reshape(1, -1))
 
-    t = Thread(target=retrain_and_save, args=(X_scaled, y_scaled))
-    t.start()
+    # t = Thread(target=retrain_and_save, args=(X_scaled, y_scaled))
+    # t.start()
+    save_model_retraining_args(X_scaled, y_scaled)
 
     save_df(data)
 
@@ -97,21 +113,26 @@ def predict(timestamp: str, scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled
 # if (__name__ == '__main__'):
 #     from tensorflow.keras.models import load_model
 #
-#     data = prep_data(True)
-#     print(data)
+#     data = prep_data(False)
+#     # print(data)
+#     data[['NextClose1', 'NextClose2', 'NextClose3', 'NextClose4', 'NextClose5', 'NextClose6']] = data[
+#         ['NextClose1', 'NextClose2', 'NextClose3', 'NextClose4', 'NextClose5', 'NextClose6']].interpolate(
+#         method="ffill")
+#     data.fillna(0, inplace=True)
 #     scaler, X, y = scale_data(data)
-#     # # mse = create_and_save_base_model_regression(scaler, X, y)
-#     # #
-#     # # model = joblib.load('mining_models/base_linear_regression.joblib')
-#     # #
-#     # ny_timezone = timezone('America/New_York')
-#     # current_time_ny = datetime.now(ny_timezone) + timedelta(days=-1)  # for testing purposes
-#     # timestamp = current_time_ny.isoformat()
-#     timestamp = "2024-06-18T15:55:00.386953-04:00"
-#     # #
-#     # from base_miner.model import create_and_save_base_model_lstm
-#     #
-#     model = load_model("mining_models/base_lstm_new.h5")
-#     # model = create_and_save_base_model_lstm(scaler, X, y)
+#     print(data.tail())
+#     # # # # mse = create_and_save_base_model_regression(scaler, X, y)
+#     # # # #
+#     # # # # model = joblib.load('mining_models/base_linear_regression.joblib')
+#     # # # #
+#     # # # ny_timezone = timezone('America/New_York')
+#     # # # current_time_ny = datetime.now(ny_timezone) + timedelta(days=-1)  # for testing purposes
+#     # # # timestamp = current_time_ny.isoformat()
+#     timestamp = "2024-06-20T15:55:00.386953-04:00"
+#     # # # #
+#     # # # from base_miner.model import create_and_save_base_model_lstm
+#     # # #
+#     # model = load_model("mining_models/base_lstm_new.h5")
+#     model = retrain_and_save(X, y, "base_miner/mining_models/base_lstm_new.h5")
 #     prediction = predict(timestamp, scaler, X, y, model, type='lstm')
 #     print(prediction)

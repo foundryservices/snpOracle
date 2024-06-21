@@ -6,11 +6,11 @@ import joblib
 import numpy as np
 import tensorflow
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import TimeSeriesSplit, train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Input, LSTM, Dense, Dropout
+from tensorflow.keras.layers import Input, LSTM, Dense, Dropout, TimeDistributed
 import os
 from dotenv import load_dotenv
 from huggingface_hub import HfApi
@@ -24,7 +24,7 @@ if not os.getenv("HF_ACCESS_TOKEN"):
 token = os.getenv("HF_ACCESS_TOKEN")
 
 
-def retrain_and_save(X_scaled: np.ndarray, y_scaled: np.ndarray):
+def retrain_and_save(X_scaled: np.ndarray, y_scaled: np.ndarray, model_path: str):
     """
     For testing purposes only!
     Args:
@@ -35,38 +35,44 @@ def retrain_and_save(X_scaled: np.ndarray, y_scaled: np.ndarray):
     Returns:
         Model object
     """
-    model_name = "mining_models/base_lstm_new"
 
     X_scaled = X_scaled.reshape((X_scaled.shape[0], 1, X_scaled.shape[1]))
 
     # Split data into training and testing
-    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y_scaled, test_size=0.2, random_state=42)
+    tss = TimeSeriesSplit(n_splits=6)
+    X_train, X_test, y_train, y_test = None, None, None, None
+    for train_index, test_index in tss.split(X_scaled):
+        X_train, X_test = X_scaled[train_index, :], X_scaled[test_index, :]
+        y_train, y_test = y_scaled[train_index], y_scaled[test_index]
+
+    # X_train, X_test, y_train, y_test = train_test_split(X_scaled, y_scaled, test_size=0.2, random_state=42)
 
     # LSTM model - all hyperparameters are baseline params - should be changed according to your required
     # architecture. LSTMs are also not the only way to do this, can be done using any algo deemed fit by
     # the creators of the miner.
     model = Sequential()
     model.add(Input(shape=(X_scaled.shape[1], X_scaled.shape[2])))
-    model.add(LSTM(units=100, return_sequences=True))
+    model.add(LSTM(units=64, return_sequences=True))
     model.add(Dropout(0.2))
-    model.add(LSTM(units=100, return_sequences=False))
+    model.add(LSTM(units=64, return_sequences=False))
     model.add(Dropout(0.2))
     model.add(Dense(units=6))
 
     # Compile the model
-    optimizer = tensorflow.keras.optimizers.Adam(learning_rate=0.0001)
+    optimizer = tensorflow.keras.optimizers.Adam(learning_rate=0.001)
     model.compile(optimizer=optimizer, loss='mean_squared_error',
                   metrics=[tensorflow.keras.metrics.RootMeanSquaredError()])
 
     early_stopping = tensorflow.keras.callbacks.EarlyStopping(monitor='val_loss',
                                                               patience=3,
-                                                              mode='min')
+                                                              mode='min',
+                                                              restore_best_weights=True)
 
     # Train the model
-    model.fit(X_train, y_train, epochs=100, batch_size=10, validation_data=(X_test, y_test), callbacks=[early_stopping])
+    model.fit(X_train, y_train, epochs=100, batch_size=8, validation_data=(X_test, y_test), callbacks=[early_stopping])
     try:
-        model.save(f'{model_name}.h5')
-        print(f"Successfully saved model in: {model_name}.h5")
+        model.save(model_path)
+        print(f"Successfully saved model in: {model_path}")
     except Exception as e:
         print(e)
 

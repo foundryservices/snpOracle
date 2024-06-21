@@ -142,4 +142,7 @@ def merge_dfs(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
     df_diff = df2[~df2['Datetime'].isin(df1['Datetime'])]
     merge_lst = [df1, df_diff]
     merged_df = pd.concat(merge_lst, ignore_index=True)
+    merged_df.drop(['NextClose1', 'NextClose2', 'NextClose3', 'NextClose4', 'NextClose5', 'NextClose6'], axis=1)
+    for i in range(1, 7):
+        merged_df[f'NextClose{i}'] = merged_df['Close'].shift(-1 * i)
     return merged_df

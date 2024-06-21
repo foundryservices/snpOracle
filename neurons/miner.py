@@ -25,6 +25,7 @@ import bittensor as bt
 from base_miner.model import retrain_and_save
 from base_miner.predict import predict
 from base_miner.get_data import prep_data, scale_data
+from base_miner.scheduler import main as schedule
 
 # import predictionnet
 # Bittensor Miner Template:
@@ -189,7 +190,7 @@ class Miner(BaseMinerNeuron):
         if os.path.exists(model_path):
             model = load_model(model_path)
         else:
-            model = retrain_and_save(X_scaled, y_scaled)
+            model = retrain_and_save(X_scaled, y_scaled, model_path)
 
         # mse = create_and_save_base_model_lstm(scaler, X, y)
 
@@ -236,6 +237,8 @@ class Miner(BaseMinerNeuron):
 
 # This is the main function, which runs the miner.
 if __name__ == "__main__":
+    schedule()
+    print("Scheduler started.")
     with Miner() as miner:
         while True:
             miner.print_info()
