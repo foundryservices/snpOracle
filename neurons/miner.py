@@ -20,6 +20,7 @@
 import argparse
 import time
 import typing
+import pickle
 import bittensor as bt
 
 from base_miner.model import retrain_and_save
@@ -187,16 +188,19 @@ class Miner(BaseMinerNeuron):
         data = prep_data()
         scaler, X_scaled, y_scaled = scale_data(data)
 
-        if os.path.exists(model_path):
-            model = load_model(model_path)
-        else:
-            model = retrain_and_save(X_scaled, y_scaled, model_path)
+        # if os.path.exists(model_path):
+        #     model = load_model(model_path)
+        # else:
+        #     model = retrain_and_save(X_scaled, y_scaled, model_path)
+
+        with open(model_path, "rb") as model_f:
+            model = pickle.load(model_f)
 
         # mse = create_and_save_base_model_lstm(scaler, X, y)
 
         # type needs to be changed based on the algo you're running
         # any algo specific change logic can be added to predict function in predict.py
-        prediction = predict(timestamp, scaler, X_scaled, y_scaled, model, type='lstm')
+        prediction = predict(timestamp, scaler, X_scaled, y_scaled, model, type='arimax')
 
         # pred_np_array = np.array(prediction).reshape(-1, 1)
 
@@ -237,7 +241,10 @@ class Miner(BaseMinerNeuron):
 
 # This is the main function, which runs the miner.
 if __name__ == "__main__":
-    schedule()
+    from threading import Thread
+    #
+    t = Thread(target=schedule)
+    t.start()
     print("Scheduler started.")
     with Miner() as miner:
         while True:

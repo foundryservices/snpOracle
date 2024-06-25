@@ -5,14 +5,14 @@ import os.path
 from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
+import pickle
 from pandas import DataFrame
 from sklearn.preprocessing import MinMaxScaler
-import ta
 from typing import Tuple
 import yfinance as yf
 
 
-def prep_data(drop_na: bool = True) -> DataFrame:
+def prep_data(drop_na: bool = True, type: str = "arimax") -> DataFrame:
     """
     Prepare data by calling Yahoo Finance SDK & computing technical indicators.
 
@@ -38,21 +38,24 @@ def prep_data(drop_na: bool = True) -> DataFrame:
     # Calculate technical indicators - all technical indicators computed here are based on the 5m data
     # For example - SMA_50, is not a 50-day moving average, but is instead a 50 5m moving average
     # since the granularity of the data we procure is at a 5m interval. 
-    data['SMA_50'] = data['Close'].rolling(window=50).mean()
-    data['SMA_200'] = data['Close'].rolling(window=200).mean()
-    data['RSI'] = ta.momentum.RSIIndicator(data['Close']).rsi()
-    data['CCI'] = ta.trend.CCIIndicator(data['High'], data['Low'], data['Close']).cci()
-    data['Momentum'] = ta.momentum.ROCIndicator(data['Close']).roc()
-    data['LastIntervalReturn'] = (data['Close'].shift(-1) / data['Close'].shift(-2)) - 1
-    # data['VolumeChange'] = (data['Volume'].shift(-1) / data['Volume'].shift(-2)) - 1
-    for i in range(1, 7):
-        data[f'NextClose{i}'] = data['Close'].shift(-1 * i)
+    # data['SMA_50'] = data['Close'].rolling(window=50).mean()
+    # data['SMA_200'] = data['Close'].rolling(window=200).mean()
+    # data['RSI'] = ta.momentum.RSIIndicator(data['Close']).rsi()
+    # data['CCI'] = ta.trend.CCIIndicator(data['High'], data['Low'], data['Close']).cci()
+    # data['Momentum'] = ta.momentum.ROCIndicator(data['Close']).roc()
+    # data['LastIntervalReturn'] = (data['Close'].shift(0) / data['Close'].shift(-1)) - 1
+    # data['VolumeChange'] = (data['Volume'].shift(0) / data['Volume'].shift(-1)) - 1
+    data = data.replace([np.inf, -np.inf], np.nan)
+    data = data.fillna(0)
+    if type == "lstm":
+        for i in range(1, 7):
+            data[f'NextClose{i}'] = data['Close'].shift(-1 * i)
 
     # Drop NaN values
     if (drop_na):
         data.dropna(inplace=True)
 
-    data.reset_index(inplace=True)
+    # data.reset_index(inplace=True)
 
     return data
 
@@ -102,8 +105,7 @@ def scale_data(data: DataFrame) -> Tuple[MinMaxScaler, np.ndarray, np.ndarray]:
                 - X_scaled : input/features to the model scaled (np.ndarray)
                 - y_scaled : target variable of the model scaled (np.ndarray)
     """
-    X = data[
-        ['Open', 'High', 'Low', 'Volume', 'SMA_50', 'SMA_200', 'RSI', 'CCI', 'Momentum', 'LastIntervalReturn']].values
+    X = data.drop(["Adj Close", "Close"], axis=1).values
 
     # Prepare target variable
     y = data[['NextClose1', 'NextClose2', 'NextClose3', 'NextClose4', 'NextClose5', 'NextClose6']].values
@@ -118,11 +120,12 @@ def scale_data(data: DataFrame) -> Tuple[MinMaxScaler, np.ndarray, np.ndarray]:
     return scaler, X_scaled, y_scaled
 
 
-def load_df(path: str = "GSPC.csv") -> DataFrame or None:
+def load_df(path: str = "GSPC.csv", type="arimax") -> DataFrame or None:
     if os.path.exists(path):
-        df = pd.read_csv(path)
-        df['Datetime'] = pd.to_datetime(df['Datetime'])
-        df['Datetime'] = df['Datetime'].dt.tz_convert("America/New_York")
+        df = pd.read_csv(path, index_col=0)
+        if type == "lstm":
+            df['Datetime'] = pd.to_datetime(df['Datetime'])
+            df['Datetime'] = df['Datetime'].dt.tz_convert("America/New_York")
         return df
     else:
         print("There's no GSPC.csv file")
@@ -131,18 +134,37 @@ def load_df(path: str = "GSPC.csv") -> DataFrame or None:
 
 def save_df(df: DataFrame, path: str = "GSPC.csv") -> bool:
     try:
-        df.to_csv(path, index=False)
+        df.to_csv(path)
         return True
     except Exception as e:
         print(e)
         return False
 
 
-def merge_dfs(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
-    df_diff = df2[~df2['Datetime'].isin(df1['Datetime'])]
+def update_arimax_model(model, df_diff):
+    y_new = df_diff['Adj Close'].values
+    X_new = df_diff.drop(["Adj Close", "Close"], axis=1).values
+
+    for new_ob_y, new_ob_X in zip(y_new, X_new):
+        model.update(new_ob_y, X=new_ob_X.reshape(1, -1))
+    with open("mining_models/arimax_model.pkl", "wb") as model_f:
+        pickle.dump(model, model_f)
+    return model
+
+
+def merge_dfs(df1: pd.DataFrame, df2: pd.DataFrame, model, type: str = "arimax") -> tuple:
+    df_diff = None
+    if type == "lstm":
+        df_diff = df2[~df2['Datetime'].isin(df1['Datetime'])]
+    elif type == "arimax":
+        df_diff = df2[~df2.index.isin(df1.index)]
     merge_lst = [df1, df_diff]
-    merged_df = pd.concat(merge_lst, ignore_index=True)
-    merged_df.drop(['NextClose1', 'NextClose2', 'NextClose3', 'NextClose4', 'NextClose5', 'NextClose6'], axis=1)
-    for i in range(1, 7):
-        merged_df[f'NextClose{i}'] = merged_df['Close'].shift(-1 * i)
-    return merged_df
+    merged_df = pd.concat(merge_lst)
+    if type == "arimax":
+        model = update_arimax_model(model, df_diff)
+    if type == "lstm":
+        merged_df.drop(['NextClose1', 'NextClose2', 'NextClose3', 'NextClose4', 'NextClose5', 'NextClose6'], axis=1)
+        for i in range(1, 7):
+            merged_df[f'NextClose{i}'] = merged_df['Close'].shift(-1 * i)
+    save_df(merged_df)
+    return merged_df, model

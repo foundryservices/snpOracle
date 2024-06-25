@@ -28,7 +28,9 @@ def save_model_retraining_args(X_scaled: np.ndarray, y_scaled: np.ndarray):
     print("Successfully saved scaled vars.")
 
 
-def predict(timestamp: str, scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled: np.ndarray, model, type) -> float:
+def predict(timestamp: str, model, scaler: MinMaxScaler or None = None, X_scaled: np.ndarray or None = None,
+            y_scaled: np.ndarray or None = None,
+            type="arimax") -> float:
     """
     Predicts the close price of the next 5m interval
 
@@ -54,32 +56,20 @@ def predict(timestamp: str, scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled
     # only a timestamp, it is on the miners to get the data and prepare is according to their requirements
     data = prep_data(drop_na=False)
     # Ensuring that the Datetime column in the data procured from yahoo finance is truly a datetime object
-    data['Datetime'] = pd.to_datetime(data['Datetime'])
-    data['Datetime'] = data['Datetime'].dt.tz_convert("America/New_York")
-
-    saved_data = load_df()
-    merged_df = None
-    if saved_data is not None:
-        try:
-            merged_df = merge_dfs(saved_data, data)
-            save_df(merged_df)
-        except ValueError:
-            print("Couldn't merge datasets")
-
-    if merged_df is not None:
-        data = merged_df
-
-    data[['NextClose1', 'NextClose2', 'NextClose3', 'NextClose4', 'NextClose5', 'NextClose6']] = data[
-        ['NextClose1', 'NextClose2', 'NextClose3', 'NextClose4', 'NextClose5', 'NextClose6']].interpolate(
-        method="ffill")
+    if type == "lstm":
+        data['Datetime'] = pd.to_datetime(data['Datetime'])
+        data['Datetime'] = data['Datetime'].dt.tz_convert("America/New_York")
+        data[['NextClose1', 'NextClose2', 'NextClose3', 'NextClose4', 'NextClose5', 'NextClose6']] = data[
+            ['NextClose1', 'NextClose2', 'NextClose3', 'NextClose4', 'NextClose5', 'NextClose6']].interpolate(
+            method="ffill")
 
     data.fillna(0, inplace=True)
+    save_df(data)
 
     # The timestamp sent by the validator need not be associated with an exact 5m interval
     # It's on the miners to ensure that the time is rounded down to the last completed 5 min candle
     pred_time = round_down_time(datetime.fromisoformat(timestamp))
-
-    matching_row = data[data['Datetime'] == pred_time]
+    matching_row = data[data.index == pred_time]
 
     # print(pred_time, matching_row)
 
@@ -88,22 +78,18 @@ def predict(timestamp: str, scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled
         print("No matching row found for the given timestamp. Took last one from dataframe.")
         matching_row = data.tail(1)
 
-    input = matching_row[['Open', 'High', 'Low', 'Volume', 'SMA_50', 'SMA_200', 'RSI', 'CCI', 'Momentum',
-                          'LastIntervalReturn']]
+    input = matching_row.drop(['Adj Close', 'Close'], axis=1)
 
-    if (type != 'regression'):
+    prediction = None
+    if type == 'lstm':
         input = np.array(input, dtype=np.float32).reshape(1, -1)
         input = np.reshape(input, (1, 1, input.shape[1]))
-
-    prediction = model.predict(input)
-    if (type != 'regression'):
+        prediction = model.predict(input)
         prediction = scaler.inverse_transform(prediction.reshape(1, -1))
-
-    # t = Thread(target=retrain_and_save, args=(X_scaled, y_scaled))
-    # t.start()
-    save_model_retraining_args(X_scaled, y_scaled)
-
-    save_df(data)
+        save_model_retraining_args(X_scaled, y_scaled)
+    elif type == "arimax":
+        prediction = model.predict(n_periods=6, X=data.drop(['Adj Close', 'Close'], axis=1).tail(6).values,
+                                   return_conf_int=False)
 
     return prediction
 
@@ -111,28 +97,33 @@ def predict(timestamp: str, scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled
 # Uncomment this section if you wanna do a local test without having to run the miner
 # on a subnet. This main block (kinda) mimics the actual validator response being sent
 # if (__name__ == '__main__'):
-#     from tensorflow.keras.models import load_model
+#     #     import yfinance as yf
+#     import pickle
 #
-#     data = prep_data(False)
-#     # print(data)
-#     data[['NextClose1', 'NextClose2', 'NextClose3', 'NextClose4', 'NextClose5', 'NextClose6']] = data[
-#         ['NextClose1', 'NextClose2', 'NextClose3', 'NextClose4', 'NextClose5', 'NextClose6']].interpolate(
-#         method="ffill")
-#     data.fillna(0, inplace=True)
-#     scaler, X, y = scale_data(data)
-#     print(data.tail())
-#     # # # # mse = create_and_save_base_model_regression(scaler, X, y)
-#     # # # #
-#     # # # # model = joblib.load('mining_models/base_linear_regression.joblib')
-#     # # # #
-#     # # # ny_timezone = timezone('America/New_York')
-#     # # # current_time_ny = datetime.now(ny_timezone) + timedelta(days=-1)  # for testing purposes
-#     # # # timestamp = current_time_ny.isoformat()
-#     timestamp = "2024-06-20T15:55:00.386953-04:00"
-#     # # # #
-#     # # # from base_miner.model import create_and_save_base_model_lstm
-#     # # #
-#     # model = load_model("mining_models/base_lstm_new.h5")
-#     model = retrain_and_save(X, y, "base_miner/mining_models/base_lstm_new.h5")
-#     prediction = predict(timestamp, scaler, X, y, model, type='lstm')
+#     #     import pmdarima as pm
+#     #
+#     #     # data = prep_data(False)
+#     #     # data = yf.download('^GSPC', period='60d', interval='5m')
+#     #     # data.reset_index(inplace=True)
+#     #     # scaler, X, y = scale_data(data)
+#     #     # print(data.tail())
+#     #     # # # # mse = create_and_save_base_model_regression(scaler, X, y)
+#     #     # # # #
+#     #     # # # # model = joblib.load('mining_models/base_linear_regression.joblib')
+#     #     # # # #
+#     #     # # # ny_timezone = timezone('America/New_York')
+#     #     # # # current_time_ny = datetime.now(ny_timezone) + timedelta(days=-1)  # for testing purposes
+#     #     # # # timestamp = current_time_ny.isoformat()
+#     timestamp = "2024-06-24T15:55:29.139514-04:00"
+#     #     # # # #
+#     #     # # # from base_miner.model import create_and_save_base_model_lstm
+#     #     # # #
+#     with open("mining_models/arimax_model.pkl", "rb") as model_f:
+#         model = pickle.load(model_f)
+#     #     # model = load_model("mining_models/base_lstm_new.h5")
+#     #     # model = retrain_and_save(X, y, "mining_models/base_lstm_new.h5")
+#     prediction = predict(timestamp, model=model, type='arimax')
 #     print(prediction)
+
+# df = pd.read_csv("GSPC.csv").set_index("Datetime")
+# print(df.head())
