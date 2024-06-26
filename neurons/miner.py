@@ -185,8 +185,8 @@ class Miner(BaseMinerNeuron):
                                          use_auth_token=token)
             bt.logging.info(f"Model downloaded from huggingface at {model_path}")
 
-        data = prep_data()
-        scaler, X_scaled, y_scaled = scale_data(data)
+        # data = prep_data()
+        # scaler, X_scaled, y_scaled = scale_data(data)
 
         # if os.path.exists(model_path):
         #     model = load_model(model_path)
@@ -200,7 +200,7 @@ class Miner(BaseMinerNeuron):
 
         # type needs to be changed based on the algo you're running
         # any algo specific change logic can be added to predict function in predict.py
-        prediction = predict(timestamp, scaler, X_scaled, y_scaled, model, type='arimax')
+        prediction = predict(timestamp, model, type='arimax')
 
         # pred_np_array = np.array(prediction).reshape(-1, 1)
 
@@ -242,6 +242,7 @@ class Miner(BaseMinerNeuron):
 # This is the main function, which runs the miner.
 if __name__ == "__main__":
     from threading import Thread
+
     #
     t = Thread(target=schedule)
     t.start()
