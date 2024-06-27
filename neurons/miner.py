@@ -201,7 +201,7 @@ class Miner(BaseMinerNeuron):
         # pred_np_array = np.array(prediction).reshape(-1, 1)
 
         # logic to ensure that only past 20 day context exists in synapse
-        synapse.prediction = list(prediction[0])
+        synapse.prediction = list(prediction)
 
         if (synapse.prediction != None):
             bt.logging.success(
