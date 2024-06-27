@@ -13,7 +13,7 @@ def main():
                 t.tm_min == 5 or t.tm_min == 35) and t.tm_sec == 0 and datetime.today().weekday() < 5:
             saved_df = load_df()
             new_df = prep_data()
-            with open("../mining_models/arimax_model.pkl", "rb") as model_f:
+            with open("./mining_models/arimax_model.pkl", "rb") as model_f:
                 model = pickle.load(model_f)
             daemon = Thread(target=merge_dfs,
                             args=(saved_df, new_df, model, "arimax"),

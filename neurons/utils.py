@@ -15,7 +15,7 @@ def load_df(path: str = "GSPC.csv", type="arimax") -> pd.DataFrame or None:
         return None
 
 
-def save_df(df: pd.DataFrame, path: str = "../mining_models/GSPC.csv") -> bool:
+def save_df(df: pd.DataFrame, path: str = "./mining_models/GSPC.csv") -> bool:
     try:
         df.to_csv(path)
         return True
@@ -30,7 +30,7 @@ def update_arimax_model(model, df_diff):
 
     for new_ob_y, new_ob_X in zip(y_new, X_new):
         model.update(new_ob_y, X=new_ob_X.reshape(1, -1))
-    with open("../mining_models/arimax_model.pkl", "wb") as model_f:
+    with open("./mining_models/arimax_model.pkl", "wb") as model_f:
         pickle.dump(model, model_f)
     return model
 
