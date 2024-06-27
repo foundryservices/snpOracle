@@ -3,7 +3,7 @@ import pickle
 import pandas as pd
 
 
-def load_df(path: str = "GSPC.csv", type="arimax") -> pd.DataFrame or None:
+def load_df(path: str = "./mining_models/GSPC.csv", type="arimax") -> pd.DataFrame or None:
     if os.path.exists(path):
         df = pd.read_csv(path, index_col=0)
         if type == "lstm":
