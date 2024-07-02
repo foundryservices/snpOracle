@@ -177,6 +177,14 @@ def add_args(cls, parser):
             default='foundryservices/bittensor-sn28-base-lstm'
         )
 
+        parser.add_argument(
+            "--scheduler",
+            action="store_true",
+            help="Starts model updating scheduler between challenges.",
+            default=False
+        )
+
+
 def config(cls):
     """
     Returns the configuration object specific to this miner or validator after adding relevant arguments.

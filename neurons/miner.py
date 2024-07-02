@@ -237,13 +237,14 @@ class Miner(BaseMinerNeuron):
 
 # This is the main function, which runs the miner.
 if __name__ == "__main__":
-    from threading import Thread
 
-    #
-    t = Thread(target=schedule)
-    t.start()
-    print("Scheduler started.")
     with Miner() as miner:
+        if miner.config.scheduler:
+            from threading import Thread
+
+            t = Thread(target=schedule)
+            t.start()
+            print("Scheduler started.")
         while True:
             miner.print_info()
             time.sleep(15)
