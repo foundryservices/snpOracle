@@ -239,7 +239,7 @@ class Miner(BaseMinerNeuron):
 if __name__ == "__main__":
 
     with Miner() as miner:
-        if miner.config.scheduler:
+        if miner.config.scheduler == 'yes':
             from threading import Thread
 
             t = Thread(target=schedule)

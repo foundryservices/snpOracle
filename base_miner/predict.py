@@ -55,6 +55,7 @@ def predict(timestamp: str, model, scaler: MinMaxScaler or None = None, X_scaled
     # calling this to get the data - the information passed by the validator contains
     # only a timestamp, it is on the miners to get the data and prepare is according to their requirements
     data = prep_data(drop_na=False)
+
     # Ensuring that the Datetime column in the data procured from yahoo finance is truly a datetime object
     if type == "lstm":
         data['Datetime'] = pd.to_datetime(data['Datetime'])
@@ -64,7 +65,7 @@ def predict(timestamp: str, model, scaler: MinMaxScaler or None = None, X_scaled
             method="ffill")
 
     data.fillna(0, inplace=True)
-    save_df(data, "./mining_models/GSPC.csv")
+    # save_df(data, "./mining_models/GSPC.csv")
 
     # The timestamp sent by the validator need not be associated with an exact 5m interval
     # It's on the miners to ensure that the time is rounded down to the last completed 5 min candle

@@ -179,9 +179,9 @@ def add_args(cls, parser):
 
         parser.add_argument(
             "--scheduler",
-            action="store_true",
+            type=str,
             help="Starts model updating scheduler between challenges.",
-            default=False
+            default='no'
         )
 
 
