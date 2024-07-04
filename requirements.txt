@@ -20,3 +20,4 @@ huggingface_hub==0.22.2
 wandb==0.16.6
 python_dotenv
 psycopg
+shap

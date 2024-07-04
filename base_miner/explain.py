@@ -4,8 +4,7 @@ from model import *
 from predict import *
 
 
-
-def explain_lstm(model, X_train, X_test, features):
+def explain_arimax(model, X_train, X_test, features):
     explainer = shap.DeepExplainer(model, X_train)
     shap_values = explainer.shap_values(X_test)
     shap.initjs()
@@ -15,7 +14,8 @@ def explain_lstm(model, X_train, X_test, features):
 if __name__ == '__main__':
     data = prep_data(False)
     scaler, X, y = scale_data(data)
-    # mse = create_and_save_base_model_regression(scaler, X, y)
+    mse = create_and_save_base_model_regression(scaler, X, y)
+    print(f'MSE for ARIMAX: ${mse}')
 
     # model = joblib.load('mining_models/base_linear_regression.joblib')
     #
@@ -25,10 +25,11 @@ if __name__ == '__main__':
 
     features = np.array(['Open', 'High', 'Low', 'Volume', 'SMA_50', 'SMA_200', 'RSI', 'CCI', 'Momentum'])
 
-    result = create_base_model_lstm(X, y)
+    result = create_and_save_base_model_regression(X, y)
+    print(f'${result}')
 
     model = result['model']
     X_train = result['X_train']
     X_test = result['X_test']
 
-    explain_lstm(model, X_train, X_test, features)
+    explain_arimax(model, X_train, X_test, features)

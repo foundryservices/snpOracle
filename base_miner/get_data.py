@@ -1,11 +1,8 @@
-# developer: Foundry Digital
-# Copyright © 2023 Foundry Digital
-import os.path
 # Import required models
 from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
-import pickle
+import ta
 from pandas import DataFrame
 from sklearn.preprocessing import MinMaxScaler
 from typing import Tuple
@@ -47,7 +44,7 @@ def prep_data(drop_na: bool = True, type: str = "arimax") -> DataFrame:
     data['VolumeChange'] = (data['Volume'].shift(0) / data['Volume'].shift(-1)) - 1
     data = data.replace([np.inf, -np.inf], np.nan)
     data = data.fillna(0)
-    if type == "lstm":
+    if type == "arimax":
         for i in range(1, 7):
             data[f'NextClose{i}'] = data['Close'].shift(-1 * i)
 
@@ -118,6 +115,3 @@ def scale_data(data: DataFrame) -> Tuple[MinMaxScaler, np.ndarray, np.ndarray]:
     y_scaled = scaler.fit_transform(y)
 
     return scaler, X_scaled, y_scaled
-
-
-
