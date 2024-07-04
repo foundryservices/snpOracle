@@ -38,13 +38,13 @@ def prep_data(drop_na: bool = True, type: str = "arimax") -> DataFrame:
     # Calculate technical indicators - all technical indicators computed here are based on the 5m data
     # For example - SMA_50, is not a 50-day moving average, but is instead a 50 5m moving average
     # since the granularity of the data we procure is at a 5m interval. 
-    # data['SMA_50'] = data['Close'].rolling(window=50).mean()
-    # data['SMA_200'] = data['Close'].rolling(window=200).mean()
-    # data['RSI'] = ta.momentum.RSIIndicator(data['Close']).rsi()
-    # data['CCI'] = ta.trend.CCIIndicator(data['High'], data['Low'], data['Close']).cci()
-    # data['Momentum'] = ta.momentum.ROCIndicator(data['Close']).roc()
-    # data['LastIntervalReturn'] = (data['Close'].shift(0) / data['Close'].shift(-1)) - 1
-    # data['VolumeChange'] = (data['Volume'].shift(0) / data['Volume'].shift(-1)) - 1
+    data['SMA_50'] = data['Close'].rolling(window=50).mean()
+    data['SMA_200'] = data['Close'].rolling(window=200).mean()
+    data['RSI'] = ta.momentum.RSIIndicator(data['Close']).rsi()
+    data['CCI'] = ta.trend.CCIIndicator(data['High'], data['Low'], data['Close']).cci()
+    data['Momentum'] = ta.momentum.ROCIndicator(data['Close']).roc()
+    data['LastIntervalReturn'] = (data['Close'].shift(0) / data['Close'].shift(-1)) - 1
+    data['VolumeChange'] = (data['Volume'].shift(0) / data['Volume'].shift(-1)) - 1
     data = data.replace([np.inf, -np.inf], np.nan)
     data = data.fillna(0)
     if type == "lstm":
