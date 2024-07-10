@@ -35,15 +35,98 @@ def prep_data(drop_na: bool = True, type: str = "arimax") -> DataFrame:
     # Calculate technical indicators - all technical indicators computed here are based on the 5m data
     # For example - SMA_50, is not a 50-day moving average, but is instead a 50 5m moving average
     # since the granularity of the data we procure is at a 5m interval. 
+    # TREND
+
+    # SMA_50
     data['SMA_50'] = data['Close'].rolling(window=50).mean()
+    # Exponential Moving Average (EMA) as an imput for NaN values
+    # method='linear',inplace=True
+    print(type(data['SMA_50']))
+    # <class 'pandas.core.series.Series'>
+    # interpolate
+    # mean_SMA_50 = data['SMA_50']
+    # print(mean_SMA_50)
+    # mean_SMA_50 = mean_SMA_50.interpolate(method='linear', axis=0)
+    # print(mean_SMA_50)
+    mean_SMA_50 = ta.trend.ema_indicator(data['Close'], window=2, fillna=True)
+    # Replace NaNs in column SMA_50 with the
+    # Exponential Moving Average (EMA) window=2 of values in the same column
+    data['SMA_50'].fillna(value=mean_SMA_50, inplace=True)
+
+    # SMA_200
     data['SMA_200'] = data['Close'].rolling(window=200).mean()
-    data['RSI'] = ta.momentum.RSIIndicator(data['Close']).rsi()
-    data['CCI'] = ta.trend.CCIIndicator(data['High'], data['Low'], data['Close']).cci()
-    data['Momentum'] = ta.momentum.ROCIndicator(data['Close']).roc()
+    # Exponential Moving Average (EMA) as an imput for NaN values
+    mean_SMA_200 = ta.trend.ema_indicator(data['Close'], window=8, fillna=True)
+    # Replace NaNs in column SMA_200 with the
+    # Exponential Moving Average (EMA) window=2x4 of values in the same column
+    data['SMA_200'].fillna(value=mean_SMA_200, inplace=True)
+
+    # CCI
+    # Commodity Channel Index (CCI)
+    # CCI measures the difference between a security’s price change and its average price change.
+    # High positive readings indicate that prices are well above their average, which is a show of strength.
+    # Low negative readings indicate that prices are well below their average, which is a show of weakness.
+    data['CCI'] = ta.trend.CCIIndicator(data['High'], data['Low'], data['Close'], window=20, constant=0.015,
+                                        fillna=True).cci()
+
+    # classta.trend.CCIIndicator(high: pandas.core.series.Series, low: pandas.core.series.Series, close: pandas.core.series.Series, window: int = 20, constant: float = 0.015, fillna: bool = False)
+
+    # Exponential Moving Average (EMA) as an imput for NaN values
+    # mean_CCI = data['CCI'].fillna(0)
+    mean_CCI = data['CCI'].rolling(window=3).mean()
+    # Replace NaNs in column CCI with the
+    # Exponential Moving Average (EMA) window=2x4 of values in the same column
+    data['CCI'].fillna(value=mean_CCI, inplace=True)
+
+    # VOLATILITY
+
+    # Initialize Bollinger Bands Indicator
+    # indicator_bb = BollingerBands(close=data["Close"], window=20, window_dev=2)
+
+    # Add Bollinger Bands features
+    data['bb_bbm'] = ta.volatility.bollinger_mavg(close=data["Close"], window=50)
+    # Exponential Moving Average (EMA) as an imput for NaN values
+    mean_bb_bbm = ta.trend.ema_indicator(data['Close'], window=50, fillna=True)
+    # Replace NaNs in column bb_bbm with the
+    # Exponential Moving Average (EMA) window=50 of values in the same column
+    data['bb_bbm'].fillna(value=mean_bb_bbm, inplace=True)
+
+    # bb_bbh
+    data['bb_bbh'] = ta.volatility.bollinger_hband(close=data["Close"], window=20, window_dev=2, fillna=True)
+    # Exponential Moving Average (EMA) as an imput for NaN values
+    mean_bb_bbh = ta.trend.ema_indicator(data['Close'], window=20, fillna=True)
+    # Replace NaNs in column bb_bbm with the
+    # Exponential Moving Average (EMA) window=20 of values in the same column
+    data['bb_bbh'].fillna(value=mean_bb_bbh, inplace=True)
+
+    # bb_bbl
+    data['bb_bbl'] = ta.volatility.bollinger_lband(data['Close'], window=20, window_dev=2, fillna=True)
+    # Exponential Moving Average (EMA) as an imput for NaN values
+    mean_bb_bbl = ta.trend.ema_indicator(data['Close'], window=20, fillna=True)
+    # Replace NaNs in column bb_bbm with the
+    # Exponential Moving Average (EMA) window=20 of values in the same column
+    data['bb_bbl'].fillna(value=mean_bb_bbl, inplace=True)
+
+    # MOMENTUM
+
+    # Relative Strength Index (RSI)
+    # Compares the magnitude of recent gains and losses over a specified time period to measure speed and change of price movements of a security.
+    # It is primarily used to attempt to identify overbought or oversold conditions in the trading of an asset.
+    data['RSI'] = ta.momentum.RSIIndicator(data['Close'], window=14, fillna=True).rsi()
+
+    data['Momentum'] = ta.momentum.ROCIndicator(data['Close'], window=14, fillna=True).roc()
+    # mean_Momentum = data['Momentum'].fillna(0)
+    # data['Momentum'].fillna(value=mean_Momentum, inplace=True)
+
+    # VOLUME
     data['LastIntervalReturn'] = (data['Close'].shift(0) / data['Close'].shift(-1)) - 1
+    mean_LastIntervalReturn = data['LastIntervalReturn'].fillna(0)
+    data['LastIntervalReturn'].fillna(value=mean_LastIntervalReturn, inplace=True)
+
     data['VolumeChange'] = (data['Volume'].shift(0) / data['Volume'].shift(-1)) - 1
-    data = data.replace([np.inf, -np.inf], np.nan)
-    data = data.fillna(0)
+    mean_VolumeChange = data['VolumeChange'].fillna(0)
+    data['VolumeChange'].fillna(value=mean_VolumeChange, inplace=True)
+
     if type == "arimax":
         for i in range(1, 7):
             data[f'NextClose{i}'] = data['Close'].shift(-1 * i)
