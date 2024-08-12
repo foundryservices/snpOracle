@@ -30,6 +30,7 @@ from datetime import datetime, timedelta
 from pytz import timezone
 from predictionnet.base.neuron import BaseNeuron
 import time
+import numpy as np
 
 
 class BaseValidatorNeuron(BaseNeuron):
@@ -44,6 +45,9 @@ class BaseValidatorNeuron(BaseNeuron):
 
         # Save a copy of the hotkeys to local memory.
         self.hotkeys = copy.deepcopy(self.metagraph.hotkeys)
+
+        self.past_predictions = [np.full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), np.nan)] * len(self.hotkeys)
+        self.past_close_prices = [np.full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), np.nan)] * len(self.hotkeys)
 
         # Dendrite lets us send messages to other nodes (axons) in the network.
         self.dendrite = bt.dendrite(wallet=self.wallet)
@@ -289,6 +293,8 @@ class BaseValidatorNeuron(BaseNeuron):
         for uid, hotkey in enumerate(self.hotkeys):
             if hotkey != self.metagraph.hotkeys[uid]:
                 self.scores[uid] = 0  # hotkey has been replaced
+                self.past_predictions[uid] = np.full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), np.nan) # reset past predictions
+                self.past_close_prices[uid] = np.full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), np.nan)
 
         # Check to see if the metagraph has changed size.
         # If so, we need to add new hotkeys and moving averages.
