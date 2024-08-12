@@ -74,11 +74,16 @@ async def forward(self):
     # Build synapse for request
     # Replace dummy_input with actually defined variables in protocol.py
     # This can be combined with line 49
-    synapse = predictionnet.protocol.Challenge(
+    # synapse = predictionnet.protocol.Challenge(
+    #     timestamp=timestamp,
+    #     past_predictions=self.past_predictions,
+    #     past_close_prices=self.past_close_prices,
+    # )
+    synapses = [predictionnet.protocol.Challenge(
         timestamp=timestamp,
-        past_predictions=self.past_predictions,
-        past_close_prices=self.past_close_prices,
-    )
+        past_predictions=self.past_predictions[uid],
+        past_close_prices=self.past_close_prices[uid],
+    ) for uid in miner_uids]
 
     # The dendrite client queries the network.
     responses = self.dendrite.query(
@@ -86,7 +91,7 @@ async def forward(self):
         axons=[self.metagraph.axons[uid] for uid in miner_uids],
         # Construct a dummy query. This simply contains a single integer.
         # This can be simplified later to all build from here
-        synapse=synapse,
+        synapse=synapses,
         #synapse=Dummy(dummy_input=self.step),
         # All responses have the deserialize function called on them before returning.
         # You are encouraged to define your own deserialization function.
