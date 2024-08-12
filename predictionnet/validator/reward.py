@@ -54,12 +54,8 @@ def calc_raw(self, response: Challenge, close_price: float):
     if len(response.prediction) != len(close_price):
         return None, None
     else:
-        # if there is no saved history for this neuron yet
-        if response.past_predictions is None:
-            response.past_predictions = np.full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), np.nan)
-            response.past_close_prices = np.full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), np.nan)
-        prediction_array = np.concatenate((np.array(response.prediction), response.past_predictions), axis=0)
-        close_price_array = np.concatenate((np.array(close_price), response.past_close_prices), axis=0)
+        prediction_array = np.concatenate((np.array(response.prediction), response.past_predictions[0]), axis=0)
+        close_price_array = np.concatenate((np.array(close_price), response.past_close_prices[0]), axis=0)
         if len(response.past_predictions.shape) == 1:
             before_pred_vector = np.array([])
             before_close_vector = np.array([])
