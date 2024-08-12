@@ -68,19 +68,13 @@ async def forward(self):
     print(miner_uids)    
     current_time_ny = datetime.now(ny_timezone)
     timestamp = current_time_ny.isoformat()
-    
+
     # Build synapse for request
     # Replace dummy_input with actually defined variables in protocol.py
     # This can be combined with line 49
     synapse = predictionnet.protocol.Challenge(
         timestamp=timestamp,
     )
-    # synapses = [predictionnet.protocol.Challenge(
-    #     timestamp=timestamp,
-    #     past_predictions=self.past_predictions[uid].tolist(),
-    #     past_close_prices=self.past_close_prices[uid].tolist(),
-    # ) for uid in miner_uids]
-
 
     responses = self.dendrite.query(
         # Send the query to selected miner axons in the network.
