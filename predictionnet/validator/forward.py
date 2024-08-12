@@ -70,14 +70,14 @@ async def forward(self):
     timestamp = current_time_ny.isoformat()
     self.miner_update_time = current_time_ny
 
-    
+
     # Build synapse for request
     # Replace dummy_input with actually defined variables in protocol.py
     # This can be combined with line 49
     synapse = predictionnet.protocol.Challenge(
         timestamp=timestamp,
-        past_predictions=self.past_predictions
-        past_close_prices=self.past_close_prices
+        past_predictions=self.past_predictions,
+        past_close_prices=self.past_close_prices,
     )
 
     # The dendrite client queries the network.
