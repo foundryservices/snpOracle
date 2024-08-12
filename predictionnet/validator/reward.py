@@ -152,7 +152,6 @@ def get_rewards(
     """
     INTERVAL = self.INTERVAL
     N_TIMEPOINTS = self.N_TIMEPOINTS
-    print(responses)
     prediction_interval = self.prediction_interval
     if len(responses) == 0:
         bt.logging.info("Got no responses. Returning reward tensor of zeros.")
@@ -180,7 +179,7 @@ def get_rewards(
 
     
     data = yf.download(tickers=ticker_symbol, period='1d', interval='5m', progress=False)
-    bt.logging.info("Procured data from yahoo finance.")
+    #bt.logging.info("Procured data from yahoo finance.")
 
     bt.logging.info(data.iloc[(-N_TIMEPOINTS-1):-1])
     close_price = data['Close'].iloc[(-N_TIMEPOINTS-1):-1].tolist()
