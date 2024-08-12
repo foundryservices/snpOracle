@@ -40,7 +40,7 @@ import numpy as np
 ################################################################################
 #                              Helper Functions                                #
 ################################################################################
-def calc_raw(self, response: Challenge, close_price: float):
+def calc_raw(self, uid, response: Challenge, close_price: float):
     # calculate delta and whether the direction of prediction was correct for each timepoint for a single response
     # use the saved past_predictions to include up to N_TIMEPOINTS of history
     # OUTPUT format:
@@ -54,8 +54,8 @@ def calc_raw(self, response: Challenge, close_price: float):
     if len(response.prediction) != len(close_price):
         return None, None
     else:
-        past_predictions = np.array(response.past_predictions)
-        past_close_prices = np.array(response.past_close_prices)
+        past_predictions = self.past_predictions[uid]
+        past_close_prices = self.past_close_prices[uid]
         prediction_array = np.concatenate((np.array(response.prediction), past_predictions[0]), axis=0)
         close_price_array = np.concatenate((np.array(close_price), past_close_prices[0]), axis=0)
         if len(past_predictions.shape) == 1:
@@ -122,12 +122,12 @@ def time_shift(array):
     return shifted_array
 
 def update_synapse(self, uid, response: Challenge, close_price: float):
-    past_predictions = np.array(response.past_predictions)
-    past_close_prices = np.array(response.past_close_prices)
+    past_predictions = self.past_predictions[uid]
+    past_close_prices = self.past_close_prices[uid]
     new_past_close_prices = np.concatenate((np.array(close_price), past_close_prices), axis=0)
     new_past_predictions = np.concatenate((np.array(response.prediction), past_predictions), axis=0)
-    self.past_close_prices[uid] = new_past_close_prices[0:-1,:].tolist() # remove the oldest epoch
-    self.past_predictions[uid] = new_past_predictions[0:-1,:].tolist() # remove the oldest epoch
+    self.past_close_prices[uid] = new_past_close_prices[0:-1,:] # remove the oldest epoch
+    self.past_predictions[uid] = new_past_predictions[0:-1,:] # remove the oldest epoch
 
 
 ################################################################################
@@ -191,7 +191,7 @@ def get_rewards(
     ranks = np.full((len(responses),N_TIMEPOINTS,N_TIMEPOINTS), np.nan)
     for x,response in enumerate(responses):
         # calc_raw also does many helpful things like shifting epoch to 
-        delta , correct = calc_raw(self, response, close_price)
+        delta , correct = calc_raw(self, miner_uids[x], response, close_price)
         if delta is None or correct is None:
             if response.prediction is None:
                 # no response generated

@@ -74,38 +74,30 @@ async def forward(self):
     # Build synapse for request
     # Replace dummy_input with actually defined variables in protocol.py
     # This can be combined with line 49
-    # synapse = predictionnet.protocol.Challenge(
-    #     timestamp=timestamp,
-    #     past_predictions=self.past_predictions,
-    #     past_close_prices=self.past_close_prices,
-    # )
-    synapses = [predictionnet.protocol.Challenge(
+    synapse = predictionnet.protocol.Challenge(
         timestamp=timestamp,
-        past_predictions=self.past_predictions[uid].tolist(),
-        past_close_prices=self.past_close_prices[uid].tolist(),
-    ) for uid in miner_uids]
+        past_predictions=self.past_predictions,
+        past_close_prices=self.past_close_prices,
+    )
+    # synapses = [predictionnet.protocol.Challenge(
+    #     timestamp=timestamp,
+    #     past_predictions=self.past_predictions[uid].tolist(),
+    #     past_close_prices=self.past_close_prices[uid].tolist(),
+    # ) for uid in miner_uids]
 
-    # The dendrite client queries the network.
-    responses =[self.dendrite.query(
-        axons=[self.metagraph.axons[uid]],
-        synapse=synapses[i],
+
+    responses = self.dendrite.query(
+        # Send the query to selected miner axons in the network.
+        axons=[self.metagraph.axons[uid] for uid in miner_uids],
+        # Construct a dummy query. This simply contains a single integer.
+        # This can be simplified later to all build from here
+        synapse=synapse,
+        #synapse=Dummy(dummy_input=self.step),
+        # All responses have the deserialize function called on them before returning.
+        # You are encouraged to define your own deserialization function.
+        # Other subnets have this turned to false, I am unsure of whether this should be set to true
         deserialize=False,
-        ) for i, uid in enumerate(miner_uids)
-    ]
-
-    # responses = self.dendrite.query(
-    #     # Send the query to selected miner axons in the network.
-    #     axons=[self.metagraph.axons[uid] for uid in miner_uids],
-    #     # Construct a dummy query. This simply contains a single integer.
-    #     # This can be simplified later to all build from here
-    #     synapse=synapses,
-    #     #synapse=Dummy(dummy_input=self.step),
-    #     # All responses have the deserialize function called on them before returning.
-    #     # You are encouraged to define your own deserialization function.
-        
-    #     # Other subnets have this turned to false, I am unsure of whether this should be set to true
-    #     deserialize=False,
-    # )
+    )
     # Log the results for monitoring purposes.
     bt.logging.info(f"Received responses: {responses}")
     # TODO(developer): Define how the validator scores responses.

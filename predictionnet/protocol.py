@@ -67,18 +67,18 @@ class Challenge(bt.Synapse):
         title="Predictions",
         description="Next 6 5m candles' predictions for closing price of S&P 500"
     )
-    past_predictions: Optional[List[List[float]]] = pydantic.Field(
-        default=None,
-        title="Past Predictions",
-        description="Past 6 5m candles' predictions for closing price of S&P 500",
-        allow_mutation=False,
-    )
-    past_close_prices: Optional[List[List[float]]] = pydantic.Field(
-        default=None,
-        title="Past Close Prices",
-        description="Past N_TIMEPOINTS epochs of N_TIMEPOINTS close prices for closing price of S&P 500",
-        allow_mutation=False,
-    )
+    # past_predictions: Optional[List[List[float]]] = pydantic.Field(
+    #     default=None,
+    #     title="Past Predictions",
+    #     description="Past 6 5m candles' predictions for closing price of S&P 500",
+    #     allow_mutation=False,
+    # )
+    # past_close_prices: Optional[List[List[float]]] = pydantic.Field(
+    #     default=None,
+    #     title="Past Close Prices",
+    #     description="Past N_TIMEPOINTS epochs of N_TIMEPOINTS close prices for closing price of S&P 500",
+    #     allow_mutation=False,
+    # )
 
     def deserialize(self) -> int:
         """
