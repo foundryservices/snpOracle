@@ -80,8 +80,7 @@ async def forward(self):
     # The dendrite client queries the network.
     responses = self.dendrite.query(
         # Send the query to selected miner axons in the network.
-        axons = [self.metagraph.axons[133]],
-        # axons=[self.metagraph.axons[uid] for uid in miner_uids],
+        axons=[self.metagraph.axons[uid] for uid in miner_uids],
         # Construct a dummy query. This simply contains a single integer.
         # This can be simplified later to all build from here
         synapse=synapse,
