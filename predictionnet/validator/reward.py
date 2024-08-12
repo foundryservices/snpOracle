@@ -41,7 +41,7 @@ import numpy as np
 #                              Helper Functions                                #
 ################################################################################
 def calc_raw(self, uid, response: Challenge, close_price: float):
-    # calculate delta and whether the direction of prediction was correct for each timepoint for a single response
+    # calculate delta and whether the direction of prediction was correct
     # use the saved past_predictions to include up to N_TIMEPOINTS of history
     # OUTPUT format:
     #    - both delta and correct_dirs are N_TIMEPOINTS x N_TIMEPOINTS matrices
