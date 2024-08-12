@@ -78,7 +78,6 @@ class BaseValidatorNeuron(BaseNeuron):
         self.is_running: bool = False
         self.thread: threading.Thread = None
         self.lock = asyncio.Lock()
-        self.miner_update_time = datetime.now(timezone('America/New_York')) - timedelta(minutes=self.prediction_interval)
 
     def serve_axon(self):
         """Serve axon to enable external connections."""
