@@ -54,9 +54,11 @@ def calc_raw(self, response: Challenge, close_price: float):
     if len(response.prediction) != len(close_price):
         return None, None
     else:
-        prediction_array = np.concatenate((np.array(response.prediction), response.past_predictions[0]), axis=0)
-        close_price_array = np.concatenate((np.array(close_price), response.past_close_prices[0]), axis=0)
-        if len(response.past_predictions.shape) == 1:
+        past_predictions = np.array(response.past_predictions)
+        past_close_prices = np.array(response.past_close_prices)
+        prediction_array = np.concatenate((np.array(response.prediction), past_predictions[0]), axis=0)
+        close_price_array = np.concatenate((np.array(close_price), past_close_prices[0]), axis=0)
+        if len(past_predictions.shape) == 1:
             before_pred_vector = np.array([])
             before_close_vector = np.array([])
         else:
@@ -119,13 +121,13 @@ def time_shift(array):
             shifted_array[i,:] = array[i,:]
     return shifted_array
 
-def update_synapse(response: Challenge, close_price: float):
-    new_past_close_prices = np.concatenate((np.array(close_price), response.past_close_prices), axis=0)
-    new_past_predictions = np.concatenate((np.array(response.prediction), response.past_predictions), axis=0)
-    response.past_close_prices = new_past_close_prices[0:-1,:] # remove the oldest epoch
-    response.past_predictions = new_past_predictions[0:-1,:] # remove the oldest epoch
-    # self.past_predictions = query.past_predictions
-    # self.past_close_prices = query.past_close_prices
+def update_synapse(self, uid, response: Challenge, close_price: float):
+    past_predictions = np.array(response.past_predictions)
+    past_close_prices = np.array(response.past_close_prices)
+    new_past_close_prices = np.concatenate((np.array(close_price), past_close_prices), axis=0)
+    new_past_predictions = np.concatenate((np.array(response.prediction), past_predictions), axis=0)
+    self.past_close_prices[uid] = new_past_close_prices[0:-1,:].tolist() # remove the oldest epoch
+    self.past_predictions[uid] = new_past_predictions[0:-1,:].tolist() # remove the oldest epoch
 
 
 ################################################################################
@@ -133,8 +135,8 @@ def update_synapse(response: Challenge, close_price: float):
 ################################################################################
 def get_rewards(
     self,
-    query: Challenge,
     responses: List[Challenge],
+    miner_uids: List[int],
 ) -> torch.FloatTensor:
     """
     Returns a tensor of rewards for the given query and responses.
@@ -157,7 +159,7 @@ def get_rewards(
     ticker_symbol = '^GSPC'
     ticker = yf.Ticker(ticker_symbol)
 
-    timestamp = query.timestamp
+    timestamp = responses[0].timestamp
     timestamp = datetime.fromisoformat(timestamp)
 
     # Round up current timestamp and then wait until that time has been hit
@@ -202,7 +204,7 @@ def get_rewards(
         else:
             raw_deltas[x,:,:] = delta
             raw_correct_dir[x,:,:] = correct
-        update_synapse(x, response)
+        update_synapse(self, miner_uids[x], response, close_price)
 
     # raw_deltas is now a full of the last N_TIMEPOINTS of prediction deltas, same for raw_correct_dir
     ranks = np.full((len(responses),N_TIMEPOINTS,N_TIMEPOINTS), np.nan)

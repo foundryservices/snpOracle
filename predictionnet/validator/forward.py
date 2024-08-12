@@ -81,15 +81,8 @@ async def forward(self):
     # )
     synapses = [predictionnet.protocol.Challenge(
         timestamp=timestamp,
-        past_predictions=[list (x) for x in self.past_predictions[uid]],
-        past_close_prices=[list (x) for x in self.past_close_prices[uid]],
-    ) for uid in miner_uids]
-
-    test = np.full((6, 6), np.nan)
-    synapses = [predictionnet.protocol.Challenge(
-        timestamp=timestamp,
-        past_predictions=[list(x) for x in test],
-        past_close_prices=[list(x) for x in test],
+        past_predictions=self.past_predictions[uid].tolist(),
+        past_close_prices=self.past_close_prices[uid].tolist(),
     ) for uid in miner_uids]
 
     # The dendrite client queries the network.
@@ -111,7 +104,7 @@ async def forward(self):
     # TODO(developer): Define how the validator scores responses.
     # Adjust the scores based on responses from miners.
     
-    rewards = get_rewards(self, query=synapse, responses=responses)
+    rewards = get_rewards(self, responses=responses)
 
     wandb_val_log = {
         "miners_info": {
