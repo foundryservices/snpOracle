@@ -86,19 +86,26 @@ async def forward(self):
     ) for uid in miner_uids]
 
     # The dendrite client queries the network.
-    responses = self.dendrite.query(
-        # Send the query to selected miner axons in the network.
-        axons=[self.metagraph.axons[uid] for uid in miner_uids],
-        # Construct a dummy query. This simply contains a single integer.
-        # This can be simplified later to all build from here
-        synapse=synapses,
-        #synapse=Dummy(dummy_input=self.step),
-        # All responses have the deserialize function called on them before returning.
-        # You are encouraged to define your own deserialization function.
-        
-        # Other subnets have this turned to false, I am unsure of whether this should be set to true
+    responses =[self.dendrite.query(
+        axons=[self.metagraph.axons[uid]],
+        synapse=synapses[i],
         deserialize=False,
-    )
+        ) for i, uid in enumerate(miner_uids)
+    ]
+
+    # responses = self.dendrite.query(
+    #     # Send the query to selected miner axons in the network.
+    #     axons=[self.metagraph.axons[uid] for uid in miner_uids],
+    #     # Construct a dummy query. This simply contains a single integer.
+    #     # This can be simplified later to all build from here
+    #     synapse=synapses,
+    #     #synapse=Dummy(dummy_input=self.step),
+    #     # All responses have the deserialize function called on them before returning.
+    #     # You are encouraged to define your own deserialization function.
+        
+    #     # Other subnets have this turned to false, I am unsure of whether this should be set to true
+    #     deserialize=False,
+    # )
     # Log the results for monitoring purposes.
     bt.logging.info(f"Received responses: {responses}")
     # TODO(developer): Define how the validator scores responses.
