@@ -56,8 +56,8 @@ def calc_raw(self, uid, response: Challenge, close_price: float):
     else:
         past_predictions = self.past_predictions[uid]
         past_close_prices = self.past_close_prices[uid]
-        prediction_array = np.concatenate((np.array(response.prediction), past_predictions[0]), axis=0)
-        close_price_array = np.concatenate((np.array(close_price), past_close_prices[0]), axis=0)
+        prediction_array = np.concatenate((np.array(response.prediction), past_predictions), axis=0)
+        close_price_array = np.concatenate((np.array(close_price), past_close_prices), axis=0)
         if len(past_predictions.shape) == 1:
             before_pred_vector = np.array([])
             before_close_vector = np.array([])
@@ -148,7 +148,6 @@ def get_rewards(
     Returns:
     - torch.FloatTensor: A tensor of rewards for the given query and responses.
     """
-    INTERVAL = self.INTERVAL
     N_TIMEPOINTS = self.N_TIMEPOINTS
     prediction_interval = self.prediction_interval
     if len(responses) == 0:
