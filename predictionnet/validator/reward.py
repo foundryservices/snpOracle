@@ -124,8 +124,8 @@ def time_shift(array):
 def update_synapse(self, uid, response: Challenge, close_price: float):
     past_predictions = self.past_predictions[uid]
     past_close_prices = self.past_close_prices[uid]
-    new_past_close_prices = np.concatenate((np.array(close_price), past_close_prices), axis=0)
-    new_past_predictions = np.concatenate((np.array(response.prediction), past_predictions), axis=0)
+    new_past_close_prices = np.concatenate((np.array(close_price).reshape(1,6), past_close_prices), axis=0)
+    new_past_predictions = np.concatenate((np.array(response.prediction).reshape(1,6), past_predictions), axis=0)
     self.past_close_prices[uid] = new_past_close_prices[0:-1,:] # remove the oldest epoch
     self.past_predictions[uid] = new_past_predictions[0:-1,:] # remove the oldest epoch
 

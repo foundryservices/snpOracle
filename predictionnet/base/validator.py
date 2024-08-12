@@ -49,7 +49,7 @@ class BaseValidatorNeuron(BaseNeuron):
 
         # Save a copy of the hotkeys to local memory.
         self.hotkeys = copy.deepcopy(self.metagraph.hotkeys)
-
+        #initialize past_predictions history
         self.past_predictions = [np.full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), np.nan)] * len(self.hotkeys)
         self.past_close_prices = [np.full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), np.nan)] * len(self.hotkeys)
 
