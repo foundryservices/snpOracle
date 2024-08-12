@@ -104,7 +104,7 @@ async def forward(self):
     # TODO(developer): Define how the validator scores responses.
     # Adjust the scores based on responses from miners.
     
-    rewards = get_rewards(self, responses=responses)
+    rewards = get_rewards(self, responses=responses, miner_uids=miner_uids)
 
     wandb_val_log = {
         "miners_info": {
