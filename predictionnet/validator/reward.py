@@ -27,7 +27,6 @@ import yfinance as yf
 from pytz import timezone
 import numpy as np
 
-
 # run this through time_shift to see how the function works
 # this array represents how the past_predictions is organized by time. 0 is the current prediction epoch
 # test_array = np.array([[0,5,10,15,20,25], # - response.prediction so the current timepoint
@@ -153,6 +152,7 @@ def get_rewards(
     """
     INTERVAL = self.INTERVAL
     N_TIMEPOINTS = self.N_TIMEPOINTS
+    print(responses)
     prediction_interval = self.prediction_interval
     if len(responses) == 0:
         bt.logging.info("Got no responses. Returning reward tensor of zeros.")
@@ -179,7 +179,7 @@ def get_rewards(
         time.sleep(15)
 
     
-    data = yf.download(tickers=ticker_symbol, period='1d', interval='5m')
+    data = yf.download(tickers=ticker_symbol, period='1d', interval='5m', progress=False)
     bt.logging.info("Procured data from yahoo finance.")
 
     bt.logging.info(data.iloc[(-N_TIMEPOINTS-1):-1])
@@ -214,7 +214,7 @@ def get_rewards(
     for t in range(N_TIMEPOINTS):
         ranks[:,:,t] = rank_miners_by_epoch(N_TIMEPOINTS, raw_deltas[:,:,t], raw_correct_dir[:,:,t])
 
-    incentives = np.mean(np.nanmean(ranks, axis=2), axis=1).argsort().argsort()
+    incentives = np.nanmean(np.nanmean(ranks, axis=2), axis=1).argsort().argsort()
     reward = np.exp(-0.05*incentives)
     reward[incentives>100] = 0
     reward = reward/np.max(reward)
