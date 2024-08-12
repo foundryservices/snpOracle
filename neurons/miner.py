@@ -189,7 +189,7 @@ class Miner(BaseMinerNeuron):
         # type needs to be changed based on the algo you're running
         # any algo specific change logic can be added to predict function in predict.py
         prediction = predict(timestamp, scaler, model, type='lstm') 
-        
+        bt.logging.info(f"Prediction: {prediction}")
         #pred_np_array = np.array(prediction).reshape(-1, 1)
 
         # logic to ensure that only past 20 day context exists in synapse
