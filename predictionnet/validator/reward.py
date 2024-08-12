@@ -56,8 +56,8 @@ def calc_raw(self, uid, response: Challenge, close_price: float):
     else:
         past_predictions = self.past_predictions[uid]
         past_close_prices = self.past_close_prices[uid]
-        prediction_array = np.concatenate((np.array(response.prediction), past_predictions), axis=0)
-        close_price_array = np.concatenate((np.array(close_price), past_close_prices), axis=0)
+        prediction_array = np.concatenate((np.array(response.prediction).reshape(1,6), past_predictions), axis=0)
+        close_price_array = np.concatenate((np.array(close_price).reshape(1,6), past_close_prices), axis=0)
         if len(past_predictions.shape) == 1:
             before_pred_vector = np.array([])
             before_close_vector = np.array([])
