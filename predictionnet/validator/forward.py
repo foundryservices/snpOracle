@@ -81,8 +81,15 @@ async def forward(self):
     # )
     synapses = [predictionnet.protocol.Challenge(
         timestamp=timestamp,
-        past_predictions=[self.past_predictions[uid]],
-        past_close_prices=[self.past_close_prices[uid]],
+        past_predictions=[list (x) for x in self.past_predictions[uid]],
+        past_close_prices=[list (x) for x in self.past_close_prices[uid]],
+    ) for uid in miner_uids]
+
+    test = np.full((6, 6), np.nan)
+    synapses = [predictionnet.protocol.Challenge(
+        timestamp=timestamp,
+        past_predictions=[list(x) for x in test],
+        past_close_prices=[list(x) for x in test],
     ) for uid in miner_uids]
 
     # The dendrite client queries the network.
