@@ -42,6 +42,10 @@ class BaseValidatorNeuron(BaseNeuron):
 
     def __init__(self, config=None):
         super().__init__(config=config)
+        # basic params
+        self.prediction_interval = 5 # in minutes
+        self.N_TIMEPOINTS = 6 # number of timepoints to predict
+        self.INTERVAL = self.prediction_interval * self.N_TIMEPOINTS # 30 Minutes
 
         # Save a copy of the hotkeys to local memory.
         self.hotkeys = copy.deepcopy(self.metagraph.hotkeys)
@@ -74,9 +78,6 @@ class BaseValidatorNeuron(BaseNeuron):
         self.is_running: bool = False
         self.thread: threading.Thread = None
         self.lock = asyncio.Lock()
-        self.prediction_interval = 5 # in minutes
-        self.N_TIMEPOINTS = 6 # number of timepoints to predict
-        self.INTERVAL = self.prediction_interval * self.N_TIMEPOINTS # 30 Minutes
         self.miner_update_time = datetime.now(timezone('America/New_York')) - timedelta(minutes=self.prediction_interval)
 
     def serve_axon(self):
