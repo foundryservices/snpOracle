@@ -345,6 +345,8 @@ class BaseValidatorNeuron(BaseNeuron):
                 "step": self.step,
                 "scores": self.scores,
                 "hotkeys": self.hotkeys,
+                "past_predictions": self.past_predictions,
+                "past_close_prices": self.past_close_prices,
             },
             self.config.neuron.full_path + "/state.pt",
         )
@@ -358,3 +360,5 @@ class BaseValidatorNeuron(BaseNeuron):
         self.step = state["step"]
         self.scores = state["scores"]
         self.hotkeys = state["hotkeys"]
+        self.past_predictions = state["past_predictions"]
+        self.past_close_prices = state["past_close_prices"]

@@ -194,6 +194,7 @@ def get_rewards(
         if delta is None or correct is None:
             if response.prediction is None:
                 # no response generated
+                bt.logging.info(f'Netuid {x} returned no response. Setting incentive to 0')
                 raw_deltas[x,:,:], raw_correct_dir[x,:,:] = np.nan, np.nan
             else:
                 # wrong size response generated
