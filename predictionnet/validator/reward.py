@@ -51,9 +51,10 @@ def calc_raw(self, uid, response: Challenge, close_price: float):
     #    - to further investigate format, run 'time_shift(test_array)'
     if response.prediction is None:
         return None, None
-    if len(response.prediction) != len(close_price):
+    elif len(response.prediction) != len(close_price):
         return None, None
     else:
+        bt.logging.info(len(response.prediction))
         if max(self.past_predictions[uid].shape) != self.N_TIMEPOINTS:
             self.past_predictions[uid] = np.full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), np.nan)
             self.past_close_prices[uid] = np.full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), np.nan)
