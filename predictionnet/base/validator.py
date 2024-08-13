@@ -242,8 +242,8 @@ class BaseValidatorNeuron(BaseNeuron):
             subtensor=self.subtensor,
             metagraph=self.metagraph,
         )
-        bt.logging.debug("processed_weights", processed_weights)
-        bt.logging.debug("processed_weight_uids", processed_weight_uids)
+        # bt.logging.debug("processed_weights", processed_weights)
+        # bt.logging.debug("processed_weight_uids", processed_weight_uids)
 
         # Convert to uint16 weights and uids.
         (
@@ -252,8 +252,8 @@ class BaseValidatorNeuron(BaseNeuron):
         ) = bt.utils.weight_utils.convert_weights_and_uids_for_emit(
             uids=processed_weight_uids, weights=processed_weights
         )
-        bt.logging.debug("uint_weights", uint_weights)
-        bt.logging.debug("uint_uids", uint_uids)
+        # bt.logging.debug("uint_weights", uint_weights)
+        # bt.logging.debug("uint_uids", uint_uids)
 
         # Set the weights on chain via our subtensor connection.
         bt.logging.info(f"Setting weights...")
@@ -333,6 +333,7 @@ class BaseValidatorNeuron(BaseNeuron):
             1 - alpha
         ) * self.scores.to(self.device)
         bt.logging.debug(f"Updated moving avg scores: {self.scores}")
+        self.set_weights()
 
     def save_state(self):
         """Saves the state of the validator to a file."""

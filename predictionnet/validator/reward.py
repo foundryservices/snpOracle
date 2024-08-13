@@ -54,6 +54,9 @@ def calc_raw(self, uid, response: Challenge, close_price: float):
     if len(response.prediction) != len(close_price):
         return None, None
     else:
+        if max(self.past_predictions[uid].shape) != self.N_TIMEPOINTS:
+            self.past_predictions[uid] = np.full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), np.nan)
+            self.past_close_prices[uid] = np.full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), np.nan)
         past_predictions = self.past_predictions[uid]
         past_close_prices = self.past_close_prices[uid]
         prediction_array = np.concatenate((np.array(response.prediction).reshape(1,6), past_predictions), axis=0)
