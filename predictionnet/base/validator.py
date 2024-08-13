@@ -30,6 +30,7 @@ from traceback import print_exception
 from predictionnet.base.neuron import BaseNeuron
 import time
 import random
+import numpy as np
 
 
 class BaseValidatorNeuron(BaseNeuron):
@@ -56,7 +57,7 @@ class BaseValidatorNeuron(BaseNeuron):
 
         # Set up initial scoring weights for validation
         bt.logging.info("Building validation weights.")
-        self.scores = torch.zeros_like(self.metagraph.S, dtype=torch.float32)
+        self.scores = torch.zeros_like(torch.from_numpy(self.metagraph.S), dtype=torch.float32)
 
         # Init sync with the network. Updates the metagraph.
         self.sync()
@@ -249,15 +250,15 @@ class BaseValidatorNeuron(BaseNeuron):
         raw_weights = torch.nn.functional.normalize(self.scores, p=1, dim=0)
 
         bt.logging.debug("raw_weights", raw_weights)
-        bt.logging.debug("raw_weight_uids", self.metagraph.uids.to("cpu"))
+        bt.logging.debug("raw_weight_uids", self.metagraph.uids)
         # Process the raw weights to final_weights via subtensor limitations.
         (
             processed_weight_uids,
             processed_weights,
         ) = bt.utils.weight_utils.process_weights_for_netuid(
             # PyTorch Function to move data to CPU
-            uids=self.metagraph.uids.to("cpu"),
-            weights=raw_weights.to("cpu"),
+            uids=self.metagraph.uids,
+            weights=np.array(raw_weights),
             netuid=self.config.netuid,
             subtensor=self.subtensor,
             metagraph=self.metagraph,
