@@ -87,7 +87,7 @@ class Validator(BaseValidatorNeuron):
             return False
         # Check if the current time is between 9:30 AM and 4:00 PM
         start_time = now.replace(hour=9, minute=30, second=0, microsecond=0)
-        end_time = now.replace(hour=16, minute=0, second=0, microsecond=0)
+        end_time = now.replace(hour=16, minute=0, second=0, microsecond=0) - timedelta(minutes=self.prediction_interval*self.N_TIMEPOINTS)
         if not (start_time <= now <= end_time):
             return False
         # if all checks pass, return true
