@@ -327,7 +327,6 @@ class BaseValidatorNeuron(BaseNeuron):
             1 - alpha
         ) * self.scores.to(self.device)
         bt.logging.debug(f"Updated moving avg scores: {self.scores}")
-        self.set_weights()
 
     def save_state(self):
         """Saves the state of the validator to a file."""
