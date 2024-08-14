@@ -29,17 +29,8 @@ import numpy as np
 
 # run this through time_shift to see how the function works
 # this array represents how the past_predictions is organized by time. 0 is the current prediction epoch
-# test_array = np.array([[0,5,10,15,20,25], # - response.prediction so the current timepoint
-#                       [-5,0,5,10,15,20],
-#                       [-10,-5,0,5,10,15],
-#                       [-15,-10,-5,0,5,10],
-#                       [-20,-15,-10,-5,0,5],  # - 25 minute prediction for time 0
-#                       [-25,-20,-15,-10,-5,0],
-#                       [-30,-25,-20,15,-10,-5]])  # - the about to be obseleted prediction
 
-# test_array = np.array([[-25,-20,-15,-10,-5,0], # - response.prediction so the current timepoint
-#                       [-30,-25,-20,-15,-10,-5],
-#                       [-35,-30,-25,-20,-15,-10]
+
 
 
 
@@ -129,8 +120,27 @@ def rank_columns(array):
     return ranked_array
 
 def time_shift(array):
-    # this is a strange but necessary function to replace predictions that havent come to fruition with nans
-    # and align past prediction with the currect epoch
+    """
+    This function alligns the timepoints of past_predictions with the current epoch
+    and replaces predictions that havent come to fruition with nans.
+
+    Args:
+        array (np.ndarray): a square matrix
+
+    Returns:
+        This is a description of what is returned.
+
+    Example:
+        >>> test_array = np.array([[0,5,10,15,20,25], # - response.prediction on the current timepoint
+                            [-5,0,5,10,15,20],
+                            [-10,-5,0,5,10,15],
+                            [-15,-10,-5,0,5,10],
+                            [-20,-15,-10,-5,0,5],  # - 25 minute prediction for time 0
+                            [-25,-20,-15,-10,-5,0],
+                            [-30,-25,-20,15,-10,-5]])  # - the about to be obseleted prediction
+        >>> shifted_array =time_shift(test_array)
+        >>> print(shifted_array)
+    """
     shifted_array = np.full((array.shape[0], array.shape[1]), np.nan)
     for i in range(array.shape[0]):
         if i != range(array.shape[0]):
@@ -193,8 +203,8 @@ def get_rewards(
     data = yf.download(tickers=ticker_symbol, period='5d', interval='5m', progress=False)
     #bt.logging.info("Procured data from yahoo finance.")
     # add an extra timepoint for dir_acc calculation
-    bt.logging.info(data.iloc[(-N_TIMEPOINTS-2):])
-    close_price = data['Close'].iloc[(-N_TIMEPOINTS-2):].tolist()
+    bt.logging.info(data.iloc[(-N_TIMEPOINTS-1):])
+    close_price = data['Close'].iloc[(-N_TIMEPOINTS-1):].tolist()
     close_price_revealed = ' '.join(str(price) for price in close_price)
 
     bt.logging.info(f"Revealing close prices for this interval: {close_price_revealed}")
