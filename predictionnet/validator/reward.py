@@ -154,7 +154,7 @@ def time_shift(array):
 
 def update_synapse(self, uid, response: Challenge):
     """
-    This is an example of Google style.
+    Updates the values of past_predictions with the current epoch
 
     Args:
         uid (int): The miner uid taken from the metagraph to be updated
