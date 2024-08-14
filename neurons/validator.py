@@ -78,11 +78,25 @@ class Validator(BaseValidatorNeuron):
         )
         
     async def is_valid_time(self):
+        """
+        This function checks if the NYSE is open and validators should send requests.
+        The final valid time is 4:00 PM - prediction length (self.INTERVAL) so that the final prediction is for 4:00 PM
+
+        Returns:
+            True if the NYSE is open and the current time is between 9:30 AM and (4:00 PM - self.INTERVAL)
+            False otherwise
+
+        Notes:
+        ------
+        Timezone is set to America/New_York
+
+        """
         est = pytz.timezone('America/New_York')
         now = datetime.now(est)
         # Check if today is Monday through Friday
         if now.weekday() >= 5:  # 0 is Monday, 6 is Sunday
             return False
+        # Check if the NYSE is open (i.e. not a holiday)
         if not self.market_is_open(now):
             return False
         # Check if the current time is between 9:30 AM and 4:00 PM
@@ -97,6 +111,17 @@ class Validator(BaseValidatorNeuron):
         #     return True
 
     def market_is_open(self, date):
+        """
+        This is an extra check for holidays where the NYSE is closed
+
+        Args:
+            date (datetime): The date to check
+
+        Returns:
+            True if the NYSE is open.
+            False otherwise
+
+        """
         result = mcal.get_calendar("NYSE").schedule(start_date=date, end_date=date)
         return result.empty == False
 

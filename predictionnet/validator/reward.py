@@ -37,11 +37,30 @@ import numpy as np
 #                       [-25,-20,-15,-10,-5,0],
 #                       [-30,-25,-20,15,-10,-5]])  # - the about to be obseleted prediction
 
+# test_array = np.array([[-25,-20,-15,-10,-5,0], # - response.prediction so the current timepoint
+#                       [-30,-25,-20,-15,-10,-5],
+#                       [-35,-30,-25,-20,-15,-10]
+
+
+
 ################################################################################
 #                              Helper Functions                                #
 ################################################################################
 def calc_raw(self, uid, response: Challenge, close_price: float):
-    # calculate delta and whether the direction of prediction was correct
+    """
+    Calculate delta and whether the direction of prediction was correct for a single response
+
+    Args:
+        uid: The miner uid taken from the metagraph for this response 
+        response: The synapse response from the miner containing the prediction
+        close_price: The S&P500 close price for the current epoch
+
+    Returns:
+        deltas: The absolute difference between the predicted price and the true price
+        correct_dirs: A boolean array for if the predicted direction matched the true direction
+
+    """
+    # 
     # use the saved past_predictions to include up to N_TIMEPOINTS of history
     # OUTPUT format:
     #    - both delta and correct_dirs are N_TIMEPOINTS x N_TIMEPOINTS matrices
@@ -55,16 +74,15 @@ def calc_raw(self, uid, response: Challenge, close_price: float):
         return None, None
     else:
         past_predictions = self.past_predictions[uid]
-        past_close_prices = self.past_close_prices[uid]
         prediction_array = np.concatenate((np.array(response.prediction).reshape(1,self.N_TIMEPOINTS), past_predictions), axis=0)
-        close_price_array = np.concatenate((np.array(close_price).reshape(1,self.N_TIMEPOINTS), past_close_prices), axis=0)
+        close_price_array = np.repeat(np.array(close_price[1:]).reshape(1,self.N_TIMEPOINTS), self.N_TIMEPOINTS, axis=0)
         if len(past_predictions.shape) == 1:
             before_pred_vector = np.array([])
             before_close_vector = np.array([])
         else:
             # add the timepoint before the first t from past history for each epoch
             before_pred_vector = np.concatenate((prediction_array[1:,0], np.array([0]))).reshape(self.N_TIMEPOINTS+1, 1)
-            before_close_vector = np.concatenate((close_price_array[1:,0], np.array([0]))).reshape(self.N_TIMEPOINTS+1, 1)
+            before_close_vector = np.repeat(np.array(close_price[0]), self.N_TIMEPOINTS, axis=0)
         # take the difference between timepoints and remove the oldest epoch (it is now obselete)
         # # old version, each timepoint compared to the previous timepoint
         # pred_dir = np.diff(np.concatenate((before_pred_vector, prediction_array), axis=1), axis=1)[:-1,:]
@@ -123,10 +141,7 @@ def time_shift(array):
 
 def update_synapse(self, uid, response: Challenge, close_price: float):
     past_predictions = self.past_predictions[uid]
-    past_close_prices = self.past_close_prices[uid]
-    new_past_close_prices = np.concatenate((np.array(close_price).reshape(1,6), past_close_prices), axis=0)
     new_past_predictions = np.concatenate((np.array(response.prediction).reshape(1,6), past_predictions), axis=0)
-    self.past_close_prices[uid] = new_past_close_prices[0:-1,:] # remove the oldest epoch
     self.past_predictions[uid] = new_past_predictions[0:-1,:] # remove the oldest epoch
 
 
@@ -177,9 +192,9 @@ def get_rewards(
     
     data = yf.download(tickers=ticker_symbol, period='5d', interval='5m', progress=False)
     #bt.logging.info("Procured data from yahoo finance.")
-
-    bt.logging.info(data.iloc[(-N_TIMEPOINTS-1):-1])
-    close_price = data['Close'].iloc[(-N_TIMEPOINTS-1):-1].tolist()
+    # add an extra timepoint for dir_acc calculation
+    bt.logging.info(data.iloc[(-N_TIMEPOINTS-2):])
+    close_price = data['Close'].iloc[(-N_TIMEPOINTS-2):].tolist()
     close_price_revealed = ' '.join(str(price) for price in close_price)
 
     bt.logging.info(f"Revealing close prices for this interval: {close_price_revealed}")
