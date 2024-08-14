@@ -81,7 +81,7 @@ def calc_raw(self, uid, response: Challenge, close_price: float):
         pred_dir = (before_pred_vector - prediction_array)[:-1,:]
         close_dir = (before_close_vector - close_price_array)
         correct_dirs = time_shift((close_dir>=0)==(pred_dir>=0))
-        deltas = np.abs(time_shift(close_price_array[:-1,:])-time_shift(prediction_array[:-1,:]))
+        deltas = np.abs(time_shift(close_price_array)-time_shift(prediction_array[:-1,:]))
         return deltas, correct_dirs
         
 def rank_miners_by_epoch(N_TIMEPOINTS,deltas: np.ndarray, correct_dirs: np.ndarray):
