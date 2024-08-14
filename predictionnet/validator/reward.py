@@ -27,12 +27,6 @@ import yfinance as yf
 from pytz import timezone
 import numpy as np
 
-# run this through time_shift to see how the function works
-# this array represents how the past_predictions is organized by time. 0 is the current prediction epoch
-
-
-
-
 
 ################################################################################
 #                              Helper Functions                                #
@@ -72,25 +66,27 @@ def calc_raw(self, uid, response: Challenge, close_price: float):
             # add the timepoint before the first t from past history for each epoch
             before_pred_vector = np.concatenate((prediction_array[1:,0], np.array([0]))).reshape(self.N_TIMEPOINTS+1, 1)
             before_close_vector = np.repeat(np.array(close_price[0]), self.N_TIMEPOINTS, axis=0).reshape(self.N_TIMEPOINTS, 1)
-        # take the difference between timepoints and remove the oldest epoch (it is now obselete)
-        # # old version, each timepoint compared to the previous timepoint
-        # pred_dir = np.diff(np.concatenate((before_pred_vector, prediction_array), axis=1), axis=1)[:-1,:]
-        # close_dir = np.diff(np.concatenate((before_close_vector, close_price_array), axis=1), axis=1)[:-1,:]
-
-        # new version, each timepoint compared to t_0 for that epoch
+        # take the difference between timepoints and remove the oldest prediction epoch (it is now obselete)
         pred_dir = (before_pred_vector - prediction_array)[:-1,:]
         close_dir = (before_close_vector - close_price_array)
         correct_dirs = time_shift((close_dir>=0)==(pred_dir>=0))
         deltas = np.abs(time_shift(close_price_array)-time_shift(prediction_array[:-1,:]))
         return deltas, correct_dirs
         
-def rank_miners_by_epoch(N_TIMEPOINTS,deltas: np.ndarray, correct_dirs: np.ndarray):
-    # inputs should be nMiners x N_TIMEPOINTS matrix of one prediction epoch and should be matched between deltas and correct_dirs
-    #    - deltas is a float array of the absolute difference between the predicted price and the true price
-    #    - correct_dirs is a boolean array for if the predicted direction matched the true direction
-    correct_deltas = np.full((deltas.shape[0], N_TIMEPOINTS), np.nan)
+def rank_miners_by_epoch(deltas: np.ndarray, correct_dirs: np.ndarray):
+    """
+    Generates the rankings for each miner (rows) first according to their correct direction (bool), then by delta (float)
+
+    Args:
+        deltas (numpy.ndarray): n_miners x N_TIMEPOINTS array for one prediction timepoint (e.g. the 5min prediction)
+        correct_dirs (numpy.ndarray): n_miners x N_TIMEPOINTS array for one prediction timepoint
+
+    Returns:
+        all_ranks (numpy.ndarray): n_miners x N_TIMEPOINTS array for one prediction timepoint
+    """
+    correct_deltas = np.full(deltas.shape, np.nan)
     correct_deltas[correct_dirs] = deltas[correct_dirs]
-    incorrect_deltas = np.full((deltas.shape[0],N_TIMEPOINTS), np.nan)
+    incorrect_deltas = np.full(deltas.shape, np.nan)
     incorrect_deltas[~correct_dirs] = deltas[~correct_dirs]
     correct_ranks = rank_columns(correct_deltas)
     incorrect_ranks = rank_columns(incorrect_deltas)+np.nanmax(correct_ranks, axis=0)
@@ -99,7 +95,15 @@ def rank_miners_by_epoch(N_TIMEPOINTS,deltas: np.ndarray, correct_dirs: np.ndarr
     return all_ranks
 
 def rank_columns(array):
-    # Copy the array to avoid modifying the original
+    """
+    Changes the values of array into within-column ranks, putting nans at the lowest ranks
+
+    Args:
+        array (numpy.ndarray): a 2D array of values
+
+    Returns:
+        ranked_array (numpy.ndarray): array where the values are replaced with within-column rank
+    """
     ranked_array = np.copy(array)
     # Iterate over each column
     for col in range(array.shape[1]):
@@ -126,16 +130,17 @@ def time_shift(array):
         array (np.ndarray): a square matrix
 
     Returns:
-        This is a description of what is returned.
+        shifted_array (np.ndarray): a square matrix where the diagonal elements become the last column,
+            the unfulfilled predictions are removed and filled with nans
 
     Example:
         >>> test_array = np.array([[0,5,10,15,20,25], # - response.prediction on the current timepoint
                             [-5,0,5,10,15,20],
                             [-10,-5,0,5,10,15],
                             [-15,-10,-5,0,5,10],
-                            [-20,-15,-10,-5,0,5],  # - 25 minute prediction for time 0
-                            [-25,-20,-15,-10,-5,0],
-                            [-30,-25,-20,15,-10,-5]])  # - the about to be obseleted prediction
+                            [-20,-15,-10,-5,0,5],  
+                            [-25,-20,-15,-10,-5,0], # - 30 minute prediction for time 0
+                            [-30,-25,-20,15,-10,-5]])  # - the obseleted prediction
         >>> shifted_array =time_shift(test_array)
         >>> print(shifted_array)
     """
@@ -147,7 +152,17 @@ def time_shift(array):
             shifted_array[i,:] = array[i,:]
     return shifted_array
 
-def update_synapse(self, uid, response: Challenge, close_price: float):
+def update_synapse(self, uid, response: Challenge):
+    """
+    This is an example of Google style.
+
+    Args:
+        uid (int): The miner uid taken from the metagraph to be updated
+        response (Challenge): The synapse response from the miner containing the prediction
+
+    Returns:
+        changes the value of self.past_predictions[uid] to include the most recent prediction and remove the oldest prediction
+    """
     past_predictions = self.past_predictions[uid]
     new_past_predictions = np.concatenate((np.array(response.prediction).reshape(1,6), past_predictions), axis=0)
     self.past_predictions[uid] = new_past_predictions[0:-1,:] # remove the oldest epoch
@@ -232,7 +247,7 @@ def get_rewards(
     # raw_deltas is now a full of the last N_TIMEPOINTS of prediction deltas, same for raw_correct_dir
     ranks = np.full((len(responses),N_TIMEPOINTS,N_TIMEPOINTS), np.nan)
     for t in range(N_TIMEPOINTS):
-        ranks[:,:,t] = rank_miners_by_epoch(N_TIMEPOINTS, raw_deltas[:,:,t], raw_correct_dir[:,:,t])
+        ranks[:,:,t] = rank_miners_by_epoch(raw_deltas[:,:,t], raw_correct_dir[:,:,t])
 
     incentives = np.nanmean(np.nanmean(ranks, axis=2), axis=1).argsort().argsort()
     reward = np.exp(-0.05*incentives)
