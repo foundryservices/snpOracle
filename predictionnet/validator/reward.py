@@ -242,7 +242,7 @@ def get_rewards(
         else:
             raw_deltas[x,:,:] = delta
             raw_correct_dir[x,:,:] = correct
-        update_synapse(self, miner_uids[x], response, close_price)
+        update_synapse(self, miner_uids[x], response)
 
     # raw_deltas is now a full of the last N_TIMEPOINTS of prediction deltas, same for raw_correct_dir
     ranks = np.full((len(responses),N_TIMEPOINTS,N_TIMEPOINTS), np.nan)
