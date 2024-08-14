@@ -48,17 +48,15 @@ def calc_raw(self, uid, response: Challenge, close_price: float):
 
     Returns:
         deltas: The absolute difference between the predicted price and the true price
+            - numpy.ndarray: (N_TIMEPOINTS x N_TIMEPOINTS)
         correct_dirs: A boolean array for if the predicted direction matched the true direction
-
+            - numpy.ndarray: (N_TIMEPOINTS x N_TIMEPOINTS)
+    
+    Notes:
+         - first row is the current epoch with only one prediction from self.prediction_interval minutes ago
+         - the final row is N_TIMEPOINTS epochs ago with  (N_TIMEPOINTS x self.prediction_interval = 30min) minute predictions for the current timepoint
+         - the final column is the current timepoint with various prediction distances (5min, 10min,...)
     """
-    # 
-    # use the saved past_predictions to include up to N_TIMEPOINTS of history
-    # OUTPUT format:
-    #    - both delta and correct_dirs are N_TIMEPOINTS x N_TIMEPOINTS matrices
-    #    - first row is the current epoch with only one prediction from 5 minutes ago
-    #    - the final row is N_TIMEPOINTS epochs ago with a 30min prediction for the current timepoint
-    #    - the final column is the current timepoint with various prediction distances (5min, 10min,...)
-    #    - to further investigate format, run 'time_shift(test_array)'
     if response.prediction is None:
         return None, None
     elif len(response.prediction) != self.N_TIMEPOINTS:
@@ -73,7 +71,7 @@ def calc_raw(self, uid, response: Challenge, close_price: float):
         else:
             # add the timepoint before the first t from past history for each epoch
             before_pred_vector = np.concatenate((prediction_array[1:,0], np.array([0]))).reshape(self.N_TIMEPOINTS+1, 1)
-            before_close_vector = np.repeat(np.array(close_price[0]), self.N_TIMEPOINTS, axis=0)
+            before_close_vector = np.repeat(np.array(close_price[0]), self.N_TIMEPOINTS, axis=0).reshape(self.N_TIMEPOINTS, 1)
         # take the difference between timepoints and remove the oldest epoch (it is now obselete)
         # # old version, each timepoint compared to the previous timepoint
         # pred_dir = np.diff(np.concatenate((before_pred_vector, prediction_array), axis=1), axis=1)[:-1,:]
@@ -81,7 +79,7 @@ def calc_raw(self, uid, response: Challenge, close_price: float):
 
         # new version, each timepoint compared to t_0 for that epoch
         pred_dir = (before_pred_vector - prediction_array)[:-1,:]
-        close_dir = (before_close_vector - close_price_array)[:-1,:]
+        close_dir = (before_close_vector - close_price_array)
         correct_dirs = time_shift((close_dir>=0)==(pred_dir>=0))
         deltas = np.abs(time_shift(close_price_array[:-1,:])-time_shift(prediction_array[:-1,:]))
         return deltas, correct_dirs
