@@ -65,7 +65,7 @@ def calc_raw(self, uid, response: Challenge, close_price: float):
         else:
             # add the timepoint before the first t from past history for each epoch
             before_pred_vector = np.concatenate((prediction_array[1:,0], np.array([0]))).reshape(self.N_TIMEPOINTS+1, 1)
-            before_close_vector = np.array(close_price[1:].reverse()).reshape(self.N_TIMEPOINTS,1)
+            before_close_vector = np.array(close_price[0:-1].reverse()).reshape(self.N_TIMEPOINTS,1)
         # take the difference between timepoints and remove the oldest prediction epoch (it is now obselete)
         pred_dir = (before_pred_vector - prediction_array)[:-1,:]
         close_dir = (before_close_vector - close_price_array)
