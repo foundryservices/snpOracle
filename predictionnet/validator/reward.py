@@ -64,9 +64,7 @@ def calc_raw(self, uid, response: Challenge, close_price: float):
             before_close_vector = np.array([])
         else:
             # add the timepoint before the first t from past history for each epoch
-            print(self.oldest_prediction[uid])
-            print(prediction_array[1:,0])
-            before_pred_vector = np.concatenate((prediction_array[1:,0], np.array(self.oldest_prediction[uid]))).reshape(self.N_TIMEPOINTS+1, 1)
+            before_pred_vector = np.concatenate((prediction_array[1:,0], np.array([self.oldest_prediction[uid]]))).reshape(self.N_TIMEPOINTS+1, 1)
             past_timepoint = close_price[0:-1]
             past_timepoint.reverse()
             before_close_vector = np.array(past_timepoint).reshape(self.N_TIMEPOINTS,1)
