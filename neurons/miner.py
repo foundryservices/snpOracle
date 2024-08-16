@@ -169,7 +169,7 @@ class Miner(BaseMinerNeuron):
         )
 
         timestamp = synapse.timestamp
-        data = yf.download(tickers='^GSPC', period='1d', interval='5m', progress=False)
+        data = yf.download(tickers='^GSPC', period='5d', interval='5m', progress=False)
         synapse.prediction = list(data['Close'].iloc[-6:])
         # Download the file
         # if(self.config.hf_repo_id=="LOCAL"):
