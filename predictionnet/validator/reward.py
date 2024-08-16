@@ -64,7 +64,7 @@ def calc_raw(self, uid, response: Challenge, close_price: float):
             before_close_vector = np.array([])
         else:
             # add the timepoint before the first t from past history for each epoch
-            before_pred_vector = np.concatenate((prediction_array[1:,0], np.array([0]))).reshape(self.N_TIMEPOINTS+1, 1)
+            before_pred_vector = np.concatenate((prediction_array[1:,0], np.array(self.oldest_prediction[uid]))).reshape(self.N_TIMEPOINTS+1, 1)
             past_timepoint = close_price[0:-1]
             past_timepoint.reverse()
             before_close_vector = np.array(past_timepoint).reshape(self.N_TIMEPOINTS,1)
@@ -166,8 +166,9 @@ def update_synapse(self, uid, response: Challenge) -> None:
         changes the value of self.past_predictions[uid] to include the most recent prediction and remove the oldest prediction
     """
     past_predictions = self.past_predictions[uid]
-    new_past_predictions = np.concatenate((np.array(response.prediction).reshape(1,6), past_predictions), axis=0)
+    new_past_predictions = np.concatenate((np.array(response.prediction).reshape(1,self.N_TIMEPOINTS), past_predictions), axis=0)
     self.past_predictions[uid] = new_past_predictions[0:-1,:] # remove the oldest epoch
+    self.oldest_prediction[uid] = past_predictions[self.N_TIMEPOINTS,self.N_TIMEPOINTS] # save one value from the oldest epoch for dir calculation
 
 
 ################################################################################
