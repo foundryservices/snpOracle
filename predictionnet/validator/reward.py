@@ -33,22 +33,22 @@ import numpy as np
 ################################################################################
 def calc_raw(self, uid, response: Challenge, close_price: float):
     """
-    Calculate delta and whether the direction of prediction was correct for a single response
+    Calculate delta and whether the direction of prediction was correct for one miner over the past N_TIMEPOINTS epochs
 
     Args:
         uid: The miner uid taken from the metagraph for this response 
         response: The synapse response from the miner containing the prediction
-        close_price: The S&P500 close price for the current epoch
+        close_price: The S&P500 close price for the current epoch (N_TIMEPOINTS+1 to calculate price direction)
 
     Returns:
         deltas: The absolute difference between the predicted price and the true price
-            - numpy.ndarray: (N_TIMEPOINTS x N_TIMEPOINTS)
+            - numpy.ndarray: (N_TIMEPOINTS (epochs) x N_TIMEPOINTS (timepoints))
         correct_dirs: A boolean array for if the predicted direction matched the true direction
-            - numpy.ndarray: (N_TIMEPOINTS x N_TIMEPOINTS)
+            - numpy.ndarray: (N_TIMEPOINTS (epochs) x N_TIMEPOINTS (timepoints))
     
     Notes:
-         - first row is the current epoch with only one prediction from self.prediction_interval minutes ago
-         - the final row is N_TIMEPOINTS epochs ago with  (N_TIMEPOINTS x self.prediction_interval = 30min) minute predictions for the current timepoint
+         - first row is the current epoch with only one prediction from <self.prediction_interval> minutes ago
+         - the final row is <N_TIMEPOINTS> epochs ago with  (N_TIMEPOINTS x self.prediction_interval = 30min) minute predictions for the current timepoint
          - the final column is the current timepoint with various prediction distances (5min, 10min,...)
     """
     if response.prediction is None:
@@ -70,12 +70,12 @@ def calc_raw(self, uid, response: Challenge, close_price: float):
         pred_dir = (before_pred_vector - prediction_array)[:-1,:]
         close_dir = (before_close_vector - close_price_array)
         correct_dirs = time_shift((close_dir>=0)==(pred_dir>=0))
-        deltas = np.abs(time_shift(close_price_array)-time_shift(prediction_array[:-1,:]))
+        deltas = np.abs(close_price_array-time_shift(prediction_array[:-1,:]))
         return deltas, correct_dirs
         
-def rank_miners_by_epoch(deltas: np.ndarray, correct_dirs: np.ndarray):
+def rank_miners_by_epoch(deltas: np.ndarray, correct_dirs: np.ndarray) -> np.ndarray:
     """
-    Generates the rankings for each miner (rows) first according to their correct direction (bool), then by delta (float)
+    Generates the rankings for each miner (rows) first according to their correct_dirs (bool), then by deltas (float)
 
     Args:
         deltas (numpy.ndarray): n_miners x N_TIMEPOINTS array for one prediction timepoint (e.g. the 5min prediction)
@@ -94,9 +94,9 @@ def rank_miners_by_epoch(deltas: np.ndarray, correct_dirs: np.ndarray):
     all_ranks[~correct_dirs] = incorrect_ranks[~correct_dirs]
     return all_ranks
 
-def rank_columns(array):
+def rank_columns(array) -> np.ndarray:
     """
-    Changes the values of array into within-column ranks, putting nans at the lowest ranks
+    Changes the values of array into within-column ranks, preserving nans
 
     Args:
         array (numpy.ndarray): a 2D array of values
@@ -121,7 +121,7 @@ def rank_columns(array):
         ranked_array[non_nan_indices, col] = ranks
     return ranked_array
 
-def time_shift(array):
+def time_shift(array) -> np.ndarray:
     """
     This function alligns the timepoints of past_predictions with the current epoch
     and replaces predictions that havent come to fruition with nans.
@@ -152,7 +152,7 @@ def time_shift(array):
             shifted_array[i,:] = array[i,:]
     return shifted_array
 
-def update_synapse(self, uid, response: Challenge):
+def update_synapse(self, uid, response: Challenge) -> None:
     """
     Updates the values of past_predictions with the current epoch
 
