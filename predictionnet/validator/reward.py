@@ -135,13 +135,13 @@ def time_shift(array) -> np.ndarray:
             the unfulfilled predictions are removed and filled with nans
 
     Example:
-        >>> test_array = np.array([[0,5,10,15,20,25], # - response.prediction on the current timepoint
-                            [-5,0,5,10,15,20],
-                            [-10,-5,0,5,10,15],
-                            [-15,-10,-5,0,5,10],
-                            [-20,-15,-10,-5,0,5],  
-                            [-25,-20,-15,-10,-5,0], # - 30 minute prediction for time 0
-                            [-30,-25,-20,15,-10,-5]])  # - the obseleted prediction
+        >>> test_array = np.array([[0,5,10,15,20,25], # - response.prediction on the current timepoint (requested 5 minutes ago)
+                                   [-5,0,5,10,15,20], # - 10 minute prediction for time 0
+                                   [-10,-5,0,5,10,15],
+                                   [-15,-10,-5,0,5,10],
+                                   [-20,-15,-10,-5,0,5],  
+                                   [-25,-20,-15,-10,-5,0], # - 30 minute prediction for time 0
+                                   [-30,-25,-20,15,-10,-5]])  # - the obseleted prediction
         >>> shifted_array =time_shift(test_array)
         >>> print(shifted_array)
     """
@@ -167,8 +167,6 @@ def update_synapse(self, uid, response: Challenge) -> None:
     past_predictions = self.past_predictions[uid]
     new_past_predictions = np.concatenate((np.array(response.prediction).reshape(1,self.N_TIMEPOINTS), past_predictions), axis=0)
     self.past_predictions[uid] = new_past_predictions[0:-1,:] # remove the oldest epoch
-    self.oldest_prediction[uid] = past_predictions[self.N_TIMEPOINTS-1,self.N_TIMEPOINTS-1] # save one value from the oldest epoch for dir calculation
-
 
 ################################################################################
 #                                Main Function                                 #

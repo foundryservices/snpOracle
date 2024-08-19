@@ -51,7 +51,6 @@ class BaseValidatorNeuron(BaseNeuron):
         self.hotkeys = copy.deepcopy(self.metagraph.hotkeys)
         #initialize past_predictions history
         self.past_predictions = [np.full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), np.nan)] * len(self.hotkeys)
-        self.oldest_prediction = [np.nan] * len(self.hotkeys)
 
         # Dendrite lets us send messages to other nodes (axons) in the network.
         self.dendrite = bt.dendrite(wallet=self.wallet)
