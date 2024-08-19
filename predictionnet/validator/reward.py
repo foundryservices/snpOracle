@@ -70,7 +70,7 @@ def calc_raw(self, uid, response: Challenge, close_price: float):
         # take the difference between timepoints and remove the oldest prediction epoch (it is now obselete)
         pred_dir = (before_close_vector - prediction_array[:-1,:])
         close_dir = (before_close_vector - close_price_array)
-        correct_dirs = time_shift((close_dir>=0)==(pred_dir>=0))
+        correct_dirs = (close_dir>=0)==time_shift((pred_dir>=0))
         deltas = np.abs(close_price_array-time_shift(prediction_array[:-1,:]))
         return deltas, correct_dirs
         
