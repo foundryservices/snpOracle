@@ -31,7 +31,7 @@ def prep_data(drop_na:bool = True) -> DataFrame:
     """
     # Fetch S&P 500 data - when capturing data any interval, the max we can go back is 60 days
     # using Yahoo Finance's Python SDK
-    data = yf.download('^GSPC', period='3mo', interval='5m')
+    data = yf.download('^GSPC', period='1mo', interval='5m')
 
     # Calculate technical indicators - all technical indicators computed here are based on the 5m data
     # For example - SMA_50, is not a 50-day moving average, but is instead a 50 5m moving average
