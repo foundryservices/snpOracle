@@ -19,7 +19,6 @@ import predictionnet
 from predictionnet.protocol import Challenge
 from predictionnet.validator.reward import get_rewards
 from predictionnet.utils.uids import get_random_uids, check_uid_availability
-import numpy as np
 from datetime import datetime, timedelta
 import time
 from pytz import timezone
@@ -38,8 +37,8 @@ async def forward(self):
     
     # wait for market to be open
     ny_timezone = timezone('America/New_York')
-    current_time = datetime.now(ny_timezone)
-    bt.logging.info("Current time: ", current_time)
+    current_time_ny = datetime.now(ny_timezone)
+    bt.logging.info("Current time: ", current_time_ny)
     # block forward from running if market is closed
     while True:
         if await self.is_valid_time():
@@ -48,10 +47,10 @@ async def forward(self):
         else:
             bt.logging.info("Market is closed. Sleeping for 2 minutes...")
             time.sleep(120)  # Sleep for 5 minutes before checking again
-            if datetime.now(ny_timezone) - current_time >= timedelta(hours=1):
+            if datetime.now(ny_timezone) - current_time_ny >= timedelta(hours=1):
                 self.resync_metagraph()
                 self.set_weights()
-                current_time = datetime.now(ny_timezone)
+                current_time_ny = datetime.now(ny_timezone)
     
     #miner_uids = get_random_uids(self, k=min(self.config.neuron.sample_size, self.metagraph.n.item()))
     #get all uids

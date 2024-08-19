@@ -30,7 +30,7 @@ from datetime import datetime, timedelta
 from pytz import timezone
 from predictionnet.base.neuron import BaseNeuron
 import time
-import numpy as np
+
 
 
 class BaseValidatorNeuron(BaseNeuron):
@@ -42,15 +42,9 @@ class BaseValidatorNeuron(BaseNeuron):
 
     def __init__(self, config=None):
         super().__init__(config=config)
-        # basic params
-        self.prediction_interval = 5 # in minutes
-        self.N_TIMEPOINTS = 6 # number of timepoints to predict
-        self.INTERVAL = self.prediction_interval * self.N_TIMEPOINTS # 30 Minutes
 
         # Save a copy of the hotkeys to local memory.
         self.hotkeys = copy.deepcopy(self.metagraph.hotkeys)
-        #initialize past_predictions history
-        self.past_predictions = [np.full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), np.nan)] * len(self.hotkeys)
 
         # Dendrite lets us send messages to other nodes (axons) in the network.
         self.dendrite = bt.dendrite(wallet=self.wallet)

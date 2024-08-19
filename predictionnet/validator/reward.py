@@ -208,7 +208,7 @@ def get_rewards(
 
     while (datetime.now(ny_timezone) < rounded_up_time):
         bt.logging.info(f"Waiting for next {prediction_interval}m interval...")
-        if(datetime.now(ny_timezone).minute%20==0):
+        if(datetime.now(ny_timezone).minute%10==0):
             self.resync_metagraph()
         time.sleep(15)
 

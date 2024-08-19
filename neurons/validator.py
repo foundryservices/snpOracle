@@ -24,6 +24,7 @@ import pytz
 import pathlib
 import wandb
 import os
+from numpy import nan, full
 
 # Bittensor
 import bittensor as bt
@@ -49,6 +50,12 @@ class Validator(BaseValidatorNeuron):
 
     def __init__(self, config=None):
         super(Validator, self).__init__(config=config)
+        # basic params
+        self.prediction_interval = 5 # in minutes
+        self.N_TIMEPOINTS = 6 # number of timepoints to predict
+        self.INTERVAL = self.prediction_interval * self.N_TIMEPOINTS # 30 Minutes
+         #initialize past_predictions history
+        self.past_predictions = [full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)] * len(self.hotkeys)
 
         bt.logging.info("load_state()")
         self.load_state()
@@ -106,9 +113,6 @@ class Validator(BaseValidatorNeuron):
             return False
         # if all checks pass, return true
         return True
-        # # if at least prediction_interval minutes have passed since they were queried
-        # if self.miner_update_time + timedelta(minutes=self.prediction_interval) <= now:
-        #     return True
 
     def market_is_open(self, date):
         """

@@ -21,7 +21,6 @@ from typing import Optional, List
 import bittensor as bt
 import pydantic
 from datetime import datetime
-import numpy as np
 
 # TODO(developer): Rewrite with your protocol definition.
 
