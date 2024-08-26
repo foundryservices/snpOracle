@@ -16,14 +16,13 @@
 import bittensor as bt
 # Import Validator Template
 import predictionnet
-from predictionnet.protocol import Challenge
 from predictionnet.validator.reward import get_rewards
 from predictionnet.utils.uids import get_random_uids, check_uid_availability
-
 from datetime import datetime, timedelta
 import time
 from pytz import timezone
 import wandb
+
 
 async def forward(self):
     """
@@ -39,33 +38,19 @@ async def forward(self):
     ny_timezone = timezone('America/New_York')
     current_time_ny = datetime.now(ny_timezone)
     bt.logging.info("Current time: ", current_time_ny)
-    
+    # block forward from running if market is closed
     while True:
-        current_time = datetime.now(ny_timezone)
-        if await self.is_market_open(current_time):
+        if await self.is_valid_time():
             bt.logging.info("Market is open. Begin processes requests")
-            # Wait until the time is at a 30-minute interval
-            while current_time.minute % 30 not in {0, 1, 2, 3, 4}:    
-                bt.logging.info("Waiting until the next 30-minute interval...")
-                time.sleep(30)  # Check every minute
-                if(current_time.minute%10==0):
-                    self.resync_metagraph()
-            
-                # Update current_time
-                current_time = datetime.now(ny_timezone)
- 
-            break  # Exit the loop if market is open and at a 30-minute interval
-     
+            break
         else:
             bt.logging.info("Market is closed. Sleeping for 2 minutes...")
             time.sleep(120)  # Sleep for 5 minutes before checking again
-
             if datetime.now(ny_timezone) - current_time_ny >= timedelta(hours=1):
                 self.resync_metagraph()
                 self.set_weights()
                 current_time_ny = datetime.now(ny_timezone)
     
-
     #miner_uids = get_random_uids(self, k=min(self.config.neuron.sample_size, self.metagraph.n.item()))
     #get all uids
     miner_uids = []
@@ -89,10 +74,6 @@ async def forward(self):
         timestamp=timestamp,
     )
 
-    #with open('timestamp.txt', 'w') as file:
-    #    file.write(timestamp)
-
-    # The dendrite client queries the network.
     responses = self.dendrite.query(
         # Send the query to selected miner axons in the network.
         axons=[self.metagraph.axons[uid] for uid in miner_uids],
@@ -102,7 +83,6 @@ async def forward(self):
         #synapse=Dummy(dummy_input=self.step),
         # All responses have the deserialize function called on them before returning.
         # You are encouraged to define your own deserialization function.
-        
         # Other subnets have this turned to false, I am unsure of whether this should be set to true
         deserialize=False,
     )
@@ -111,9 +91,7 @@ async def forward(self):
     # TODO(developer): Define how the validator scores responses.
     # Adjust the scores based on responses from miners.
     
-    # query = synapse most likely?
-    #rewards = get_rewards(self, query=self.step, responses=responses)
-    rewards = get_rewards(self, query=synapse, responses=responses)
+    rewards = get_rewards(self, responses=responses, miner_uids=miner_uids)
 
     wandb_val_log = {
         "miners_info": {

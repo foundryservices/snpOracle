@@ -24,12 +24,12 @@ import pytz
 import pathlib
 import wandb
 import os
+from numpy import nan, full
 
 # Bittensor
 import bittensor as bt
 
 # Bittensor Validator Template:
-import predictionnet
 from predictionnet.validator import forward
 
 # import base validator class which takes care of most of the boilerplate
@@ -49,6 +49,12 @@ class Validator(BaseValidatorNeuron):
 
     def __init__(self, config=None):
         super(Validator, self).__init__(config=config)
+        # basic params
+        self.prediction_interval = 5 # in minutes
+        self.N_TIMEPOINTS = 6 # number of timepoints to predict
+        self.INTERVAL = self.prediction_interval * self.N_TIMEPOINTS # 30 Minutes
+         #initialize past_predictions history
+        self.past_predictions = [full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)] * len(self.hotkeys)
 
         bt.logging.info("load_state()")
         self.load_state()
@@ -77,37 +83,50 @@ class Validator(BaseValidatorNeuron):
                 reinit=True,
         )
         
-    
-    async def is_market_open(self, time):
-        # Convert Unix timestamp to datetime in UTC
-        #time = datetime.utcfromtimestamp(unix_time).replace(tzinfo=pytz.utc)
+    async def is_valid_time(self):
+        """
+        This function checks if the NYSE is open and validators should send requests.
+        The final valid time is 4:00 PM - prediction length (self.INTERVAL) so that the final prediction is for 4:00 PM
 
-        if time.weekday() < 5:  # Check if it's a weekday
-            # Create a market calendar for NYSE
-            nyse = mcal.get_calendar('NYSE')
+        Returns:
+            True if the NYSE is open and the current time is between 9:30 AM and (4:00 PM - self.INTERVAL)
+            False otherwise
 
-            # Convert `time` to 'America/New_York' before checking the schedule
-            ny_time = time.astimezone(pytz.timezone('America/New_York'))
-            #print(ny_time)
-            # Check if the current date is a holiday or a market day
-            schedule = nyse.schedule(start_date=ny_time.date(), end_date=ny_time.date())
-            
-            if not schedule.empty:
-                market_open = schedule.iloc[0]['market_open']
-                market_close = schedule.iloc[0]['market_close']
+        Notes:
+        ------
+        Timezone is set to America/New_York
 
-                # Check if current time is within market hours
-                if market_open <= ny_time <= market_close:
-                    #print(ny_time)
-                    ticker_symbol = '^GSPC'
-                    ticker = yf.Ticker(ticker_symbol)
-                    adjusted = ny_time - timedelta(minutes=35)
-                    data = ticker.history(start=adjusted, end=ny_time, interval='5m')
-                    
-                    return len(data) > 0
+        """
+        est = pytz.timezone('America/New_York')
+        now = datetime.now(est)
+        # Check if today is Monday through Friday
+        if now.weekday() >= 5:  # 0 is Monday, 6 is Sunday
+            return False
+        # Check if the NYSE is open (i.e. not a holiday)
+        if not self.market_is_open(now):
+            return False
+        # Check if the current time is between 9:30 AM and 4:00 PM
+        start_time = now.replace(hour=9, minute=30, second=0, microsecond=0)
+        end_time = now.replace(hour=16, minute=0, second=0, microsecond=0) - timedelta(minutes=self.prediction_interval*self.N_TIMEPOINTS)
+        if not (start_time <= now <= end_time):
+            return False
+        # if all checks pass, return true
+        return True
 
-        bt.logging.info(f"Market Closed today")
-        return False
+    def market_is_open(self, date):
+        """
+        This is an extra check for holidays where the NYSE is closed
+
+        Args:
+            date (datetime): The date to check
+
+        Returns:
+            True if the NYSE is open.
+            False otherwise
+
+        """
+        result = mcal.get_calendar("NYSE").schedule(start_date=date, end_date=date)
+        return result.empty == False
 
     async def forward(self):
         """

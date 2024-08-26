@@ -26,9 +26,8 @@ import bittensor as bt
 
 from typing import List
 from traceback import print_exception
-
 from predictionnet.base.neuron import BaseNeuron
-import time
+
 
 
 class BaseValidatorNeuron(BaseNeuron):
@@ -233,8 +232,6 @@ class BaseValidatorNeuron(BaseNeuron):
             subtensor=self.subtensor,
             metagraph=self.metagraph,
         )
-        bt.logging.debug("processed_weights", processed_weights)
-        bt.logging.debug("processed_weight_uids", processed_weight_uids)
 
         # Convert to uint16 weights and uids.
         (
@@ -243,8 +240,6 @@ class BaseValidatorNeuron(BaseNeuron):
         ) = bt.utils.weight_utils.convert_weights_and_uids_for_emit(
             uids=processed_weight_uids, weights=processed_weights
         )
-        bt.logging.debug("uint_weights", uint_weights)
-        bt.logging.debug("uint_uids", uint_uids)
 
         # Set the weights on chain via our subtensor connection.
         bt.logging.info(f"Setting weights...")
@@ -284,6 +279,7 @@ class BaseValidatorNeuron(BaseNeuron):
         for uid, hotkey in enumerate(self.hotkeys):
             if hotkey != self.metagraph.hotkeys[uid]:
                 self.scores[uid] = 0  # hotkey has been replaced
+                self.past_predictions[uid] = np.full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), np.nan) # reset past predictions
 
         # Check to see if the metagraph has changed size.
         # If so, we need to add new hotkeys and moving averages.
@@ -313,7 +309,7 @@ class BaseValidatorNeuron(BaseNeuron):
         scattered_rewards: torch.FloatTensor = self.scores.scatter(
             0, torch.tensor(uids).to(self.device), rewards
         ).to(self.device)
-        bt.logging.debug(f"Scattered rewards: {rewards}")
+        #bt.logging.debug(f"Scattered rewards: {rewards}")
 
         # Update scores with rewards produced by this step.
         # shape: [ metagraph.n ]

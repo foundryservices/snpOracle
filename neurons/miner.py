@@ -24,7 +24,7 @@ import bittensor as bt
 
 from base_miner.predict import predict
 from base_miner.get_data import prep_data, scale_data
-
+import yfinance as yf
 #import predictionnet 
 # Bittensor Miner Template:
 import predictionnet
@@ -169,7 +169,6 @@ class Miner(BaseMinerNeuron):
         )
 
         timestamp = synapse.timestamp
-
         # Download the file
         if(self.config.hf_repo_id=="LOCAL"):
             model_path = f'./{self.config.model}'
@@ -189,7 +188,7 @@ class Miner(BaseMinerNeuron):
         # type needs to be changed based on the algo you're running
         # any algo specific change logic can be added to predict function in predict.py
         prediction = predict(timestamp, scaler, model, type='lstm') 
-        
+        bt.logging.info(f"Prediction: {prediction}")
         #pred_np_array = np.array(prediction).reshape(-1, 1)
 
         # logic to ensure that only past 20 day context exists in synapse
