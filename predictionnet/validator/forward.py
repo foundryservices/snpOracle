@@ -16,7 +16,6 @@
 import bittensor as bt
 # Import Validator Template
 import predictionnet
-from predictionnet.protocol import Challenge
 from predictionnet.validator.reward import get_rewards
 from predictionnet.utils.uids import get_random_uids, check_uid_availability
 from datetime import datetime, timedelta

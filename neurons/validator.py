@@ -30,7 +30,6 @@ from numpy import nan, full
 import bittensor as bt
 
 # Bittensor Validator Template:
-import predictionnet
 from predictionnet.validator import forward
 
 # import base validator class which takes care of most of the boilerplate
