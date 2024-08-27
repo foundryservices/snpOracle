@@ -163,7 +163,6 @@ W_{m} = e^{-0.05 * rank_m}
 ```
 The constant shown in this equation, −0.05, is a hyperparameter which controls the steepness of the curve (i.e. what proportion of the emissions are allocated to rank 1, 2, 3,... etc.). We chose this value to fairly distribute across miners to mitigate the effect of rank volatility. This ranking system ensures that machine learning or statistical models will inherently perform better than any method of gamification. By effectively performing a commit-reveal on a future S&P Price Prediction, S&P Oracle ensures that only well-tuned models will survive. 
 
-
 ---
 
 ## Roadmap
@@ -173,8 +172,9 @@ Foundry will constantly work to make this subnet more robust, with the north sta
 - [X] Add Features to Rewards Mechanism
 - [X] Query all miners instead of a random subset
 - [X] Automate holiday detection and market close logic
+- [X] Implement new Incentive Mechanism
 - [ ] (Ongoing) Wandb Integration
-- [ ] (Ongoing) Altering Synapse to hold short term history of predictions
+- [X] Altering Validator to hold short term history of predictions
 - [ ] (Ongoing) Front end for end-user access
 - [ ] Add new Synapse type for Inference Requests
 

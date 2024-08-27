@@ -27,6 +27,7 @@ import bittensor as bt
 from typing import List
 from traceback import print_exception
 from predictionnet.base.neuron import BaseNeuron
+from numpy import nan, full
 
 
 
@@ -279,7 +280,7 @@ class BaseValidatorNeuron(BaseNeuron):
         for uid, hotkey in enumerate(self.hotkeys):
             if hotkey != self.metagraph.hotkeys[uid]:
                 self.scores[uid] = 0  # hotkey has been replaced
-                self.past_predictions[uid] = np.full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), np.nan) # reset past predictions
+                self.past_predictions[uid] = full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan) # reset past predictions
 
         # Check to see if the metagraph has changed size.
         # If so, we need to add new hotkeys and moving averages.
