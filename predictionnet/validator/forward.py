@@ -96,7 +96,6 @@ async def forward(self):
     rewards = get_rewards(self, responses=responses, miner_uids=miner_uids)
 
     wandb_val_log = {
-        "timestamp": timestamp,
         "miners_info": {
             miner_uid: {
                 "miner_response":response.prediction, 
