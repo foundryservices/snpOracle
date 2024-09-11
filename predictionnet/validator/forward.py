@@ -22,6 +22,7 @@ from datetime import datetime, timedelta
 import time
 from pytz import timezone
 import wandb
+from numpy import full, nan
 
 
 async def forward(self):
@@ -49,6 +50,7 @@ async def forward(self):
             if datetime.now(ny_timezone) - current_time_ny >= timedelta(hours=1):
                 self.resync_metagraph()
                 self.set_weights()
+                self.past_predictions = [full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)] * len(self.hotkeys)
                 current_time_ny = datetime.now(ny_timezone)
     
     #miner_uids = get_random_uids(self, k=min(self.config.neuron.sample_size, self.metagraph.n.item()))
@@ -94,6 +96,7 @@ async def forward(self):
     rewards = get_rewards(self, responses=responses, miner_uids=miner_uids)
 
     wandb_val_log = {
+        "timestamp": timestamp,
         "miners_info": {
             miner_uid: {
                 "miner_response":response.prediction, 
