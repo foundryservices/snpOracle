@@ -23,6 +23,7 @@ import torch
 import asyncio
 import threading
 import bittensor as bt
+import os
 
 from typing import List
 from traceback import print_exception
@@ -340,6 +341,10 @@ class BaseValidatorNeuron(BaseNeuron):
     def load_state(self):
         """Loads the state of the validator from a file."""
         bt.logging.info("Loading validator state.")
+        state_path = os.path.join(self.config.neuron.full_path, "state.pt")
+        if not os.path.exists(state_path):
+            bt.logging.info("Skipping state load due to missing state.pt file.")
+            return
 
         # Load the state of the validator from file.
         state = torch.load(self.config.neuron.full_path + "/state.pt")
