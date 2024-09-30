@@ -194,7 +194,6 @@ def get_rewards(
 
     # Prepare to extract close price for this timestamp
     ticker_symbol = '^GSPC'
-    ticker = yf.Ticker(ticker_symbol)
 
     timestamp = responses[0].timestamp
     timestamp = datetime.fromisoformat(timestamp)
@@ -213,16 +212,12 @@ def get_rewards(
         time.sleep(15)
 
     prediction_times = []
+    rounded_up_time.
     # add an extra timepoint for dir_acc calculation
     for i in range(N_TIMEPOINTS+1):
         prediction_times.append(rounded_up_time - timedelta(minutes=i*prediction_interval)) 
     data = yf.download(tickers=ticker_symbol, period='1d', interval='1m', progress=False)
-    print(data)
-    print(f'Rounded up time:{rounded_up_time}')
-    print(f'Close price times to pull: {prediction_times}')
-    print(data.iloc[data.index.isin(prediction_times)])
     close_price = data.iloc[data.index.isin(prediction_times)]['Close'].tolist()
-
     close_price_revealed = ' '.join(str(price) for price in close_price)
 
     bt.logging.info(f"Revealing close prices for this interval: {close_price_revealed}")
