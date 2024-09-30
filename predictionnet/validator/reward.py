@@ -212,7 +212,6 @@ def get_rewards(
         time.sleep(15)
 
     prediction_times = []
-    rounded_up_time.
     # add an extra timepoint for dir_acc calculation
     for i in range(N_TIMEPOINTS+1):
         prediction_times.append(rounded_up_time - timedelta(minutes=i*prediction_interval)) 
