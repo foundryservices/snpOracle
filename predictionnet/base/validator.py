@@ -53,7 +53,10 @@ class BaseValidatorNeuron(BaseNeuron):
         self.scores = torch.zeros_like(self.metagraph.S, dtype=torch.float32)
 
         # Load state because self.sync() will overwrite it
-        self.load_state()
+        try:
+            self.load_state()
+        except:
+            bt.logging.error("Failed to load state. This is likely because there was no previous state to load.")
 
         # Init sync with the network. Updates the metagraph.
         self.sync()

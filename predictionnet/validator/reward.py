@@ -202,7 +202,7 @@ def get_rewards(
     # Round up current timestamp and then wait until that time has been hit
     rounded_up_time = timestamp - timedelta(minutes=timestamp.minute % prediction_interval,
                                     seconds=timestamp.second,
-                                    microseconds=timestamp.microsecond) + timedelta(minutes=prediction_interval, seconds=30)
+                                    microseconds=timestamp.microsecond) + timedelta(minutes=prediction_interval, seconds=10)
     
     ny_timezone = timezone('America/New_York')
 
@@ -212,12 +212,13 @@ def get_rewards(
             self.resync_metagraph()
         time.sleep(15)
 
-    
-    data = yf.download(tickers=ticker_symbol, period='5d', interval='5m', progress=False)
-    #bt.logging.info("Procured data from yahoo finance.")
+    prediction_times = []
     # add an extra timepoint for dir_acc calculation
-    bt.logging.info(data.iloc[(-N_TIMEPOINTS-1):])
-    close_price = data['Close'].iloc[(-N_TIMEPOINTS-1):].tolist()
+    for i in range(N_TIMEPOINTS+1):
+        prediction_times.append(rounded_up_time - timedelta(minutes=i*prediction_interval)) 
+    data = yf.download(tickers=ticker_symbol, period='1d', interval='1m', progress=False)
+    close_price = data.iloc[data.index.isin(prediction_times)]['Close'].tolist()
+
     close_price_revealed = ' '.join(str(price) for price in close_price)
 
     bt.logging.info(f"Revealing close prices for this interval: {close_price_revealed}")
@@ -254,3 +255,4 @@ def get_rewards(
     reward[incentives>100] = 0
     reward = reward/np.max(reward)
     return torch.FloatTensor(reward)
+
