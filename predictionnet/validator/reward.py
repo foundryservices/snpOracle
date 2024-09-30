@@ -202,6 +202,7 @@ def get_rewards(
     rounded_up_time = timestamp - timedelta(minutes=timestamp.minute % prediction_interval,
                                     seconds=timestamp.second,
                                     microseconds=timestamp.microsecond) + timedelta(minutes=prediction_interval, seconds=10)
+
     
     ny_timezone = timezone('America/New_York')
 
