@@ -217,6 +217,7 @@ def get_rewards(
     for i in range(N_TIMEPOINTS+1):
         prediction_times.append(rounded_up_time - timedelta(minutes=i*prediction_interval)) 
     data = yf.download(tickers=ticker_symbol, period='1d', interval='1m', progress=False)
+    print(data.iloc[data.index.isin(prediction_times)])
     close_price = data.iloc[data.index.isin(prediction_times)]['Close'].tolist()
 
     close_price_revealed = ' '.join(str(price) for price in close_price)
