@@ -25,7 +25,7 @@ import pathlib
 import wandb
 import os
 from numpy import nan, full
-
+from predictionnet.utils.uids import check_uid_availability
 # Bittensor
 import bittensor as bt
 
@@ -53,11 +53,14 @@ class Validator(BaseValidatorNeuron):
         self.prediction_interval = 5 # in minutes
         self.N_TIMEPOINTS = 6 # number of timepoints to predict
         self.INTERVAL = self.prediction_interval * self.N_TIMEPOINTS # 30 Minutes
-         #initialize past_predictions history
-        self.past_predictions = [full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)] * len(self.hotkeys)
-
-        bt.logging.info("load_state()")
-        self.load_state()
+        miner_uids = []
+        self.past_predictions = {}
+        for uid in range(self.metagraph.n.item()):
+            uid_is_available = check_uid_availability(
+                self.metagraph, uid, self.config.neuron.vpermit_tao_limit
+            )
+            if uid_is_available:
+                self.past_predictions[uid] = full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)
 
         # TODO(developer): Anything specific to your use case you can do here
         netrc_path = pathlib.Path.home() / ".netrc"
