@@ -223,9 +223,6 @@ class BaseValidatorNeuron(BaseNeuron):
         # Calculate the average reward for each uid across non-zero values.
         # Replace any NaN values with 0.
         raw_weights = torch.nn.functional.normalize(self.scores, p=1, dim=0)
-
-        bt.logging.debug("raw_weights", raw_weights)
-        bt.logging.debug("raw_weight_uids", self.metagraph.uids.to("cpu"))
         # Process the raw weights to final_weights via subtensor limitations.
         (
             processed_weight_uids,
@@ -308,9 +305,6 @@ class BaseValidatorNeuron(BaseNeuron):
             bt.logging.warning(f"NaN values detected in rewards: {rewards}")
             # Replace any NaN values in rewards with 0.
             rewards = torch.nan_to_num(rewards, 0)
-        bt.logging.info(f'len_past_pred: {len(self.past_predictions)}  |  len_uids: {len(uids)}  |  len_rewards: {len(rewards)}')
-        bt.logging.info(f'len_scores: {len(self.scores)}  |  len_hotkeys: {len(self.hotkeys)}  |  len_metagraph_uids: {len(self.metagraph.axons)}')
-        bt.logging.info(f'uids: {uids}')
         # Compute forward pass rewards, assumes uids are mutually exclusive.
         # shape: [ metagraph.n ]  
         scattered_rewards: torch.FloatTensor = self.scores.scatter(
@@ -322,7 +316,6 @@ class BaseValidatorNeuron(BaseNeuron):
         self.scores: torch.FloatTensor = alpha * scattered_rewards + (
             1 - alpha
         ) * self.scores.to(self.device)
-        bt.logging.debug(f"Updated moving avg scores: {self.scores}")
 
     def save_state(self):
         """Saves the state of the validator to a file."""
