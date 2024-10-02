@@ -53,8 +53,7 @@ class BaseValidatorNeuron(BaseNeuron):
         bt.logging.info("Building validation weights.")
         self.scores = [1.0] * len(self.metagraph.S)
         # Load state because self.sync() will overwrite it
-        if not self.config.neuron.reset_state:
-            self.load_state()
+        self.load_state()
 
         # Init sync with the network. Updates the metagraph.
         self.sync()
