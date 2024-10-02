@@ -51,7 +51,7 @@ class BaseValidatorNeuron(BaseNeuron):
 
         # Set up initial scoring weights for validation
         bt.logging.info("Building validation weights.")
-        self.scores = torch.zeros_like(len(self.metagraph.axons), dtype=torch.float32)
+        self.scores = [1.0] * len(self.metagraph.S)
 
         # Load state because self.sync() will overwrite it
         self.load_state()
@@ -313,17 +313,17 @@ class BaseValidatorNeuron(BaseNeuron):
         bt.logging.info(f'uids: {uids}')
         # Compute forward pass rewards, assumes uids are mutually exclusive.
         # shape: [ metagraph.n ]
-        scattered_rewards: torch.FloatTensor = self.scores.scatter(
-            0, torch.tensor(uids).to(self.device), rewards
-        ).to(self.device)
-        #bt.logging.debug(f"Scattered rewards: {rewards}")
-
-        # Update scores with rewards produced by this step.
-        # shape: [ metagraph.n ]
-        alpha: float = self.config.neuron.moving_average_alpha
-        self.scores: torch.FloatTensor = alpha * scattered_rewards + (
-            1 - alpha
-        ) * self.scores.to(self.device)
+        for i, value in zip(uids,rewards):
+            self.scores[i] = (1 - self.alpha) * self.scores[i] + self.alpha * value    
+        # scattered_rewards: torch.FloatTensor = self.scores.scatter(
+        #     0, torch.tensor(uids).to(self.device), rewards
+        # ).to(self.device)
+        # # Update scores with rewards produced by this step.
+        # # shape: [ metagraph.n ]
+        # alpha: float = self.config.neuron.moving_average_alpha
+        # self.scores: torch.FloatTensor = alpha * scattered_rewards + (
+        #     1 - alpha
+        # ) * self.scores.to(self.device)
         bt.logging.debug(f"Updated moving avg scores: {self.scores}")
 
     def save_state(self):
