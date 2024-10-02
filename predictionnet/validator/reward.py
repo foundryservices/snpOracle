@@ -250,9 +250,9 @@ def get_rewards(
     for t in range(N_TIMEPOINTS):
         ranks[:,:,t] = rank_miners_by_epoch(raw_deltas[:,:,t], raw_correct_dir[:,:,t])
 
-    incentives = np.nanmean(np.nanmean(ranks, axis=2), axis=1).argsort().argsort()
-    reward = np.exp(-0.05*incentives)
-    reward[incentives>100] = 0
+    incentive_ranks = np.nanmean(np.nanmean(ranks, axis=2), axis=1).argsort().argsort()
+    reward = np.exp(-0.05*incentive_ranks)
+    reward[incentive_ranks>100] = 0
     reward = reward/np.max(reward)
     return torch.FloatTensor(reward)
 

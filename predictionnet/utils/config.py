@@ -148,6 +148,12 @@ def add_args(cls, parser):
             default=4096,
         )
 
+        parser.add_argument(
+            "--reset_state",
+            action="store_true",
+            help="Resets the state file to start from scratch",
+            default=False,
+        )
     else:
         parser.add_argument(
             "--blacklist.force_validator_permit",

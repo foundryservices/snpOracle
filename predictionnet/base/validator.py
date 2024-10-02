@@ -52,9 +52,9 @@ class BaseValidatorNeuron(BaseNeuron):
         # Set up initial scoring weights for validation
         bt.logging.info("Building validation weights.")
         self.scores = [1.0] * len(self.metagraph.S)
-        self.alpha = self.config.neuron.moving_average_alpha
         # Load state because self.sync() will overwrite it
-        self.load_state()
+        if not self.config.neuron.reset_state:
+            self.load_state()
 
         # Init sync with the network. Updates the metagraph.
         self.sync()
@@ -312,18 +312,16 @@ class BaseValidatorNeuron(BaseNeuron):
         bt.logging.info(f'len_scores: {len(self.scores)}  |  len_hotkeys: {len(self.hotkeys)}  |  len_metagraph_uids: {len(self.metagraph.axons)}')
         bt.logging.info(f'uids: {uids}')
         # Compute forward pass rewards, assumes uids are mutually exclusive.
+        # shape: [ metagraph.n ]  
+        scattered_rewards: torch.FloatTensor = self.scores.scatter(
+            0, torch.tensor(uids).to(self.device), rewards
+        ).to(self.device)
+        # Update scores with rewards produced by this step.
         # shape: [ metagraph.n ]
-        for i, value in zip(uids,rewards):
-            self.scores[i] = (1 - self.alpha) * self.scores[i] + self.alpha * value    
-        # scattered_rewards: torch.FloatTensor = self.scores.scatter(
-        #     0, torch.tensor(uids).to(self.device), rewards
-        # ).to(self.device)
-        # # Update scores with rewards produced by this step.
-        # # shape: [ metagraph.n ]
-        # alpha: float = self.config.neuron.moving_average_alpha
-        # self.scores: torch.FloatTensor = alpha * scattered_rewards + (
-        #     1 - alpha
-        # ) * self.scores.to(self.device)
+        alpha: float = self.config.neuron.moving_average_alpha
+        self.scores: torch.FloatTensor = alpha * scattered_rewards + (
+            1 - alpha
+        ) * self.scores.to(self.device)
         bt.logging.debug(f"Updated moving avg scores: {self.scores}")
 
     def save_state(self):
