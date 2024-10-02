@@ -65,7 +65,7 @@ async def forward(self):
     
     # Here input data should be gathered to send to the miners
     # TODO(create get_input_data())
-    print(miner_uids)    
+    bt.logging.info(f'Miner uids: {miner_uids}')    
     current_time_ny = datetime.now(ny_timezone)
     timestamp = current_time_ny.isoformat()
 
