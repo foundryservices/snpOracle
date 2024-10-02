@@ -216,7 +216,8 @@ def get_rewards(
     rounded_up_time = rounded_up_time.replace(tzinfo=None) - timedelta(seconds=10)
     # add an extra timepoint for dir_acc calculation
     for i in range(N_TIMEPOINTS+1):
-        prediction_times.append(rounded_up_time - timedelta(minutes=(i+1)*prediction_interval)) 
+        prediction_times.append(rounded_up_time - timedelta(minutes=(i+1)*prediction_interval))
+    bt.logging.info(f"Prediction times: {prediction_times}")
     data = yf.download(tickers=ticker_symbol, period='1d', interval='1m', progress=False)
     close_price = data.iloc[data.index.tz_localize(None).isin(prediction_times)]['Close'].tolist()
     close_price_revealed = ' '.join(str(price) for price in close_price)
