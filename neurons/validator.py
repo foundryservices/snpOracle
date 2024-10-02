@@ -59,7 +59,6 @@ class Validator(BaseValidatorNeuron):
                 self.metagraph, uid, self.config.neuron.vpermit_tao_limit
             )
             if uid_is_available:
-                bt.logging.info(f'{uid} is available, setting past_predictions')
                 self.past_predictions[uid] = full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)
 
         # TODO(developer): Anything specific to your use case you can do here
