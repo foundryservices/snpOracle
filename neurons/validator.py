@@ -60,14 +60,11 @@ class Validator(BaseValidatorNeuron):
             )
             if uid_is_available:
                 self.past_predictions[uid] = full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)
-
-        # TODO(developer): Anything specific to your use case you can do here
         netrc_path = pathlib.Path.home() / ".netrc"
         wandb_api_key = os.getenv("WANDB_API_KEY")
         if wandb_api_key is not None:
             bt.logging.info("WANDB_API_KEY is set")
         bt.logging.info("~/.netrc exists:", netrc_path.exists())
-
         if wandb_api_key is None and not netrc_path.exists():
             bt.logging.warning(
                 "WANDB_API_KEY not found in environment variables."
