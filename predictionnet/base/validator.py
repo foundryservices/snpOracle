@@ -28,6 +28,7 @@ from typing import List
 from traceback import print_exception
 from predictionnet.base.neuron import BaseNeuron
 from numpy import full, nan
+import os
 
 
 
@@ -53,10 +54,7 @@ class BaseValidatorNeuron(BaseNeuron):
         self.scores = torch.zeros_like(self.metagraph.S, dtype=torch.float32)
 
         # Load state because self.sync() will overwrite it
-        try:
-            self.load_state()
-        except:
-            bt.logging.error("Failed to load state. This is likely because there was no previous state to load.")
+        self.load_state()
 
         # Init sync with the network. Updates the metagraph.
         self.sync()
@@ -345,9 +343,13 @@ class BaseValidatorNeuron(BaseNeuron):
     def load_state(self):
         """Loads the state of the validator from a file."""
         bt.logging.info("Loading validator state.")
+        state_path = os.path.join(self.config.neuron.full_path, "state.pt")
+        if not os.path.exists(state_path):
+            bt.logging.info("Skipping state load due to missing state.pt file.")
+            return
 
         # Load the state of the validator from file.
-        state = torch.load(self.config.neuron.full_path + "/state.pt")
+        state = torch.load(state_path)
         self.step = state["step"]
         self.scores = state["scores"]
         self.hotkeys = state["hotkeys"]
