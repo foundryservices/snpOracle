@@ -57,6 +57,7 @@ class BaseValidatorNeuron(BaseNeuron):
 
         # Init sync with the network. Updates the metagraph.
         self.sync()
+        self.resync_metagraph() # this ensures that the state file is up to date with the metagraph
 
         # Serve axon to enable external connections.
         if not self.config.neuron.axon_off:
