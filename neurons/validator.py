@@ -54,7 +54,7 @@ class Validator(BaseValidatorNeuron):
         self.N_TIMEPOINTS = 6 # number of timepoints to predict
         self.INTERVAL = self.prediction_interval * self.N_TIMEPOINTS # 30 Minutes
         self.past_predictions = {}
-        for uid in range(len(self.metagraph.axons)):
+        for uid in range(len(self.metagraph.S)):
             uid_is_available = check_uid_availability(
                 self.metagraph, uid, self.config.neuron.vpermit_tao_limit
             )
