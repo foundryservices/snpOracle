@@ -227,7 +227,6 @@ def get_rewards(
     raw_deltas = np.full((len(responses),N_TIMEPOINTS,N_TIMEPOINTS), np.nan)
     raw_correct_dir = np.full((len(responses),N_TIMEPOINTS,N_TIMEPOINTS), False)
     ranks = np.full((len(responses),N_TIMEPOINTS,N_TIMEPOINTS), np.nan)
-    bt.logging.info(f'n_uids: {len(miner_uids)}  |  n_responses: {len(responses)}')
     for x,response in enumerate(responses):
         # calc_raw also does many helpful things like shifting epoch to 
         delta , correct = calc_raw(self, miner_uids[x], response, close_price)
