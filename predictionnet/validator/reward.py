@@ -166,7 +166,7 @@ def update_synapse(self, uid, response: Challenge) -> None:
     """
     past_predictions = self.past_predictions[uid]
     # does not save predictions that mature after market close 
-    if datetime.now(timezone('America/New_York')).replace(hour=16, minute=5, second=0, microsecond=0) - datetime.fromisoformat(response.timestamp) < self.prediction_interval*60:
+    if (datetime.now(timezone('America/New_York')).replace(hour=16, minute=5, second=0, microsecond=0) - datetime.fromisoformat(response.timestamp)).seconds < self.prediction_interval*60:
         sec_to_market_close = (datetime.now(timezone('America/New_York')).replace(hour=16, minute=0, second=0, microsecond=0) - datetime.fromisoformat(response.timestamp)).seconds
         epochs_to_market_close = int((sec_to_market_close/60) /self.prediction_interval)
         prediction_vector = np.concatenate((np.array(response.prediction[0:epochs_to_market_close]),(self.N_TIMEPOINTS-epochs_to_market_close)*[np.nan]), axis=0)
