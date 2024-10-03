@@ -17,9 +17,9 @@
 # DEALINGS IN THE SOFTWARE.
 
 import sys
-import torch
 import unittest
 import bittensor as bt
+from numpy import array
 
 from neurons.validator import Neuron as Validator
 from neurons.miner import Neuron as Miner
@@ -90,7 +90,7 @@ class TemplateValidatorNeuronTestCase(unittest.TestCase):
         )
 
         rewards = get_rewards(self.neuron, responses)
-        expected_rewards = torch.FloatTensor([1.0] * len(responses))
+        expected_rewards = array([1.0] * len(responses))
         self.assertEqual(rewards, expected_rewards)
 
     def test_reward_with_nan(self):

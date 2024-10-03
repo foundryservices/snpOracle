@@ -17,7 +17,6 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import torch
 from typing import List
 import bittensor as bt
 from predictionnet.protocol import Challenge
@@ -182,7 +181,7 @@ def get_rewards(
     self,
     responses: List[Challenge],
     miner_uids: List[int],
-) -> torch.FloatTensor:
+) -> np.ndarray:
     """
     Returns a tensor of rewards for the given query and responses.
 
@@ -191,13 +190,13 @@ def get_rewards(
     - responses (List[Challenge]): A list of responses from the miner.
     
     Returns:
-    - torch.FloatTensor: A tensor of rewards for the given query and responses.
+    - np.ndarray: A tensor of rewards for the given query and responses.
     """
     N_TIMEPOINTS = self.N_TIMEPOINTS
     prediction_interval = self.prediction_interval
     if len(responses) == 0:
         bt.logging.info("Got no responses. Returning reward tensor of zeros.")
-        return [], torch.zeros_like(0).to(self.device)  # Fallback strategy: Log and return 0.
+        return [], np.full(len(self.metagraph.S), 0.0)  # Fallback strategy: Log and return 0.
 
     # Prepare to extract close price for this timestamp
     ticker_symbol = '^GSPC'
@@ -265,5 +264,5 @@ def get_rewards(
     reward = np.exp(-0.05*incentive_ranks)
     reward[incentive_ranks>100] = 0
     reward = reward/np.max(reward)
-    return torch.FloatTensor(reward)
+    return reward
 
