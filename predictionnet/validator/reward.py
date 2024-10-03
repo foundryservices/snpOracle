@@ -165,7 +165,14 @@ def update_synapse(self, uid, response: Challenge) -> None:
         changes the value of self.past_predictions[uid] to include the most recent prediction and remove the oldest prediction
     """
     past_predictions = self.past_predictions[uid]
-    new_past_predictions = np.concatenate((np.array(response.prediction).reshape(1,self.N_TIMEPOINTS), past_predictions), axis=0)
+    # does not save predictions that mature after market close 
+    if datetime.now(timezone('America/New_York')).replace(hour=16, minute=5, second=0, microsecond=0) - datetime.fromisoformat(response.timestamp) < self.prediction_interval*60:
+        sec_to_market_close = (datetime.now(timezone('America/New_York')).replace(hour=16, minute=0, second=0, microsecond=0) - datetime.fromisoformat(response.timestamp)).seconds
+        epochs_to_market_close = int((sec_to_market_close/60) /self.prediction_interval)
+        prediction_vector = np.concatenate((np.array(response.prediction[0:epochs_to_market_close]),(self.N_TIMEPOINTS-epochs_to_market_close)*[np.nan]), axis=0)
+    else:
+        prediction_vector = np.array(response.prediction).reshape(1,self.N_TIMEPOINTS)
+    new_past_predictions = np.concatenate((prediction_vector, past_predictions), axis=0)
     self.past_predictions[uid] = new_past_predictions[0:-1,:] # remove the oldest epoch
 
 ################################################################################
@@ -218,8 +225,11 @@ def get_rewards(
     for i in range(N_TIMEPOINTS+1):
         prediction_times.append(rounded_up_time - timedelta(minutes=(i+1)*prediction_interval))
     bt.logging.info(f"Prediction times: {prediction_times}")
-    data = yf.download(tickers=ticker_symbol, period='1d', interval='5m', progress=False)
+    data = yf.download(tickers=ticker_symbol, period='5d', interval='5m', progress=False)
     close_price = data.iloc[data.index.tz_localize(None).isin(prediction_times)]['Close'].tolist()
+    if len(close_price) < (N_TIMEPOINTS+1):
+        # edge case where its between 9:30am and 10am
+        close_price = data.iloc[-N_TIMEPOINTS-1:]['Close'].tolist()
     close_price_revealed = ' '.join(str(price) for price in close_price)
 
     bt.logging.info(f"Revealing close prices for this interval: {close_price_revealed}")
