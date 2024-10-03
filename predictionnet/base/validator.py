@@ -31,6 +31,7 @@ import time
 import random
 import numpy as np
 from numpy import full, nan
+import os
 
 
 
@@ -58,6 +59,7 @@ class BaseValidatorNeuron(BaseNeuron):
 
         # Set up initial scoring weights for validation
         bt.logging.info("Building validation weights.")
+
         self.scores = torch.zeros_like(torch.from_numpy(self.metagraph.S), dtype=torch.float32)
 
         # Load state because self.sync() will overwrite it
@@ -65,6 +67,7 @@ class BaseValidatorNeuron(BaseNeuron):
 
         # Init sync with the network. Updates the metagraph.
         self.sync()
+        self.resync_metagraph() # this ensures that the state file is up to date with the metagraph
 
         # Serve axon to enable external connections.
         if not self.config.neuron.axon_off:
@@ -253,8 +256,6 @@ class BaseValidatorNeuron(BaseNeuron):
         # Replace any NaN values with 0.
         raw_weights = torch.nn.functional.normalize(self.scores, p=1, dim=0)
 
-        bt.logging.debug("raw_weights", raw_weights)
-        bt.logging.debug("raw_weight_uids", self.metagraph.uids)
         # Process the raw weights to final_weights via subtensor limitations.
         (
             processed_weight_uids,
@@ -450,21 +451,17 @@ class BaseValidatorNeuron(BaseNeuron):
             bt.logging.warning(f"NaN values detected in rewards: {rewards}")
             # Replace any NaN values in rewards with 0.
             rewards = torch.nan_to_num(rewards, 0)
-
         # Compute forward pass rewards, assumes uids are mutually exclusive.
-        # shape: [ metagraph.n ]
+        # shape: [ metagraph.n ]  
         scattered_rewards: torch.FloatTensor = self.scores.scatter(
             0, torch.tensor(uids).to(self.device), rewards
         ).to(self.device)
-        #bt.logging.debug(f"Scattered rewards: {rewards}")
-
         # Update scores with rewards produced by this step.
         # shape: [ metagraph.n ]
         alpha: float = self.config.neuron.moving_average_alpha
         self.scores: torch.FloatTensor = alpha * scattered_rewards + (
             1 - alpha
         ) * self.scores.to(self.device)
-        bt.logging.debug(f"Updated moving avg scores: {self.scores}")
 
     def save_state(self):
         """Saves the state of the validator to a file."""
@@ -483,9 +480,13 @@ class BaseValidatorNeuron(BaseNeuron):
     def load_state(self):
         """Loads the state of the validator from a file."""
         bt.logging.info("Loading validator state.")
+        state_path = os.path.join(self.config.neuron.full_path, "state.pt")
+        if not os.path.exists(state_path):
+            bt.logging.info("Skipping state load due to missing state.pt file.")
+            return
 
         # Load the state of the validator from file.
-        state = torch.load(self.config.neuron.full_path + "/state.pt")
+        state = torch.load(state_path)
         self.step = state["step"]
         self.scores = state["scores"]
         self.hotkeys = state["hotkeys"]

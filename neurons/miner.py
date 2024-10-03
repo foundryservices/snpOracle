@@ -91,7 +91,8 @@ class Miner(BaseMinerNeuron):
         the uid of the sender via a metagraph.hotkeys.index( synapse.dendrite.hotkey ) call.
 
         Otherwise, allow the request to be processed further.
-        """
+        """        
+
         # TODO(developer): Define how miners should blacklist requests.
 
         bt.logging.info("Checking miner blacklist")
@@ -105,7 +106,8 @@ class Miner(BaseMinerNeuron):
                 f"Blacklisting un-registered hotkey {synapse.dendrite.hotkey}"
             )
             return True, "Unrecognized hotkey"
-        
+
+        uid = self.metagraph.hotkeys.index( synapse.dendrite.hotkey)
         bt.logging.info(f"Requesting UID: {uid} | Stake at UID: {stake}")
 
         if stake <= self.config.validator.min_stake:
