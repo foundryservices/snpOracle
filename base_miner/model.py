@@ -13,6 +13,7 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout
 import os
 from dotenv import load_dotenv
 from huggingface_hub import HfApi
+from huggingface_hub import login
 
 load_dotenv()
 
@@ -69,6 +70,7 @@ def create_and_save_base_model_lstm(scaler:MinMaxScaler, X_scaled:np.ndarray, y_
     model.save(f'{model_name}.h5')
 
     api = HfApi()
+    login(token=token)
     api.upload_file(
         path_or_fileobj="mining_models/base_lstm_new.h5",
         path_in_repo=f"{model_name}.h5",

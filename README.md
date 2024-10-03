@@ -145,14 +145,23 @@ Once this is ready, run ```docker compose up -d``` in the base directory
 
 ## About the Rewards Mechanism
 
-The simplicity of the rewards mechanism is quite intentional. There are no methods to require a machine learning model be run by the miners. This is because the nature of the problem is such that machine learning models will inherently perform better than any method of gamification. By effectively performing a commit-reveal on a future S&P Price Prediction, S&P Oracle ensures that only well-tuned models will survive. 
+### Miner Ranking
+We implement a tiered ranking system to calculate miner rewards. For each prediction timepoint t, we sort miners into two buckets: one for miners with correct direction predictions and a second for miners with incorrect direction predictions. For any t, it is considered correctly predicting direction if, relative to the stock price just before the prediction was requested, the predicted price moves in the same direction as the actual stock price. This means that, for example, a prediction that was requested 10min ago, will use the S&P 500 stock price from 15min go to calculate directional accuracy. Once miner outputs are separated, we rank the miners within each bucket according to their $\Delta$ (calculated as shown below). Therefore, if a miner incorrectly predicts the direction of the S&P 500 price, the maximum rank they can acheive is limited to one plus the number of miners that predicted correctly during that timepoint. We then calculate these rankings for each timepoint (t − 1, t − 2, ...t − 6) in the relevant prediction epoch. Therefore each timepoint t has 6 predictions (the prediction from 5 minutes ago, 10 minutes, etc. Up to 30 minutes). Then, the final ranks for this epoch is given by the average of their rankings across timepoints.
 
-Root Mean Squared Error(RMSE) is calculated as such:
-![image](https://github.com/teast21/snpOracle/assets/109384972/214b9b12-2563-498c-8f06-956c9f9ee7b0)
+### $\Delta$ Calculation for ranking miners
 
-Directional accuracy is another metric that is calculated using the predictions and the actual close price data. If the direction in which the (n+1)th prediction goes in, from the (n)th prediction is the same as the direction in which the (n+1)th actual price goes in, from the (n)th actual price, then it is considered directionally correct. Directional accuracy is calculated for the predictions (1,2), (2,3), (3,4), (4,5) & (5,6). The directional accuracy is a score between 0 to 100.
+```math
+ \Delta_m = | \rho_{m,t} - P_{t} |
+ ```
+where $\rho_{m,t}$ is the prediction of the miner $m$ at timepoint $t$ and $P_{t}$ is the true S&P 500 price at timepoint $t$.
 
-The RMSE + directional accuracy is used to compute the rewards and is given a 50-50 weightage. These values together are then normalized to enforce scores between 0 and 1, and those scores are used to update the existing scores in the metagraph. The miners with the worst scores (highest scores) will be rewarded the least. The weighting function applied to how scores are added to the metagraph creates a pseudo-rolling average score for predictions. Thus, a miner will have perfect trust after a perfect prediction, and will also not have 0 trust after having the worst prediction of an epoch. Consistent high-quality performance will result in high trust, and consistent low-quality performance will result in low trust and eventual de-registration. 
+### Exponential Decay Weighting
+Once the miners have all been ranked, we convert these ranks to validator weights using:
+
+```math
+W_{m} = e^{-0.05 * rank_m}
+```
+The constant shown in this equation, −0.05, is a hyperparameter which controls the steepness of the curve (i.e. what proportion of the emissions are allocated to rank 1, 2, 3,... etc.). We chose this value to fairly distribute across miners to mitigate the effect of rank volatility. This ranking system ensures that machine learning or statistical models will inherently perform better than any method of gamification. By effectively performing a commit-reveal on a future S&P Price Prediction, S&P Oracle ensures that only well-tuned models will survive. 
 
 ---
 

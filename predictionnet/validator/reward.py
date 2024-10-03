@@ -26,57 +26,155 @@ from datetime import datetime, timedelta
 import yfinance as yf
 from pytz import timezone
 import numpy as np
-from sklearn.metrics import mean_squared_error
-from sklearn.preprocessing import MinMaxScaler
 
-# def get_rmse(challenge: List[Challenge], close_price: float) -> float:
-#     if challenge.prediction is None:
-#         raise ValueError("Where is my prediction bro.?")
-#     prediction_arr = np.array([c.prediction for c in challenge])
-#     squared_error = (prediction_arr - close_price) ** 2
-#     rmse = squared_error ** 0.5
-#     return rmse
 
-INTERVAL = 30
-
-def get_direction_accuracy(close_price_array, prediction_array):
-    # Calculate the direction of changes (up: 1, down: -1)
-    actual_directions = [1 if close_price_array[i] > close_price_array[i - 1] else -1 for i in range(1, len(close_price_array))]
-    predicted_directions = [1 if prediction_array[i] > prediction_array[i - 1] else -1 for i in range(1, len(prediction_array))]
-
-    # Calculate the number of times the predicted direction matches the actual direction
-    correct_predictions = sum(1 for i in range(len(actual_directions)) if actual_directions[i] == predicted_directions[i])
-
-    # Calculate directional accuracy
-    directional_accuracy = (correct_predictions/len(actual_directions)-1)*100
-
-    return directional_accuracy
-
-def reward(response: Challenge, close_price: float) -> float:
+################################################################################
+#                              Helper Functions                                #
+################################################################################
+def calc_raw(self, uid, response: Challenge, close_price: float):
     """
-    Reward the miner response to the dummy request. This method returns a reward
-    value for the miner, which is used to update the miner's score.
+    Calculate delta and whether the direction of prediction was correct for one miner over the past N_TIMEPOINTS epochs
+
+    Args:
+        uid: The miner uid taken from the metagraph for this response 
+        response: The synapse response from the miner containing the prediction
+        close_price: The S&P500 close price for the current epoch (N_TIMEPOINTS+1 to calculate price direction)
 
     Returns:
-    - float: The reward value for the miner.
+        deltas: The absolute difference between the predicted price and the true price
+            - numpy.ndarray: (N_TIMEPOINTS (epochs) x N_TIMEPOINTS (timepoints))
+        correct_dirs: A boolean array for if the predicted direction matched the true direction
+            - numpy.ndarray: (N_TIMEPOINTS (epochs) x N_TIMEPOINTS (timepoints))
+    
+    Notes:
+         - first row is the current epoch with only one prediction from <self.prediction_interval> minutes ago
+         - the final row is <N_TIMEPOINTS> epochs ago with  (N_TIMEPOINTS x self.prediction_interval = 30min) minute predictions for the current timepoint
+         - the final column is the current timepoint with various prediction distances (5min, 10min,...)
     """
-    prediction_array = np.array(response.prediction)
-    close_price_array = np.array(close_price)
+    if response.prediction is None:
+        return None, None
+    elif len(response.prediction) != self.N_TIMEPOINTS:
+        return None, None
+    else:
+        past_predictions = self.past_predictions[uid]
+        prediction_array = np.concatenate((np.array(response.prediction).reshape(1,self.N_TIMEPOINTS), past_predictions), axis=0)
+        close_price_array = np.repeat(np.array(close_price[1:]).reshape(1,self.N_TIMEPOINTS), self.N_TIMEPOINTS, axis=0)
+        if len(past_predictions.shape) == 1:
+            before_pred_vector = np.array([])
+            before_close_vector = np.array([])
+        else:
+            # add the timepoint before the first t from past history for each epoch
+            past_timepoint = close_price[0:-1]
+            past_timepoint.reverse()
+            before_close_vector = np.array(past_timepoint).reshape(self.N_TIMEPOINTS,1)
+        # take the difference between timepoints and remove the oldest prediction epoch (it is now obselete)
+        pred_dir = (before_close_vector - prediction_array[:-1,:])
+        close_dir = (before_close_vector - close_price_array)
+        correct_dirs = (close_dir>=0)==time_shift((pred_dir>=0))
+        deltas = np.abs(close_price_array-time_shift(prediction_array[:-1,:]))
+        return deltas, correct_dirs
+        
+def rank_miners_by_epoch(deltas: np.ndarray, correct_dirs: np.ndarray) -> np.ndarray:
+    """
+    Generates the rankings for each miner (rows) first according to their correct_dirs (bool), then by deltas (float)
 
-    mse = mean_squared_error(prediction_array, close_price_array)
-    directional_accuracy = get_direction_accuracy(close_price_array, prediction_array)
+    Args:
+        deltas (numpy.ndarray): n_miners x N_TIMEPOINTS array for one prediction timepoint (e.g. the 5min prediction)
+        correct_dirs (numpy.ndarray): n_miners x N_TIMEPOINTS array for one prediction timepoint
 
-    # subtracting dir accuracy from 100 because the goal is to reward those that make quality predictions for longer durations
-    # If the reward function gives a higher value, the weights will be
-    # lower since the result from this is subtracted from 1 subsequently
-    return 0.5*(mse**0.5 + (100 - directional_accuracy))
+    Returns:
+        all_ranks (numpy.ndarray): n_miners x N_TIMEPOINTS array for one prediction timepoint
+    """
+    correct_deltas = np.full(deltas.shape, np.nan)
+    correct_deltas[correct_dirs] = deltas[correct_dirs]
+    incorrect_deltas = np.full(deltas.shape, np.nan)
+    incorrect_deltas[~correct_dirs] = deltas[~correct_dirs]
+    correct_ranks = rank_columns(correct_deltas)
+    incorrect_ranks = rank_columns(incorrect_deltas)+np.nanmax(correct_ranks, axis=0)
+    all_ranks = correct_ranks
+    all_ranks[~correct_dirs] = incorrect_ranks[~correct_dirs]
+    return all_ranks
 
-# Query prob editied to query: Protocol defined synapse
-# For this method mostly should defer to Rahul/Tommy
+def rank_columns(array) -> np.ndarray:
+    """
+    Changes the values of array into within-column ranks, preserving nans
+
+    Args:
+        array (numpy.ndarray): a 2D array of values
+
+    Returns:
+        ranked_array (numpy.ndarray): array where the values are replaced with within-column rank
+    """
+    ranked_array = np.copy(array)
+    # Iterate over each column
+    for col in range(array.shape[1]):
+        # Extract the column
+        col_data = array[:, col]
+        # Get indices of non-NaN values
+        non_nan_indices = ~np.isnan(col_data)
+        # Extract non-NaN values and sort them
+        non_nan_values = col_data[non_nan_indices]
+        sorted_indices = np.argsort(non_nan_values)
+        ranks = np.empty_like(non_nan_values)
+        # Assign ranks
+        ranks[sorted_indices] = np.arange(1, len(non_nan_values) + 1)
+        # Place ranks back into the original column, preserving NaNs
+        ranked_array[non_nan_indices, col] = ranks
+    return ranked_array
+
+def time_shift(array) -> np.ndarray:
+    """
+    This function alligns the timepoints of past_predictions with the current epoch
+    and replaces predictions that havent come to fruition with nans.
+
+    Args:
+        array (np.ndarray): a square matrix
+
+    Returns:
+        shifted_array (np.ndarray): a square matrix where the diagonal elements become the last column,
+            the unfulfilled predictions are removed and filled with nans
+
+    Example:
+        >>> test_array = np.array([[0,5,10,15,20,25], # - response.prediction on the current timepoint (requested 5 minutes ago)
+                                   [-5,0,5,10,15,20], # - 10 minute prediction for time 0
+                                   [-10,-5,0,5,10,15],
+                                   [-15,-10,-5,0,5,10],
+                                   [-20,-15,-10,-5,0,5],  
+                                   [-25,-20,-15,-10,-5,0], # - 30 minute prediction for time 0
+                                   [-30,-25,-20,15,-10,-5]])  # - the obseleted prediction
+        >>> shifted_array =time_shift(test_array)
+        >>> print(shifted_array)
+    """
+    shifted_array = np.full((array.shape[0], array.shape[1]), np.nan)
+    for i in range(array.shape[0]):
+        if i != range(array.shape[0]):
+            shifted_array[i,-i-1:] = array[i,0:i+1]
+        else:
+            shifted_array[i,:] = array[i,:]
+    return shifted_array
+
+def update_synapse(self, uid, response: Challenge) -> None:
+    """
+    Updates the values of past_predictions with the current epoch
+
+    Args:
+        uid (int): The miner uid taken from the metagraph to be updated
+        response (Challenge): The synapse response from the miner containing the prediction
+
+    Returns:
+        changes the value of self.past_predictions[uid] to include the most recent prediction and remove the oldest prediction
+    """
+    past_predictions = self.past_predictions[uid]
+    new_past_predictions = np.concatenate((np.array(response.prediction).reshape(1,self.N_TIMEPOINTS), past_predictions), axis=0)
+    self.past_predictions[uid] = new_past_predictions[0:-1,:] # remove the oldest epoch
+
+################################################################################
+#                                Main Function                                 #
+################################################################################
 def get_rewards(
     self,
-    query: Challenge,
     responses: List[Challenge],
+    miner_uids: List[int],
 ) -> torch.FloatTensor:
     """
     Returns a tensor of rewards for the given query and responses.
@@ -88,7 +186,8 @@ def get_rewards(
     Returns:
     - torch.FloatTensor: A tensor of rewards for the given query and responses.
     """
-
+    N_TIMEPOINTS = self.N_TIMEPOINTS
+    prediction_interval = self.prediction_interval
     if len(responses) == 0:
         bt.logging.info("Got no responses. Returning reward tensor of zeros.")
         return [], torch.zeros_like(0).to(self.device)  # Fallback strategy: Log and return 0.
@@ -97,42 +196,61 @@ def get_rewards(
     ticker_symbol = '^GSPC'
     ticker = yf.Ticker(ticker_symbol)
 
-    timestamp = query.timestamp
+    timestamp = responses[0].timestamp
     timestamp = datetime.fromisoformat(timestamp)
 
     # Round up current timestamp and then wait until that time has been hit
-    rounded_up_time = timestamp - timedelta(minutes=timestamp.minute % INTERVAL,
+    rounded_up_time = timestamp - timedelta(minutes=timestamp.minute % prediction_interval,
                                     seconds=timestamp.second,
-                                    microseconds=timestamp.microsecond) + timedelta(minutes=INTERVAL + 5, seconds=30)
+                                    microseconds=timestamp.microsecond) + timedelta(minutes=prediction_interval, seconds=30)
     
     ny_timezone = timezone('America/New_York')
 
-    while (datetime.now(ny_timezone) < rounded_up_time - timedelta(minutes=4, seconds=30)):
-        bt.logging.info(f"Waiting for next {INTERVAL}m interval...")
+    while (datetime.now(ny_timezone) < rounded_up_time):
+        bt.logging.info(f"Waiting for next {prediction_interval}m interval...")
         if(datetime.now(ny_timezone).minute%10==0):
             self.resync_metagraph()
         time.sleep(15)
 
-    current_time_adjusted = rounded_up_time - timedelta(minutes=INTERVAL + 5)
-    print(rounded_up_time, rounded_up_time.hour, rounded_up_time.minute, current_time_adjusted)
     
-    data = yf.download(tickers=ticker_symbol, period='1d', interval='5m')
-    bt.logging.info("Procured data from yahoo finance.")
-
-    bt.logging.info(data.iloc[-7:-1])
-    close_price = data['Close'].iloc[-7:-1].tolist()
+    data = yf.download(tickers=ticker_symbol, period='5d', interval='5m', progress=False)
+    #bt.logging.info("Procured data from yahoo finance.")
+    # add an extra timepoint for dir_acc calculation
+    bt.logging.info(data.iloc[(-N_TIMEPOINTS-1):])
+    close_price = data['Close'].iloc[(-N_TIMEPOINTS-1):].tolist()
     close_price_revealed = ' '.join(str(price) for price in close_price)
 
     bt.logging.info(f"Revealing close prices for this interval: {close_price_revealed}")
 
-    # Get all the reward results by iteratively calling your reward() function.
-    scoring = [reward(response, close_price) if response.prediction != None else 0 for response in responses]
-    worst_loss = max(scoring)
-    bt.logging.debug(worst_loss)
-    scoring = [1 - (score / (worst_loss + 5)) if score != 0 else 0 for score in scoring] #constant 5 is added so that models with worst loss don't get 0 rewards
-    return torch.FloatTensor(scoring)
+    # Preallocate an array (nMiners x N_TIMEPOINTS x N_TIMEPOINTS) where the third dimension is t-1, t-2,...,t-N_TIMEPOINTS for past predictions
+    raw_deltas = np.full((len(responses),N_TIMEPOINTS,N_TIMEPOINTS), np.nan)
+    raw_correct_dir = np.full((len(responses),N_TIMEPOINTS,N_TIMEPOINTS), False)
+    ranks = np.full((len(responses),N_TIMEPOINTS,N_TIMEPOINTS), np.nan)
+    for x,response in enumerate(responses):
+        # calc_raw also does many helpful things like shifting epoch to 
+        delta , correct = calc_raw(self, miner_uids[x], response, close_price)
+        if delta is None or correct is None:
+            if response.prediction is None:
+                # no response generated
+                bt.logging.info(f'Netuid {x} returned no response. Setting incentive to 0')
+                raw_deltas[x,:,:], raw_correct_dir[x,:,:] = np.nan, np.nan
+            else:
+                # wrong size response generated
+                bt.logging.info(f'Netuid {x} returned {len(response.prediction)} predictions instead of {N_TIMEPOINTS}. Setting incentive to 0')
+                raw_deltas[x,:,:], raw_correct_dir[x,:,:] = np.nan, np.nan
+            continue
+        else:
+            raw_deltas[x,:,:] = delta
+            raw_correct_dir[x,:,:] = correct
+        update_synapse(self, miner_uids[x], response)
 
-    #scaler = MinMaxScaler(feature_range=(0,1))
-    #return torch.FloatTensor(scaler.fit_transform(np.array(scoring).reshape(-1, 1)).flatten()).to(self.device)
+    # raw_deltas is now a full of the last N_TIMEPOINTS of prediction deltas, same for raw_correct_dir
+    ranks = np.full((len(responses),N_TIMEPOINTS,N_TIMEPOINTS), np.nan)
+    for t in range(N_TIMEPOINTS):
+        ranks[:,:,t] = rank_miners_by_epoch(raw_deltas[:,:,t], raw_correct_dir[:,:,t])
 
-
+    incentives = np.nanmean(np.nanmean(ranks, axis=2), axis=1).argsort().argsort()
+    reward = np.exp(-0.05*incentives)
+    reward[incentives>100] = 0
+    reward = reward/np.max(reward)
+    return torch.FloatTensor(reward)
