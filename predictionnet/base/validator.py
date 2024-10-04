@@ -307,7 +307,7 @@ class BaseValidatorNeuron(BaseNeuron):
             rewards = nan_to_num(rewards, 0)
         # Compute forward pass rewards, assumes uids are mutually exclusive.
         # shape: [ metagraph.n ]  
-        for i, value in enumerate(rewards):
+        for i, value in zip(uids,rewards):
             self.scores[i] = (1 - self.alpha) * self.scores[i] + self.alpha * value
 
 
