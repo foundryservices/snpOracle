@@ -3,7 +3,7 @@ module.exports = {
     {
       name: 'miner',
       script: 'python3',
-      args: './neurons/miner.py --netuid 28 --logging.debug --logging.trace --subtensor.network local --wallet.name walletName --wallet.hotkey hotkeyName --axon.port 8091 --hf_repo_id foundryservices/bittensor-sn28-base-lstm --model mining_models/base_lstm_new.h5'
+      args: './neurons/miner.py --netuid 1 --logging.debug --logging.trace --subtensor.network local --wallet.name miner --subtensor.chain_endpoint ws://127.0.0.1:9946 --wallet.hotkey default --axon.port 8091'
     },
   ],
 };
