@@ -50,7 +50,7 @@ class BaseValidatorNeuron(BaseNeuron):
         # Set up initial scoring weights for validation
         bt.logging.info("Building validation weights.")
         self.scores = full(len(self.metagraph.S), 0.0)
-        self.moving_avg_scores = [1.0] * len(self.metagraph.S)
+        self.moving_avg_scores = [0.0] * len(self.metagraph.S)
         self.alpha = self.config.neuron.moving_average_alpha
         # Load state because self.sync() will overwrite it
         self.load_state()
