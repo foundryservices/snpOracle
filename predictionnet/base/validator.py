@@ -226,24 +226,24 @@ class BaseValidatorNeuron(BaseNeuron):
 
 
         # Process the raw weights to final_weights via subtensor limitations.
-        # (
-        #     processed_weight_uids,
-        #     processed_weights,
-        # ) = bt.utils.weight_utils.process_weights_for_netuid(
-        #     uids=self.metagraph.uids,
-        #     weights=array(raw_weights),
-        #     netuid=self.config.netuid,
-        #     subtensor=self.subtensor,
-        #     metagraph=self.metagraph,
-        # )
+        (
+            processed_weight_uids,
+            processed_weights,
+        ) = bt.utils.weight_utils.process_weights_for_netuid(
+            uids=self.metagraph.uids,
+            weights=array(raw_weights),
+            netuid=self.config.netuid,
+            subtensor=self.subtensor,
+            metagraph=self.metagraph,
+        )
 
-        # # Convert to uint16 weights and uids.
-        # (
-        #     uint_uids,
-        #     uint_weights,
-        # ) = bt.utils.weight_utils.convert_weights_and_uids_for_emit(
-        #     uids=processed_weight_uids, weights=processed_weights
-        # )
+        # Convert to uint16 weights and uids.
+        (
+            uint_uids,
+            uint_weights,
+        ) = bt.utils.weight_utils.convert_weights_and_uids_for_emit(
+            uids=processed_weight_uids, weights=processed_weights
+        )
 
         # Set the weights on chain via our subtensor connection.
         bt.logging.info(f"Setting weights...")
