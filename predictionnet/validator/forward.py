@@ -88,9 +88,8 @@ async def forward(self):
         deserialize=False,
     )
     # Log the results for monitoring purposes.
-    bt.logging.info(f"Received responses: {responses}")
-    # TODO(developer): Define how the validator scores responses.
-    # Adjust the scores based on responses from miners.
+    for uid, response in zip(miner_uids, responses):
+        bt.logging.info(f"UID: {uid} | Predictions: {response.prediction}")
     
     rewards = get_rewards(self, responses=responses, miner_uids=miner_uids)
 
