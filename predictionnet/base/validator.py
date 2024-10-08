@@ -222,6 +222,8 @@ class BaseValidatorNeuron(BaseNeuron):
         # Calculate the average reward for each uid across non-zero values.
         # Replace any NaN values with 0.
         total = sum(self.scores)
+        if total==0:
+            total=1
         raw_weights = [score / total for score in self.scores]
 
 
