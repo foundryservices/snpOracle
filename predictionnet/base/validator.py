@@ -309,6 +309,8 @@ class BaseValidatorNeuron(BaseNeuron):
         # shape: [ metagraph.n ]  
         for i, value in zip(uids,rewards):
             self.scores[i] = (1 - self.alpha) * self.scores[i] + self.alpha * value
+        
+        bt.logging.info(f'New Average Scores: {self.scores}')
 
 
     def save_state(self):
