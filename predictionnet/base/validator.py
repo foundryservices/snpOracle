@@ -309,10 +309,9 @@ class BaseValidatorNeuron(BaseNeuron):
             rewards = nan_to_num(rewards, 0)
         # Compute forward pass rewards, assumes uids are mutually exclusive.
         # shape: [ metagraph.n ]  
-        new_scores = self.scores.copy()
         for i, value in zip(uids,rewards):
-            new_scores[i] = (1 - self.alpha) * self.scores[i] + self.alpha * value
-        self.scores = new_scores
+            self.moving_avg_scores[i] = (1 - self.alpha) * self.scores[i] + self.alpha * value
+        self.scores = array(self.moving_avg_scores)
         bt.logging.info(f'New Average Scores: {self.scores}')
 
 
