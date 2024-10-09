@@ -69,7 +69,13 @@ class BaseNeuron(ABC):
 
         # If a gpu is required, set the device to cuda:N (e.g. cuda:0)
         self.device = self.config.neuron.device
-
+        if self.config.logging.debug:
+            bt.logging.set_debug()
+            bt.logging.debug("Enabled Debug")
+        if self.config.logging.trace:
+            bt.logging.set_trace()
+            bt.logging.trace("Enabled Trace")
+        
         # Log the configuration for reference.
         bt.logging.info(self.config)
 

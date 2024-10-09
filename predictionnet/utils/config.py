@@ -17,7 +17,6 @@
 # DEALINGS IN THE SOFTWARE.
 
 import os
-import torch
 import argparse
 import bittensor as bt
 from loguru import logger
@@ -67,6 +66,7 @@ def add_args(cls, parser):
         "validator" if "miner" not in cls.__name__.lower() else "miner"
     )
 
+    # MINER AND VALIDATOR CONFIG
     parser.add_argument(
         "--neuron.name",
         type=str,
@@ -102,6 +102,7 @@ def add_args(cls, parser):
         default=False,
     )
 
+    # VALIDATOR ONLY CONFIG
     if neuron_type == "validator":
         parser.add_argument(
             "--neuron.num_concurrent_forwards",
@@ -148,12 +149,13 @@ def add_args(cls, parser):
             default=4096,
         )
 
+    # MINER ONLY CONFIG
     else:
         parser.add_argument(
             "--blacklist.force_validator_permit",
             action="store_true",
             help="If set, we will force incoming requests to have a permit.",
-            default=False,
+            default=True,
         )
 
         parser.add_argument(
@@ -175,6 +177,13 @@ def add_args(cls, parser):
             type=str,
             help="The Huggingface repo id where the weights file exists - set as empty string if you want to use weights in local folders.",
             default='foundryservices/bittensor-sn28-base-lstm'
+        )
+
+        parser.add_argument(
+            "--validator.min_stake",
+            type=int,
+            default=8192, # Multiple of 2**X
+            help="Minimum validator stake to accept forward requests from as a miner",
         )
 
 def config(cls):

@@ -74,7 +74,7 @@ setup(
     include_package_data=True,
     author_email="",  # TODO(developer): Change this value to your module subnet author email.
     license="MIT",
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     install_requires=requirements,
     classifiers=[
         "Development Status :: 3 - Alpha",
@@ -83,7 +83,6 @@ setup(
         # Pick your license as you wish
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Topic :: Scientific/Engineering",

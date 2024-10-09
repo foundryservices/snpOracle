@@ -16,7 +16,7 @@
 
 
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from dotenv import load_dotenv
 import pandas_market_calendars as mcal
 import yfinance as yf
@@ -25,13 +25,12 @@ import pathlib
 import wandb
 import os
 from numpy import nan, full
-
+from predictionnet.utils.uids import check_uid_availability
 # Bittensor
 import bittensor as bt
 
 # Bittensor Validator Template:
 from predictionnet.validator import forward
-
 # import base validator class which takes care of most of the boilerplate
 from predictionnet.base.validator import BaseValidatorNeuron
 from predictionnet import __version__
@@ -53,19 +52,18 @@ class Validator(BaseValidatorNeuron):
         self.prediction_interval = 5 # in minutes
         self.N_TIMEPOINTS = 6 # number of timepoints to predict
         self.INTERVAL = self.prediction_interval * self.N_TIMEPOINTS # 30 Minutes
-         #initialize past_predictions history
-        self.past_predictions = [full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)] * len(self.hotkeys)
-
-        bt.logging.info("load_state()")
-        self.load_state()
-
-        # TODO(developer): Anything specific to your use case you can do here
+        self.past_predictions = {}
+        for uid in range(len(self.metagraph.S)):
+            uid_is_available = check_uid_availability(
+                self.metagraph, uid, self.config.neuron.vpermit_tao_limit
+            )
+            if uid_is_available:
+                self.past_predictions[uid] = full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)
         netrc_path = pathlib.Path.home() / ".netrc"
         wandb_api_key = os.getenv("WANDB_API_KEY")
         if wandb_api_key is not None:
             bt.logging.info("WANDB_API_KEY is set")
         bt.logging.info("~/.netrc exists:", netrc_path.exists())
-
         if wandb_api_key is None and not netrc_path.exists():
             bt.logging.warning(
                 "WANDB_API_KEY not found in environment variables."

@@ -19,7 +19,6 @@
 
 
 import copy
-import torch
 import asyncio
 import threading
 import bittensor as bt
@@ -27,7 +26,9 @@ import bittensor as bt
 from typing import List
 from traceback import print_exception
 from predictionnet.base.neuron import BaseNeuron
-from numpy import full, nan
+from numpy import full, nan, array, isnan, ndarray, nan_to_num
+import os
+import pickle
 
 
 
@@ -43,19 +44,18 @@ class BaseValidatorNeuron(BaseNeuron):
 
         # Save a copy of the hotkeys to local memory.
         self.hotkeys = copy.deepcopy(self.metagraph.hotkeys)
-
         # Dendrite lets us send messages to other nodes (axons) in the network.
         self.dendrite = bt.dendrite(wallet=self.wallet)
         bt.logging.info(f"Dendrite: {self.dendrite}")
-
         # Set up initial scoring weights for validation
         bt.logging.info("Building validation weights.")
-        self.scores = torch.zeros_like(self.metagraph.S, dtype=torch.float32)
-
+        self.scores = full(len(self.metagraph.S), 0.0)
+        self.moving_avg_scores = [0.0] * len(self.metagraph.S)
+        self.alpha = self.config.neuron.moving_average_alpha
         # Load state because self.sync() will overwrite it
         self.load_state()
-
         # Init sync with the network. Updates the metagraph.
+        self.resync_metagraph() # this ensures that the state file is up to date with the metagraph
         self.sync()
 
         # Serve axon to enable external connections.
@@ -214,24 +214,26 @@ class BaseValidatorNeuron(BaseNeuron):
         """
 
         # Check if self.scores contains any NaN values and log a warning if it does.
-        if torch.isnan(self.scores).any():
+        if isnan(self.scores).any():
             bt.logging.warning(
                 f"Scores contain NaN values. This may be due to a lack of responses from miners, or a bug in your reward functions."
             )
 
         # Calculate the average reward for each uid across non-zero values.
         # Replace any NaN values with 0.
-        raw_weights = torch.nn.functional.normalize(self.scores, p=1, dim=0)
+        total = sum(self.scores)
+        if total==0:
+            total=1
+        raw_weights = [score / total for score in self.scores]
 
-        bt.logging.debug("raw_weights", raw_weights)
-        bt.logging.debug("raw_weight_uids", self.metagraph.uids.to("cpu"))
+
         # Process the raw weights to final_weights via subtensor limitations.
         (
             processed_weight_uids,
             processed_weights,
         ) = bt.utils.weight_utils.process_weights_for_netuid(
-            uids=self.metagraph.uids.to("cpu"),
-            weights=raw_weights.to("cpu"),
+            uids=self.metagraph.uids,
+            weights=array(raw_weights),
             netuid=self.config.netuid,
             subtensor=self.subtensor,
             metagraph=self.metagraph,
@@ -257,7 +259,7 @@ class BaseValidatorNeuron(BaseNeuron):
             version_key=self.spec_version
         )
 
-        if result is True:
+        if result:
             bt.logging.info("set_weights on chain successfully!")
         else:
             bt.logging.debug("Failed to set weights this iteration with message:", msg)
@@ -289,9 +291,7 @@ class BaseValidatorNeuron(BaseNeuron):
         # If so, we need to add new hotkeys and moving averages.
         if len(self.hotkeys) < len(self.metagraph.hotkeys):
             # Update the size of the moving average scores.
-            new_moving_average = torch.zeros((self.metagraph.n)).to(
-                self.device
-            )
+            new_moving_average = full(len(self.metagraph.S), 0)
             min_len = min(len(self.hotkeys), len(self.scores))
             new_moving_average[:min_len] = self.scores[:min_len]
             self.scores = new_moving_average
@@ -299,50 +299,57 @@ class BaseValidatorNeuron(BaseNeuron):
         # Update the hotkeys.
         self.hotkeys = copy.deepcopy(self.metagraph.hotkeys)
 
-    def update_scores(self, rewards: torch.FloatTensor, uids: List[int]):
+    def update_scores(self, rewards: ndarray, uids: List[int]):
         """Performs exponential moving average on the scores based on the rewards received from the miners."""
 
         # Check if rewards contains NaN values.
-        if torch.isnan(rewards).any():
+        if isnan(rewards).any():
             bt.logging.warning(f"NaN values detected in rewards: {rewards}")
             # Replace any NaN values in rewards with 0.
-            rewards = torch.nan_to_num(rewards, 0)
-
+            rewards = nan_to_num(rewards, 0)
         # Compute forward pass rewards, assumes uids are mutually exclusive.
-        # shape: [ metagraph.n ]
-        scattered_rewards: torch.FloatTensor = self.scores.scatter(
-            0, torch.tensor(uids).to(self.device), rewards
-        ).to(self.device)
-        #bt.logging.debug(f"Scattered rewards: {rewards}")
+        # shape: [ metagraph.n ]  
+        for i, value in zip(uids,rewards):
+            self.moving_avg_scores[i] = (1 - self.alpha) * self.scores[i] + self.alpha * value
+        self.scores = array(self.moving_avg_scores)
+        bt.logging.info(f'New Average Scores: {self.scores}')
 
-        # Update scores with rewards produced by this step.
-        # shape: [ metagraph.n ]
-        alpha: float = self.config.neuron.moving_average_alpha
-        self.scores: torch.FloatTensor = alpha * scattered_rewards + (
-            1 - alpha
-        ) * self.scores.to(self.device)
-        bt.logging.debug(f"Updated moving avg scores: {self.scores}")
 
     def save_state(self):
         """Saves the state of the validator to a file."""
         bt.logging.info("Saving validator state.")
-
-        # Save the state of the validator to file.
-        torch.save(
-            {
+        state_path = os.path.join(self.config.neuron.full_path, "state.pt")
+        state = {
                 "step": self.step,
                 "scores": self.scores,
                 "hotkeys": self.hotkeys,
-            },
-            self.config.neuron.full_path + "/state.pt",
-        )
+            }
+        with open(state_path, 'wb') as f:
+            pickle.dump(state, f)
 
     def load_state(self):
         """Loads the state of the validator from a file."""
         bt.logging.info("Loading validator state.")
-
-        # Load the state of the validator from file.
-        state = torch.load(self.config.neuron.full_path + "/state.pt")
-        self.step = state["step"]
-        self.scores = state["scores"]
-        self.hotkeys = state["hotkeys"]
+        state_path = os.path.join(self.config.neuron.full_path, "state.pt")
+        if not os.path.exists(state_path):
+            bt.logging.info("Skipping state load due to missing state.pt file.")
+            return
+        # backwards compatability with torch version
+        try:
+            # Load the state of the validator from file.
+            with open(state_path, 'rb') as f:
+                state = pickle.load(f)
+            self.step = state["step"]
+            self.scores = state["scores"]
+            self.hotkeys = state["hotkeys"]
+        except:
+            try:
+                import torch
+                state = torch.load(state_path)
+                bt.logging.info("Found torch state.pt file, converting to pickle...")
+                self.step = state["step"]
+                self.scores = state["scores"]
+                self.hotkeys = state["hotkeys"]
+                self.save_state()
+            except Exception as e:
+                bt.logging.info(f'Failed to load state file with error: {e}')

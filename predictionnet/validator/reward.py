@@ -17,7 +17,6 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import torch
 from typing import List
 import bittensor as bt
 from predictionnet.protocol import Challenge
@@ -165,7 +164,14 @@ def update_synapse(self, uid, response: Challenge) -> None:
         changes the value of self.past_predictions[uid] to include the most recent prediction and remove the oldest prediction
     """
     past_predictions = self.past_predictions[uid]
-    new_past_predictions = np.concatenate((np.array(response.prediction).reshape(1,self.N_TIMEPOINTS), past_predictions), axis=0)
+    # does not save predictions that mature after market close 
+    if (datetime.now(timezone('America/New_York')).replace(hour=16, minute=5, second=0, microsecond=0) - datetime.fromisoformat(response.timestamp)).seconds < self.prediction_interval*60:
+        sec_to_market_close = (datetime.now(timezone('America/New_York')).replace(hour=16, minute=0, second=0, microsecond=0) - datetime.fromisoformat(response.timestamp)).seconds
+        epochs_to_market_close = int((sec_to_market_close/60) /self.prediction_interval)
+        prediction_vector = np.concatenate((np.array(response.prediction[0:epochs_to_market_close]),(self.N_TIMEPOINTS-epochs_to_market_close)*[np.nan]), axis=0)
+    else:
+        prediction_vector = np.array(response.prediction).reshape(1,self.N_TIMEPOINTS)
+    new_past_predictions = np.concatenate((prediction_vector, past_predictions), axis=0)
     self.past_predictions[uid] = new_past_predictions[0:-1,:] # remove the oldest epoch
 
 ################################################################################
@@ -175,7 +181,7 @@ def get_rewards(
     self,
     responses: List[Challenge],
     miner_uids: List[int],
-) -> torch.FloatTensor:
+) -> np.ndarray:
     """
     Returns a tensor of rewards for the given query and responses.
 
@@ -184,17 +190,16 @@ def get_rewards(
     - responses (List[Challenge]): A list of responses from the miner.
     
     Returns:
-    - torch.FloatTensor: A tensor of rewards for the given query and responses.
+    - np.ndarray: A tensor of rewards for the given query and responses.
     """
     N_TIMEPOINTS = self.N_TIMEPOINTS
     prediction_interval = self.prediction_interval
     if len(responses) == 0:
         bt.logging.info("Got no responses. Returning reward tensor of zeros.")
-        return [], torch.zeros_like(0).to(self.device)  # Fallback strategy: Log and return 0.
+        return [], np.full(len(self.metagraph.S), 0.0)  # Fallback strategy: Log and return 0.
 
     # Prepare to extract close price for this timestamp
     ticker_symbol = '^GSPC'
-    ticker = yf.Ticker(ticker_symbol)
 
     timestamp = responses[0].timestamp
     timestamp = datetime.fromisoformat(timestamp)
@@ -202,22 +207,28 @@ def get_rewards(
     # Round up current timestamp and then wait until that time has been hit
     rounded_up_time = timestamp - timedelta(minutes=timestamp.minute % prediction_interval,
                                     seconds=timestamp.second,
-                                    microseconds=timestamp.microsecond) + timedelta(minutes=prediction_interval, seconds=30)
+                                    microseconds=timestamp.microsecond) + timedelta(minutes=prediction_interval, seconds=10)
+
     
     ny_timezone = timezone('America/New_York')
-
+    
     while (datetime.now(ny_timezone) < rounded_up_time):
         bt.logging.info(f"Waiting for next {prediction_interval}m interval...")
         if(datetime.now(ny_timezone).minute%10==0):
             self.resync_metagraph()
         time.sleep(15)
 
-    
-    data = yf.download(tickers=ticker_symbol, period='5d', interval='5m', progress=False)
-    #bt.logging.info("Procured data from yahoo finance.")
+    prediction_times = []
+    rounded_up_time = rounded_up_time.replace(tzinfo=None) - timedelta(seconds=10)
     # add an extra timepoint for dir_acc calculation
-    bt.logging.info(data.iloc[(-N_TIMEPOINTS-1):])
-    close_price = data['Close'].iloc[(-N_TIMEPOINTS-1):].tolist()
+    for i in range(N_TIMEPOINTS+1):
+        prediction_times.append(rounded_up_time - timedelta(minutes=(i+1)*prediction_interval))
+    bt.logging.info(f"Prediction times: {prediction_times}")
+    data = yf.download(tickers=ticker_symbol, period='5d', interval='5m', progress=False)
+    close_price = data.iloc[data.index.tz_localize(None).isin(prediction_times)]['Close'].tolist()
+    if len(close_price) < (N_TIMEPOINTS+1):
+        # edge case where its between 9:30am and 10am
+        close_price = data.iloc[-N_TIMEPOINTS-1:]['Close'].tolist()
     close_price_revealed = ' '.join(str(price) for price in close_price)
 
     bt.logging.info(f"Revealing close prices for this interval: {close_price_revealed}")
@@ -249,8 +260,9 @@ def get_rewards(
     for t in range(N_TIMEPOINTS):
         ranks[:,:,t] = rank_miners_by_epoch(raw_deltas[:,:,t], raw_correct_dir[:,:,t])
 
-    incentives = np.nanmean(np.nanmean(ranks, axis=2), axis=1).argsort().argsort()
-    reward = np.exp(-0.05*incentives)
-    reward[incentives>100] = 0
+    incentive_ranks = np.nanmean(np.nanmean(ranks, axis=2), axis=1).argsort().argsort()
+    reward = np.exp(-0.05*incentive_ranks)
+    reward[incentive_ranks>100] = 0
     reward = reward/np.max(reward)
-    return torch.FloatTensor(reward)
+    return reward
+
