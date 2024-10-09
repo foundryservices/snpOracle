@@ -55,8 +55,8 @@ class BaseValidatorNeuron(BaseNeuron):
         # Load state because self.sync() will overwrite it
         self.load_state()
         # Init sync with the network. Updates the metagraph.
-        self.sync()
         self.resync_metagraph() # this ensures that the state file is up to date with the metagraph
+        self.sync()
 
         # Serve axon to enable external connections.
         if not self.config.neuron.axon_off:
@@ -334,10 +334,22 @@ class BaseValidatorNeuron(BaseNeuron):
         if not os.path.exists(state_path):
             bt.logging.info("Skipping state load due to missing state.pt file.")
             return
-
-        # Load the state of the validator from file.
-        with open(state_path, 'rb') as f:
-            state = pickle.load(f)
-        self.step = state["step"]
-        self.scores = state["scores"]
-        self.hotkeys = state["hotkeys"]
+        # backwards compatability with torch version
+        try:
+            # Load the state of the validator from file.
+            with open(state_path, 'rb') as f:
+                state = pickle.load(f)
+            self.step = state["step"]
+            self.scores = state["scores"]
+            self.hotkeys = state["hotkeys"]
+        except:
+            try:
+                import torch
+                state = torch.load(state_path)
+                bt.logging.info("Found torch state.pt file, converting to pickle...")
+                self.step = state["step"]
+                self.scores = state["scores"]
+                self.hotkeys = state["hotkeys"]
+                self.save_state()
+            except Exception as e:
+                bt.logging.info(f'Failed to load state file with error: {e}')

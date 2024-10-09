@@ -16,7 +16,7 @@
 
 
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from dotenv import load_dotenv
 import pandas_market_calendars as mcal
 import yfinance as yf
@@ -31,7 +31,6 @@ import bittensor as bt
 
 # Bittensor Validator Template:
 from predictionnet.validator import forward
-
 # import base validator class which takes care of most of the boilerplate
 from predictionnet.base.validator import BaseValidatorNeuron
 from predictionnet import __version__
