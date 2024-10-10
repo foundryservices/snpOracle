@@ -48,6 +48,7 @@ def read_requirements(path):
 
 
 requirements = read_requirements("requirements.txt")
+dev_requirements = read_requirements("dev_requirements.txt")
 here = path.abspath(path.dirname(__file__))
 
 with open(path.join(here, "README.md"), encoding="utf-8") as f:
@@ -76,6 +77,9 @@ setup(
     license="MIT",
     python_requires=">=3.9",
     install_requires=requirements,
+    extras_require={
+        "DEV": dev_requirements,
+    },
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
