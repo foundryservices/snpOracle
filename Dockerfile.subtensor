@@ -1,0 +1,37 @@
+# Use Ubuntu as the base image
+FROM ubuntu:20.04
+
+# Avoid prompts from apt
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    make build-essential git clang curl libssl-dev llvm libudev-dev protobuf-compiler \
+    python3 python3-pip
+
+# Install Rust and Cargo
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Clone subtensor repository
+RUN git clone https://github.com/opentensor/subtensor.git
+
+# Setup Rust for subtensor
+WORKDIR /subtensor
+RUN ./scripts/init.sh
+
+# Build subtensor binary with faucet feature
+RUN cargo build -p node-subtensor --profile production --features pow-faucet
+
+# Install bittensor
+RUN pip3 install bittensor
+
+# Set up entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Set working directory back to root
+WORKDIR /
+
+# Set entrypoint
+ENTRYPOINT ["/entrypoint.sh"]

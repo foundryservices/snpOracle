@@ -24,8 +24,16 @@ import pytz
 import pathlib
 import wandb
 import os
+import sys
 from numpy import nan, full
+
+# Add the parent directory to the Python path
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(parent_dir)
+
+# Now try to import from predictionnet
 from predictionnet.utils.uids import check_uid_availability
+
 # Bittensor
 import bittensor as bt
 
