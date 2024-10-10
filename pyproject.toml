@@ -1,0 +1,32 @@
+[tool.black]
+line-length = 79
+include = '''
+/(
+    \.pyi?$
+)/
+'''
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | docs
+  | mining_models
+  | contrib
+  | scripts
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 79
+skip_gitignore = true
+
+#[tool.flake8]
+# Refer to the `.flake8` file
