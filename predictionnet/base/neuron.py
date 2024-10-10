@@ -75,7 +75,7 @@ class BaseNeuron(ABC):
         if self.config.logging.trace:
             bt.logging.set_trace()
             bt.logging.trace("Enabled Trace")
-        
+
         # Log the configuration for reference.
         bt.logging.info(self.config)
 

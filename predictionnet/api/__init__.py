@@ -39,7 +39,9 @@ class SubnetsAPI(ABC):
         ...
 
     @abstractmethod
-    def process_responses(self, responses: List[Union["bt.Synapse", Any]]) -> Any:
+    def process_responses(
+        self, responses: List[Union["bt.Synapse", Any]]
+    ) -> Any:
         """
         Process the responses from the network.
         """
@@ -69,7 +71,9 @@ class SubnetsAPI(ABC):
             Any: The result of the process_responses_fn.
         """
         synapse = self.prepare_synapse(**kwargs)
-        bt.logging.debug(f"Quering valdidator axons with synapse {synapse.name}...")
+        bt.logging.debug(
+            f"Quering valdidator axons with synapse {synapse.name}..."
+        )
         responses = await self.dendrite(
             axons=axons,
             synapse=synapse,

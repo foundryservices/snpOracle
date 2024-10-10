@@ -64,7 +64,7 @@ class Challenge(bt.Synapse):
     prediction: Optional[List[float]] = pydantic.Field(
         default=None,
         title="Predictions",
-        description="Next 6 5m candles' predictions for closing price of S&P 500"
+        description="Next 6 5m candles' predictions for closing price of S&P 500",
     )
 
     def deserialize(self) -> int:
