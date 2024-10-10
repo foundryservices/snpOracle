@@ -16,8 +16,9 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import os
 import argparse
+import os
+
 import bittensor as bt
 from loguru import logger
 
@@ -169,22 +170,23 @@ def add_args(cls, parser):
             "--model",
             type=str,
             help="The file name of the model that the miner loads weights from/",
-            default='mining_models/base_lstm_new.h5'
+            default="mining_models/base_lstm_new.h5",
         )
 
         parser.add_argument(
             "--hf_repo_id",
             type=str,
             help="The Huggingface repo id where the weights file exists - set as empty string if you want to use weights in local folders.",
-            default='foundryservices/bittensor-sn28-base-lstm'
+            default="foundryservices/bittensor-sn28-base-lstm",
         )
 
         parser.add_argument(
             "--validator.min_stake",
             type=int,
-            default=8192, # Multiple of 2**X
+            default=8192,  # Multiple of 2**X
             help="Minimum validator stake to accept forward requests from as a miner",
         )
+
 
 def config(cls):
     """

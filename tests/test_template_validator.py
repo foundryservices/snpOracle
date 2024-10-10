@@ -18,17 +18,17 @@
 
 import sys
 import unittest
+
 import bittensor as bt
 from numpy import array
-
-from neurons.validator import Neuron as Validator
-from neurons.miner import Neuron as Miner
-
-from template.protocol import Dummy
-from template.validator.forward import forward
-from template.utils.uids import get_random_uids
-from template.validator.reward import get_rewards
 from template.base.validator import BaseValidatorNeuron
+from template.protocol import Dummy
+from template.utils.uids import get_random_uids
+from template.validator.forward import forward
+from template.validator.reward import get_rewards
+
+from neurons.miner import Neuron as Miner
+from neurons.validator import Neuron as Validator
 
 
 class TemplateValidatorNeuronTestCase(unittest.TestCase):

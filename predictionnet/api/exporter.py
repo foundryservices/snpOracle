@@ -1,14 +1,15 @@
-import bittensor as bt
-from predictionnet.api.prediction import PredictionAPI
-from predictionnet.api.get_query_axons import get_query_api_axons
-
+import datetime
+import os
 from datetime import datetime, timedelta
+
+import bittensor as bt
+import psycopg
 from dotenv import load_dotenv
 from psycopg import OperationalError, sql
 from pytz import timezone
-import psycopg
-import os
-import datetime
+
+from predictionnet.api.get_query_axons import get_query_api_axons
+from predictionnet.api.prediction import PredictionAPI
 
 bt.debug()
 load_dotenv()
@@ -64,7 +65,9 @@ async def test_prediction():
 
     uids = [uid.item() for uid in metagraph.uids if metagraph.trust[uid] > 0]
 
-    axons = await get_query_api_axons(wallet=wallet, metagraph=metagraph, uids=uids)
+    axons = await get_query_api_axons(
+        wallet=wallet, metagraph=metagraph, uids=uids
+    )
 
     # Store some data!
     # Read timestamp from the text file
@@ -140,7 +143,12 @@ async def test_prediction():
         # Update the other UID that is not the same HK + CK to False:
         update_is_current_uid_result = cursor.execute(
             update_miner_uid_to_false_by_hot_key_cold_key,
-            (False, export_dict["hotKey"], export_dict["coldKey"], export_dict["UID"]),
+            (
+                False,
+                export_dict["hotKey"],
+                export_dict["coldKey"],
+                export_dict["UID"],
+            ),
         )
         connection.commit()
 
