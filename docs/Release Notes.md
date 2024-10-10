@@ -3,7 +3,7 @@ Release Notes
 
 2.1.1
 -----
-Released on
+Released on October 10th 2024
 - Upgrade to Bittensor v7.4.0 due to known latency issues
 
 
