@@ -13,17 +13,18 @@
 # THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+import time
+from datetime import datetime, timedelta
+
 import bittensor as bt
+import wandb
+from numpy import full, nan
+from pytz import timezone
 
 # Import Validator Template
 import predictionnet
+from predictionnet.utils.uids import check_uid_availability, get_random_uids
 from predictionnet.validator.reward import get_rewards
-from predictionnet.utils.uids import get_random_uids, check_uid_availability
-from datetime import datetime, timedelta
-import time
-from pytz import timezone
-import wandb
-from numpy import full, nan
 
 
 async def forward(self):

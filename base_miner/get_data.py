@@ -3,12 +3,13 @@
 
 # Import required models
 from datetime import datetime, timedelta
+from typing import Tuple
+
 import numpy as np
+import ta
+import yfinance as yf
 from pandas import DataFrame
 from sklearn.preprocessing import MinMaxScaler
-import ta
-from typing import Tuple
-import yfinance as yf
 
 
 def prep_data(drop_na: bool = True) -> DataFrame:

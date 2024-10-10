@@ -18,17 +18,18 @@
 # DEALINGS IN THE SOFTWARE.
 
 
-import copy
 import asyncio
-import threading
-import bittensor as bt
-
-from typing import List
-from traceback import print_exception
-from predictionnet.base.neuron import BaseNeuron
-from numpy import full, nan, array, isnan, ndarray, nan_to_num
+import copy
 import os
 import pickle
+import threading
+from traceback import print_exception
+from typing import List
+
+import bittensor as bt
+from numpy import array, full, isnan, nan, nan_to_num, ndarray
+
+from predictionnet.base.neuron import BaseNeuron
 
 
 class BaseValidatorNeuron(BaseNeuron):

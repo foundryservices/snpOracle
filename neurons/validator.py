@@ -15,27 +15,28 @@
 # DEALINGS IN THE SOFTWARE.
 
 
+import os
+import pathlib
 import time
 from datetime import datetime
-from dotenv import load_dotenv
-import pandas_market_calendars as mcal
-import yfinance as yf
-import pytz
-import pathlib
-import wandb
-import os
-from numpy import nan, full
-from predictionnet.utils.uids import check_uid_availability
 
 # Bittensor
 import bittensor as bt
+import pandas_market_calendars as mcal
+import pytz
+import wandb
+import yfinance as yf
+from dotenv import load_dotenv
+from numpy import full, nan
 
-# Bittensor Validator Template:
-from predictionnet.validator import forward
+from predictionnet import __version__
 
 # import base validator class which takes care of most of the boilerplate
 from predictionnet.base.validator import BaseValidatorNeuron
-from predictionnet import __version__
+from predictionnet.utils.uids import check_uid_availability
+
+# Bittensor Validator Template:
+from predictionnet.validator import forward
 
 load_dotenv()
 

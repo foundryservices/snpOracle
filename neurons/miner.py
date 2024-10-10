@@ -18,29 +18,28 @@
 # DEALINGS IN THE SOFTWARE.
 
 import argparse
+import os
 import time
 import typing
-import bittensor as bt
 
-from base_miner.predict import predict
-from base_miner.get_data import prep_data, scale_data
+import bittensor as bt
+import numpy as np
+
+# ML imports
+import tensorflow
 import yfinance as yf
+from dotenv import load_dotenv
+from huggingface_hub import hf_hub_download
+from tensorflow.keras.models import load_model
 
 # import predictionnet
 # Bittensor Miner Template:
 import predictionnet
+from base_miner.get_data import prep_data, scale_data
+from base_miner.predict import predict
 
 # import base miner class which takes care of most of the boilerplate
 from predictionnet.base.miner import BaseMinerNeuron
-
-# ML imports
-import tensorflow
-import numpy as np
-from tensorflow.keras.models import load_model
-from huggingface_hub import hf_hub_download
-
-import os
-from dotenv import load_dotenv
 
 load_dotenv()
 

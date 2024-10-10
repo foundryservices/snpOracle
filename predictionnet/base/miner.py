@@ -15,11 +15,11 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import time
+import argparse
 import asyncio
 import threading
+import time
 import traceback
-import argparse
 
 import bittensor as bt
 

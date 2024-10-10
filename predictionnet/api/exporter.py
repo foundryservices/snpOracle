@@ -1,14 +1,15 @@
-import bittensor as bt
-from predictionnet.api.prediction import PredictionAPI
-from predictionnet.api.get_query_axons import get_query_api_axons
-
+import datetime
+import os
 from datetime import datetime, timedelta
+
+import bittensor as bt
+import psycopg
 from dotenv import load_dotenv
 from psycopg import OperationalError, sql
 from pytz import timezone
-import psycopg
-import os
-import datetime
+
+from predictionnet.api.get_query_axons import get_query_api_axons
+from predictionnet.api.prediction import PredictionAPI
 
 bt.debug()
 load_dotenv()

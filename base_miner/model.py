@@ -1,19 +1,19 @@
 # developer: Foundry Digital
 # Copyright © 2023 Foundry Digital
 
+import os
+
 # Import necessary modules to use for model creation - can be downloaded using pip
 import joblib
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import train_test_split
+from dotenv import load_dotenv
+from huggingface_hub import HfApi, login
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
-from tensorflow.keras.models import Sequential
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.layers import LSTM, Dense, Dropout
-import os
-from dotenv import load_dotenv
-from huggingface_hub import HfApi
-from huggingface_hub import login
+from tensorflow.keras.models import Sequential
 
 load_dotenv()
 

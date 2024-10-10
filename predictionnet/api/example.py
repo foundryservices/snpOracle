@@ -1,10 +1,11 @@
-import bittensor as bt
-from predictionnet.api.prediction import PredictionAPI
-from predictionnet.api.get_query_axons import get_query_api_axons
-
-from datetime import datetime, timedelta
 import time
+from datetime import datetime, timedelta
+
+import bittensor as bt
 from pytz import timezone
+
+from predictionnet.api.get_query_axons import get_query_api_axons
+from predictionnet.api.prediction import PredictionAPI
 
 bt.debug()
 

@@ -1,6 +1,7 @@
 import random
-import bittensor as bt
 from typing import List
+
+import bittensor as bt
 from numpy import array, ndarray
 
 

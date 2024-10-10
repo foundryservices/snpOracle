@@ -29,12 +29,10 @@ __spec_version__ = (
     + (1 * int(version_split[2]))
 )
 
-# Import all submodules.
-from . import protocol
-from . import base
-from . import validator
-
 import json
+
+# Import all submodules.
+from . import base, protocol, validator
 
 SUBNET_LINKS = None
 with open("subnet_links.json") as f:
