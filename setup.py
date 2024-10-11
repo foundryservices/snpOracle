@@ -17,14 +17,13 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import re
-import os
 import codecs
-import pathlib
-from os import path
+import os
+import re
 from io import open
-from setuptools import setup, find_packages
-from pkg_resources import parse_requirements
+from os import path
+
+from setuptools import find_packages, setup
 
 
 def read_requirements(path):
@@ -48,6 +47,7 @@ def read_requirements(path):
 
 
 requirements = read_requirements("requirements.txt")
+dev_requirements = read_requirements("dev_requirements.txt")
 here = path.abspath(path.dirname(__file__))
 
 with open(path.join(here, "README.md"), encoding="utf-8") as f:
@@ -76,6 +76,9 @@ setup(
     license="MIT",
     python_requires=">=3.9",
     install_requires=requirements,
+    extras_require={
+        "DEV": dev_requirements,
+    },
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
