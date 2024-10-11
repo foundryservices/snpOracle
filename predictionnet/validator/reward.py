@@ -71,7 +71,7 @@ def calc_raw(self, uid, response: Challenge, close_price: float):
             axis=0,
         )
         if len(past_predictions.shape) == 1:
-            before_pred_vector = np.array([])
+            # before_pred_vector = np.array([])
             before_close_vector = np.array([])
         else:
             # add the timepoint before the first t from past history for each epoch

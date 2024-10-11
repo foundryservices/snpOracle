@@ -216,7 +216,7 @@ class BaseValidatorNeuron(BaseNeuron):
         # Check if self.scores contains any NaN values and log a warning if it does.
         if isnan(self.scores).any():
             bt.logging.warning(
-                f"Scores contain NaN values. This may be due to a lack of responses from miners, or a bug in your reward functions."
+                "Scores contain NaN values. This may be due to a lack of responses from miners, or a bug in your reward functions."
             )
 
         # Calculate the average reward for each uid across non-zero values.
@@ -247,7 +247,7 @@ class BaseValidatorNeuron(BaseNeuron):
         )
 
         # Set the weights on chain via our subtensor connection.
-        bt.logging.info(f"Setting weights...")
+        bt.logging.info("Setting weights...")
         result, msg = self.subtensor.set_weights(
             wallet=self.wallet,
             netuid=self.config.netuid,
@@ -348,7 +348,7 @@ class BaseValidatorNeuron(BaseNeuron):
             self.step = state["step"]
             self.scores = state["scores"]
             self.hotkeys = state["hotkeys"]
-        except:
+        except Exception:
             try:
                 import torch
 

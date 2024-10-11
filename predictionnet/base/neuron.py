@@ -16,7 +16,6 @@
 # DEALINGS IN THE SOFTWARE.
 
 import copy
-import typing
 from abc import ABC, abstractmethod
 
 import bittensor as bt

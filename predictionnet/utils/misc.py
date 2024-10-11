@@ -16,8 +16,6 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import hashlib as rpccheckhealth
-import math
 import time
 from functools import lru_cache, update_wrapper
 from math import floor

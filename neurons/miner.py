@@ -17,17 +17,13 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import argparse
 import os
 import time
 import typing
 
 import bittensor as bt
-import numpy as np
 
 # ML imports
-import tensorflow
-import yfinance as yf
 from dotenv import load_dotenv
 from huggingface_hub import hf_hub_download
 from tensorflow.keras.models import load_model
@@ -226,7 +222,7 @@ class Miner(BaseMinerNeuron):
         # logic to ensure that only past 20 day context exists in synapse
         synapse.prediction = list(prediction[0])
 
-        if synapse.prediction != None:
+        if synapse.prediction is not None:
             bt.logging.success(f"Predicted price 🎯: {synapse.prediction}")
         else:
             bt.logging.info("No price predicted for this request.")

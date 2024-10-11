@@ -25,7 +25,6 @@ import bittensor as bt
 import pandas_market_calendars as mcal
 import pytz
 import wandb
-import yfinance as yf
 from dotenv import load_dotenv
 from numpy import full, nan
 
@@ -134,7 +133,7 @@ class Validator(BaseValidatorNeuron):
         result = mcal.get_calendar("NYSE").schedule(
             start_date=date, end_date=date
         )
-        return result.empty == False
+        return not result.empty
 
     async def forward(self):
         """

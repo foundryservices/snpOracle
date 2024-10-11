@@ -4,7 +4,6 @@
 # Import modules that already exist or can be installed using pip
 from datetime import datetime
 
-import joblib
 import numpy as np
 import pandas as pd
 from pytz import timezone
@@ -13,10 +12,7 @@ from tensorflow.keras.models import load_model
 
 # import custom defined files
 from base_miner.get_data import prep_data, round_down_time, scale_data
-from base_miner.model import (
-    create_and_save_base_model_lstm,
-    create_and_save_base_model_regression,
-)
+from base_miner.model import create_and_save_base_model_lstm
 
 
 def predict(timestamp: datetime, scaler: MinMaxScaler, model, type) -> float:

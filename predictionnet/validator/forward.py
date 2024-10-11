@@ -23,7 +23,7 @@ from pytz import timezone
 
 # Import Validator Template
 import predictionnet
-from predictionnet.utils.uids import check_uid_availability, get_random_uids
+from predictionnet.utils.uids import check_uid_availability
 from predictionnet.validator.reward import get_rewards
 
 
