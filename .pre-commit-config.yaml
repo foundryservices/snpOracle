@@ -1,0 +1,27 @@
+repos:
+  - repo: local
+    hooks:
+      - id: black
+        name: black
+        description: Format Python code
+        language: system
+        types: [python]
+        entry: black
+      - id: isort
+        name: isort
+        description: Format Python import statements
+        language: system
+        types: [python]
+        entry: isort
+      # - id: mypy
+      #   name: mypy
+      #   description: Enforce correct python type hints
+      #   language: system
+      #   types: [python]
+      #   entry: mypy
+      - id: flake8
+        name: flake8
+        description: Enforce PEP8 Python Style Guide
+        language: system
+        types: [python]
+        entry: flake8
