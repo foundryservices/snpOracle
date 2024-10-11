@@ -17,10 +17,10 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-from typing import Optional, List
+from typing import List, Optional
+
 import bittensor as bt
 import pydantic
-from datetime import datetime
 
 # TODO(developer): Rewrite with your protocol definition.
 
@@ -64,7 +64,7 @@ class Challenge(bt.Synapse):
     prediction: Optional[List[float]] = pydantic.Field(
         default=None,
         title="Predictions",
-        description="Next 6 5m candles' predictions for closing price of S&P 500"
+        description="Next 6 5m candles' predictions for closing price of S&P 500",
     )
 
     def deserialize(self) -> int:

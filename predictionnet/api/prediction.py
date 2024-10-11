@@ -17,10 +17,12 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
+from typing import Any, List, Union
+
 import bittensor as bt
-from typing import List, Optional, Union, Any, Dict
-from predictionnet.protocol import Challenge
+
 from predictionnet.api import SubnetsAPI
+from predictionnet.protocol import Challenge
 
 
 class PredictionAPI(SubnetsAPI):

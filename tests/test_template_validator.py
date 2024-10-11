@@ -18,17 +18,15 @@
 
 import sys
 import unittest
+
 import bittensor as bt
 from numpy import array
-
-from neurons.validator import Neuron as Validator
-from neurons.miner import Neuron as Miner
-
+from template.base.validator import BaseValidatorNeuron
 from template.protocol import Dummy
-from template.validator.forward import forward
 from template.utils.uids import get_random_uids
 from template.validator.reward import get_rewards
-from template.base.validator import BaseValidatorNeuron
+
+from neurons.validator import Neuron as Validator
 
 
 class TemplateValidatorNeuronTestCase(unittest.TestCase):
@@ -106,9 +104,9 @@ class TemplateValidatorNeuronTestCase(unittest.TestCase):
         )
 
         rewards = get_rewards(self.neuron, responses)
-        expected_rewards = rewards.clone()
+        _ = rewards.clone()  # expected rewards
         # Add NaN values to rewards
         rewards[0] = float("nan")
 
-        with self.assertLogs(bt.logging, level="WARNING") as cm:
+        with self.assertLogs(bt.logging, level="WARNING") as _:
             self.neuron.update_scores(rewards, self.miner_uids)
