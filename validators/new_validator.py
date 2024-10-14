@@ -3,8 +3,7 @@ import bittensor as bt
 from validators.helpers import parse_arguments
 from validators.oracle import Oracle
 import asyncio
-import argparse
-
+from pathlib import Path
 
 class Config:
     def __init__(self, args):
@@ -18,19 +17,12 @@ class Config:
 class Validator:
     def __init__(self):
         args = parse_arguments()
-        config = Config(args)
-        self.config = config
+        self.config = Config(args)
         bt.logging.info(f"Config: {self.config}")
-        self.config.full_path = os.path.expanduser(
-            "{}/{}/{}/netuid{}/{}".format(
-                self.config.logging.logging_dir,
-                self.config.wallet.name,
-                self.config.wallet.hotkey_str,
-                self.config.netuid,
-                'validator',
-            )
-        )
-        os.makedirs(self.config.full_path, exist_ok=True)
+        full_path = Path(
+        f"~/.bittensor/validators/{self.config.wallet.name}/{self.config.wallet.hotkey}/netuid{self.config.netuid}/validator").expanduser()
+        full_path.mkdir(parents=True, exist_ok=True)
+        self.config.full_path = str(full_path)
 
     def main(self):
         self.config.wallet = bt.wallet(name=self.configconfig.wallet.name, hotkey=self.config.wallet.hotkey)
