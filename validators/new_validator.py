@@ -25,7 +25,7 @@ class Validator:
         self.config.full_path = str(full_path)
 
     def main(self):
-        self.config.wallet = bt.wallet(name=self.configconfig.wallet.name, hotkey=self.config.wallet.hotkey)
+        self.config.wallet = bt.wallet(name=self.config.wallet.name, hotkey=self.config.wallet.hotkey)
         self.config.dendrite = bt.dendrite(wallet=self.config.wallet)
         bt.logging.info(f"Config: {vars(self.config)}")
         loop = asyncio.get_event_loop()
