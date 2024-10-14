@@ -17,7 +17,7 @@ class Validator:
         args = parse_arguments()
         config = Config(args)
         self.config = config
-        bt.loggin.info(f"Config: {self.config}")
+        bt.logging.info(f"Config: {self.config}")
         self.config.full_path = os.path.expanduser(
             "{}/{}/{}/netuid{}/{}".format(
                 self.config.logging.logging_dir,
