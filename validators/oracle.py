@@ -49,7 +49,7 @@ class Oracle:
         self.last_update = 0
         self.current_block = 0
         self.tempo = self.node_query('SubtensorModule', 'Tempo', [self.config.netuid])
-        self.moving_avg_scores = [1.0] * len(self.metagraph.S)
+        self.moving_avg_scores = [0.0] * len(self.metagraph.S)
         self.node = SubstrateInterface(url=self.config.subtensor.chain_endpoint)
         self.hotkeys = self.metagraph.hotkeys
         helpers.setup_wandb(self)
@@ -140,6 +140,7 @@ class Oracle:
                         helpers.log_wandb(responses, rewards, self.available_uids)
                         self.current_block = self.node_query('System', 'Number', [])
                         self.last_update = self.current_block - self.node_query('SubtensorModule', 'LastUpdate', [self.config.netuid])[self.my_uid].value
+                        bt.logging.info(f"Last update: {self.last_update}  |  Current block: {self.current_block}")
                     else:
                         helpers.print_info(self)
                         await asyncio.sleep(5)
