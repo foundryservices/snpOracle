@@ -5,9 +5,10 @@ from datetime import datetime, timedelta
 from substrateinterface import SubstrateInterface
 from protocol import Challenge
 from pytz import timezone
-
+import os
 import validators.helpers as helpers
 from reward import get_rewards
+import pickle
 
 class Oracle:
     def __init__(self, config=None, loop=None):
@@ -55,6 +56,7 @@ class Oracle:
         helpers.setup_wandb(self)
         self.available_uids = asyncio.run(self.get_available_uids())
         self.past_predictions = {uid: full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan) for uid in self.available_uids}
+        self.load_state()
         self.loop.create_task(self.scheduled_prediction_request())
         self.loop.create_task(self.refresh_metagraph())
 
@@ -95,6 +97,7 @@ class Oracle:
             min_len = min(len(self.hotkeys), len(self.scores))
             new_moving_average[:min_len] = self.scores[:min_len]
             self.scores = new_moving_average
+        self.save_state()
 
     def query_miners(self):
         timestamp = datetime.now(timezone('America/New_York')).isoformat()
@@ -163,3 +166,47 @@ class Oracle:
                     self.metagraph.sync()
             except RuntimeError as e:
                 bt.logging.error(e)
+
+    async def save_state(self):
+        """Saves the state of the validator to a file."""
+        bt.logging.info("Saving validator state.")
+        state_path = os.path.join(self.config.neuron.full_path, "state.pt")
+        state = {
+            "step": self.step,
+            "scores": self.scores,
+            "hotkeys": self.hotkeys,
+        }
+        with open(state_path, "wb") as f:
+            pickle.dump(state, f)
+
+    def load_state(self):
+        """Loads the state of the validator from a file."""
+        bt.logging.info("Loading validator state.")
+        state_path = os.path.join(self.config.neuron.full_path, "state.pt")
+        if not os.path.exists(state_path):
+            bt.logging.info(
+                "Skipping state load due to missing state.pt file."
+            )
+            return
+        # backwards compatability with torch version
+        try:
+            # Load the state of the validator from file.
+            with open(state_path, "rb") as f:
+                state = pickle.load(f)
+            self.step = state["step"]
+            self.scores = state["scores"]
+            self.hotkeys = state["hotkeys"]
+        except Exception:
+            try:
+                import torch
+
+                state = torch.load(state_path)
+                bt.logging.info(
+                    "Found torch state.pt file, converting to pickle..."
+                )
+                self.step = state["step"]
+                self.scores = state["scores"]
+                self.hotkeys = state["hotkeys"]
+                self.save_state()
+            except Exception as e:
+                bt.logging.info(f"Failed to load state file with error: {e}")
