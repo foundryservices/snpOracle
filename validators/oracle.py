@@ -128,6 +128,7 @@ class Oracle:
                         bt.logging.info(f"Received responses: {responses}")
                         try:
                             rewards = get_rewards(self, responses=responses, miner_uids=self.available_uids)
+                            bt.logging.info(f"rewards: {rewards}")
                         except:
                             self.resync_metagraph()
                             rewards = get_rewards(self, responses=responses, miner_uids=self.available_uids)
