@@ -139,7 +139,7 @@ class Oracle:
                         bt.logging.info(f"Moving Average Scores: {self.moving_avg_scores}")
                         helpers.log_wandb(self, responses, rewards, self.available_uids)
                         self.current_block = self.node_query('System', 'Number', [])
-                        self.last_update = self.current_block - self.node_query('SubtensorModule', 'LastUpdate', [self.config.netuid])[self.my_uid].value
+                        self.last_update = self.current_block - self.node_query('SubtensorModule', 'LastUpdate', [self.config.netuid])[self.my_uid]
                     else:
                         helpers.print_info(self)
                         await asyncio.sleep(5)
