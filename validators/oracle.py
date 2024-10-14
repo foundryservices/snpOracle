@@ -128,14 +128,13 @@ class Oracle:
                         bt.logging.info(f"Received responses: {responses}")
                         try:
                             rewards = get_rewards(self, responses=responses, miner_uids=self.available_uids)
-                            bt.logging.info(f"rewards: {rewards}")
                         except:
                             self.resync_metagraph()
                             rewards = get_rewards(self, responses=responses, miner_uids=self.available_uids)
 
                         # Adjust the scores based on responses from miners and update moving average.
                         for i, value in enumerate(rewards):
-                            self.moving_avg_scores[i] = (1 - self.alpha) * self.moving_avg_scores[i] + self.alpha * value
+                            self.moving_avg_scores[i] = (1 - self.config.alpha) * self.moving_avg_scores[i] + self.config.alpha * value
 
                         bt.logging.info(f"Moving Average Scores: {self.moving_avg_scores}")
                         helpers.log_wandb(responses, rewards, self.available_uids)
