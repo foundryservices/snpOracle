@@ -57,7 +57,7 @@ class Oracle:
         helpers.setup_wandb(self)
         self.resync_metagraph = helpers.resync_metagraph
         self.available_uids = asyncio.run(self.get_available_uids())
-        self.past_predictions = {uid: full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan) for uid in self.available_uids.keys()}
+        self.past_predictions = {uid: full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan) for uid in self.available_uids}
         self.loop.create_task(self.scheduled_prediction_request())
         self.loop.create_task(self.refresh_metagraph())
 
