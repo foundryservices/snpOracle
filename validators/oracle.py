@@ -102,7 +102,7 @@ class Oracle:
         synapse = Challenge(timestamp=timestamp, prediction_interval=self.prediction_interval, N_TIMEPOINTS=self.N_TIMEPOINTS)
         responses = self.dendrite.query(
             # Send the query to selected miner axons in the network.
-            axons=list(self.available_uids.values()),
+            axons=[self.metagraph.axons[uid] for uid in self.available_uids],
             synapse=synapse,
             deserialize=False,
         )
