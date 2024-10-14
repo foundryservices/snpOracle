@@ -98,7 +98,7 @@ class Oracle:
             new_moving_average[:min_len] = self.scores[:min_len]
             self.scores = new_moving_average
 
-    async def query_miners(self):
+    def query_miners(self):
         timestamp = datetime.now(timezone('America/New_York')).isoformat()
         synapse = Challenge(timestamp=timestamp, prediction_interval=self.prediction_interval, N_TIMEPOINTS=self.N_TIMEPOINTS)
         responses = self.dendrite.query(
@@ -126,7 +126,7 @@ class Oracle:
                 if helpers.market_is_open():
                     # how many seconds since 9:30 am
                     if helpers.is_query_time(self.prediction_interval, timestamp) or datetime.now(timezone('America/New_York')) - datetime.fromisoformat(timestamp) > timedelta(minutes=self.prediction_interval):
-                        responses, timestamp = await self.query_miners()
+                        responses, timestamp = self.query_miners()
                         bt.logging.info(f"Received responses: {responses}")
                         try:
                             rewards = get_rewards(self, responses=responses, miner_uids=self.available_uids)
