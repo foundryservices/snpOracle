@@ -3,6 +3,23 @@ import bittensor as bt
 from validators.helpers import parse_arguments
 from validators.oracle import Oracle
 import asyncio
+import argparse
+
+class NestedNamespace(argparse.Namespace):
+    def __setattr__(self, name, value):
+        if '.' in name:
+            group, name = name.split('.', 1)
+            ns = getattr(self, group, NestedNamespace())
+            setattr(ns, name, value)
+            self.__dict__[group] = ns
+        else:
+            self.__dict__[name] = value
+
+    def get(self, key, default=None):
+        if '.' in key:
+            group, key = key.split('.', 1)
+            return getattr(self, group, NestedNamespace()).get(key, default)
+        return self.__dict__.get(key, default)
 
 class Config:
     def __init__(self, args):
@@ -15,6 +32,7 @@ class Config:
 class Validator:
     def __init__(self):
         args = parse_arguments()
+        bt.logging.info(f"{args}  |  {config.__dict__}")
         config = Config(args)
         self.config = config
         bt.logging.info(f"Config: {self.config}")
