@@ -102,7 +102,7 @@ def parse_arguments():
     parser.add_argument("--alpha", type=float, default=0.05)
     parser.add_argument("--prediction_interval", type=int, default=5)
     parser.add_argument("--N_TIMEPOIONTS", type=int, default=6)
-    return parser.parse_args()
+    return parser.parse_args(namespace=NestedNamespace())
 
 def resync_metagraph(self):
     """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
@@ -141,3 +141,19 @@ def log_wandb(self, responses, rewards, miner_uids):
         }
     }
     wandb.log(wandb_val_log)
+
+
+class NestedNamespace(argparse.Namespace):
+    def __setattr__(self, name, value):
+        if '.' in name:
+            group, name = name.split('.', 1)
+            ns = getattr(self, group, NestedNamespace())
+            setattr(ns, name, value)
+            self.__dict__[group] = ns
+        else:
+            self.__dict__[name] = value
+    def get(self, key, default=None):
+        if '.' in key:
+            group, key = key.split('.', 1)
+            return getattr(self, group, NestedNamespace()).get(key, default)
+        return self.__dict__.get(key, default)
