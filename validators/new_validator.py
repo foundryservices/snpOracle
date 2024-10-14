@@ -32,7 +32,6 @@ class Config:
 class Validator:
     def __init__(self):
         args = parse_arguments()
-        bt.logging.info(f"{args}  |  {config.__dict__}")
         config = Config(args)
         self.config = config
         bt.logging.info(f"Config: {self.config}")
