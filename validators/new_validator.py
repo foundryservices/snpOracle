@@ -16,7 +16,6 @@ class Validator:
     def __init__(self):
         args = parse_arguments()
         self.config = Config(args)
-        os.makedirs(self.config.full_path, exist_ok=True)
         self.config.full_path = os.path.expanduser(
             "{}/{}/{}/netuid{}/{}".format(
                 self.config.logging.logging_dir,
@@ -26,7 +25,7 @@ class Validator:
                 'validator',
             )
         )
-        self.setup()
+        os.makedirs(self.config.full_path, exist_ok=True)
 
     def main(self):
         self.config.wallet = bt.wallet(name=self.configconfig.wallet.name, hotkey=self.config.wallet.hotkey)
