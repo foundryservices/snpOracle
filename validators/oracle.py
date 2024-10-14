@@ -65,7 +65,7 @@ class Oracle:
         miner_uids = []
         for uid in range(len(self.metagraph.S)):
             uid_is_available = helpers.check_uid_availability(
-                self.metagraph, uid, self.config.neuron.vpermit_tao_limit
+                self.metagraph, uid, self.config.vpermit_tao_limit
             )
             if uid_is_available:
                 miner_uids.append(uid)
