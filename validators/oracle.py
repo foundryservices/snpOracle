@@ -55,7 +55,7 @@ class Oracle:
         self.node = SubstrateInterface(url=self.config.subtensor.chain_endpoint)
         self.hotkeys = self.metagraph.hotkeys
         helpers.setup_wandb(self)
-        self.resync_metagraph = helpers.resync_metagraph
+        self.resync_metagraph = helpers.resync_metagraph()
         self.available_uids = asyncio.run(self.get_available_uids())
         self.past_predictions = {uid: full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan) for uid in self.available_uids}
         self.loop.create_task(self.scheduled_prediction_request())
@@ -102,7 +102,7 @@ class Oracle:
             try:
                 if helpers.market_is_open():
                     # how many seconds since 9:30 am
-                    if helpers.is_query_time(self.prediction_interval, timestamp):
+                    if helpers.is_query_time(self.prediction_interval, timestamp) or datetime.now(timezone('America/New_York')) - datetime.fromisoformat(timestamp) > timedelta(minutes=self.prediction_interval):
                         responses, timestamp = await self.query_miners()
                         bt.logging.info(f"Received responses: {responses}")
                         try:
