@@ -18,7 +18,6 @@ class Validator:
     def __init__(self):
         args = parse_arguments()
         self.config = Config(args)
-        bt.logging.info(f"Config: {self.config}")
         full_path = Path(
         f"~/.bittensor/validators/{self.config.wallet.name}/{self.config.wallet.hotkey}/netuid{self.config.netuid}/validator").expanduser()
         full_path.mkdir(parents=True, exist_ok=True)
@@ -28,7 +27,6 @@ class Validator:
         setup_logging(self.config)
         self.config.wallet = bt.wallet(name=self.config.wallet.name, hotkey=self.config.wallet.hotkey)
         self.config.dendrite = bt.dendrite(wallet=self.config.wallet)
-        bt.logging.info(f"Config: {vars(self.config)}")
         loop = asyncio.get_event_loop()
         oracle = Oracle(config=self.config, loop=loop)
         try:

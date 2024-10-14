@@ -21,7 +21,7 @@ class Oracle:
         if self.config.subtensor.chain_endpoint is None:
             self.config.subtensor.chain_endpoint = bt.subtensor.determine_chain_endpoint_and_network(self.config.subtensor.network)[1]
         # Initialize subtensor.
-        self.subtensor = bt.subtensor(config=self.config)
+        self.subtensor = bt.subtensor(config=self.config, network=self.config.subtensor.network)
         bt.logging.info(f"Subtensor: {self.subtensor}")
 
         # Initialize metagraph.
@@ -131,22 +131,22 @@ class Oracle:
                             rewards = get_rewards(self, responses=responses, miner_uids=self.available_uids)
                         except:
                             self.resync_metagraph()
-                            rewards = get_rewards(self, responses=responses, miner_uids=self.available_uids.keys())
+                            rewards = get_rewards(self, responses=responses, miner_uids=self.available_uids)
 
                         # Adjust the scores based on responses from miners and update moving average.
                         for i, value in enumerate(rewards):
                             self.moving_avg_scores[i] = (1 - self.alpha) * self.moving_avg_scores[i] + self.alpha * value
 
                         bt.logging.info(f"Moving Average Scores: {self.moving_avg_scores}")
-                        helpers.log_wandb(responses, rewards, list(self.available_uids.keys()))
+                        helpers.log_wandb(responses, rewards, self.available_uids)
                         self.current_block = self.node_query('System', 'Number', [])
                         self.last_update = self.current_block - self.node_query('SubtensorModule', 'LastUpdate', [self.config.netuid])[self.my_uid]
                     else:
                         helpers.print_info(self)
-                        time.sleep(5)
+                        asyncio.sleep(5)
                 else:
                     bt.logging.info('Market is closed. Sleeping for 2 minutes...')
-                    time.sleep(120)
+                    asyncio.sleep(120)
 
                 # set weights once every tempo + 1
                 if self.last_update > self.tempo + 1:
