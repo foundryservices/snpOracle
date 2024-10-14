@@ -71,7 +71,7 @@ class Oracle:
         return miner_uids
         
     async def refresh_metagraph(self):
-        await self.loop.run_in_executor(None, self.resync_metagraph())
+        self.resync_metagraph()
         time.sleep(600)
 
     def resync_metagraph(self):
