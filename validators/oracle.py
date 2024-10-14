@@ -5,9 +5,7 @@ from datetime import datetime, timedelta
 from substrateinterface import SubstrateInterface
 from protocol import Challenge
 from pytz import timezone
-import time
 
-# from validators.helpers import setup_wandb, market_is_open, is_query_time, print_info, parse_arguments, resync_metagraph, log_wandb
 import validators.helpers as helpers
 from reward import get_rewards
 
@@ -71,7 +69,7 @@ class Oracle:
         return miner_uids
         
     async def refresh_metagraph(self):
-        await asyncio.run(self.resync_metagraph())
+        self.resync_metagraph()
         await asyncio.sleep(600)
 
     async def resync_metagraph(self):
