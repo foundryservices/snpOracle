@@ -101,7 +101,7 @@ def parse_arguments():
     parser.add_argument("--logging.logging_dir", type=str, default='~/.bittensor/validators')
     parser.add_argument("--alpha", type=float, default=0.05)
     parser.add_argument("--prediction_interval", type=int, default=5)
-    parser.add_argument("--N_TIMEPOIONTS", type=int, default=6)
+    parser.add_argument("--N_TIMEPOINTS", type=int, default=6)
     return parser.parse_args(namespace=NestedNamespace())
 
 def resync_metagraph(self):
