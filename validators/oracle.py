@@ -18,6 +18,10 @@ class Oracle:
         self.prediction_interval = self.config.prediction_interval # in minutes
         self.N_TIMEPOINTS = self.config.N_TIMEPOINTS # number of timepoints to predict
         bt.logging.info(f"Running validator for subnet: {self.config.netuid} on network: {self.config.subtensor.network} with config:")
+        
+        # Initialize metagraph.
+        self.metagraph = self.subtensor.metagraph(self.config.netuid)
+        bt.logging.info(f"Metagraph: {self.metagraph}")
 
         # Initialize wallet.
         self.wallet = config.wallet
@@ -31,10 +35,6 @@ class Oracle:
         # Initialize dendrite.
         self.dendrite = bt.dendrite(wallet=self.wallet)
         bt.logging.info(f"Dendrite: {self.dendrite}")
-
-        # Initialize metagraph.
-        self.metagraph = self.subtensor.metagraph(self.config.netuid)
-        bt.logging.info(f"Metagraph: {self.metagraph}")
 
         # Connect the validator to the network.
         if self.wallet.hotkey.ss58_address not in self.metagraph.hotkeys:
