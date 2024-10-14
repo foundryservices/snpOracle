@@ -71,8 +71,8 @@ class Oracle:
         return miner_uids
         
     async def refresh_metagraph(self):
-        await self.loop.run_in_executor(None, self.resync_metagraph())
-        asyncio.sleep(600)
+        asyncio.run(self.resync_metagraph())
+        await asyncio.sleep(600)
 
     async def resync_metagraph(self):
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
@@ -144,10 +144,10 @@ class Oracle:
                         self.last_update = self.current_block - self.node_query('SubtensorModule', 'LastUpdate', [self.config.netuid])[self.my_uid]
                     else:
                         helpers.print_info(self)
-                        asyncio.sleep(5)
+                        await asyncio.sleep(5)
                 else:
                     bt.logging.info('Market is closed. Sleeping for 2 minutes...')
-                    asyncio.sleep(120)
+                    await asyncio.sleep(120)
 
                 # set weights once every tempo + 1
                 if self.last_update > self.tempo + 1:
