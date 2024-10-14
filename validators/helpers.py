@@ -157,3 +157,20 @@ class NestedNamespace(argparse.Namespace):
             group, key = key.split('.', 1)
             return getattr(self, group, NestedNamespace()).get(key, default)
         return self.__dict__.get(key, default)
+    
+def setup_logging(config):
+    if config.logging.level == 'trace':
+        bt.logging.set_trace()
+    elif config.logging.level == 'debug':
+        bt.logging.set_debug()
+    else:
+        # set to info by default
+        pass
+    bt.logging.info(f"Set logging level to {config.logging.level}")
+
+    full_path = Path(
+        f"~/.bittensor/validators/{config.wallet.name}/{config.wallet.hotkey}/netuid{config.netuid}/validator").expanduser()
+    full_path.mkdir(parents=True, exist_ok=True)
+    config.full_path = str(full_path)
+
+    bt.logging.info(f"Arguments: {vars(config)}")

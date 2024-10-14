@@ -17,7 +17,6 @@ class Oracle:
         self.loop = loop
         self.prediction_interval = self.config.prediction_interval # in minutes
         self.N_TIMEPOINTS = self.config.N_TIMEPOINTS # number of timepoints to predict
-        bt.logging(config=self.config, logging_dir=self.config.full_path)
         bt.logging.info(f"Running validator for subnet: {self.config.netuid} on network: {self.config.subtensor.network} with config:")
 
         # Initialize wallet.

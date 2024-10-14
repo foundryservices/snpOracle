@@ -1,6 +1,6 @@
 import os
 import bittensor as bt
-from validators.helpers import parse_arguments
+from validators.helpers import parse_arguments, setup_logging
 from validators.oracle import Oracle
 import asyncio
 from pathlib import Path
@@ -25,6 +25,7 @@ class Validator:
         self.config.full_path = str(full_path)
 
     def main(self):
+        setup_logging(self.config)
         self.config.wallet = bt.wallet(name=self.config.wallet.name, hotkey=self.config.wallet.hotkey)
         self.config.dendrite = bt.dendrite(wallet=self.config.wallet)
         bt.logging.info(f"Config: {vars(self.config)}")
