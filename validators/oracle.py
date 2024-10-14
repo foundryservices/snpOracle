@@ -72,7 +72,7 @@ class Oracle:
         return miner_uids
         
     async def refresh_metagraph(self):
-        await self.run_sync_in_async(lambda: self.resync_metagraph())
+        await self.loop.run_in_executor(None, self.resync_metagraph())
         time.sleep(600)
 
     async def query_miners(self):
@@ -106,10 +106,10 @@ class Oracle:
                         responses, timestamp = await self.query_miners()
                         bt.logging.info(f"Received responses: {responses}")
                         try:
-                            rewards = get_rewards(self, responses=responses, miner_uids=list(self.available_uids.keys()))
+                            rewards = get_rewards(self, responses=responses, miner_uids=self.available_uids)
                         except:
                             self.resync_metagraph()
-                            rewards = get_rewards(self, responses=responses, miner_uids=list(self.available_uids.keys()))
+                            rewards = get_rewards(self, responses=responses, miner_uids=self.available_uids.keys())
 
                         # Adjust the scores based on responses from miners and update moving average.
                         for i, value in enumerate(rewards):
