@@ -60,6 +60,21 @@ class Challenge(bt.Synapse):
         description="The time stamp at which the validation is taking place for",
         allow_mutation=False,
     )
+
+    prediction_interval: int = pydantic.Field(
+        title="Prediction Interval",
+        description="The number of minutes between each prediction value",
+        default=5,
+        allow_mutation=False,
+    )
+    
+    N_TIMEPOINTS: int = pydantic.Field(
+        title="N_TIMEPOINTS",
+        description="The number of values to predict",
+        default=6,
+        allow_mutation=False,
+    )
+
     # Optional request output, filled by recieving axon.
     prediction: Optional[List[float]] = pydantic.Field(
         default=None,

@@ -22,8 +22,10 @@
 
 import json
 
+from .. import protocol
+
 # Import all submodules.
-from . import base, protocol, validator
+from . import base, validator
 
 __version__ = "2.1.1"
 version_split = __version__.split(".")

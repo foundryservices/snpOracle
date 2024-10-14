@@ -22,7 +22,7 @@ from typing import Any, List, Union
 import bittensor as bt
 
 from predictionnet.api import SubnetsAPI
-from predictionnet.protocol import Challenge
+from protocol import Challenge
 
 
 class PredictionAPI(SubnetsAPI):
