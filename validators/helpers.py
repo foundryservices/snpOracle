@@ -105,29 +105,6 @@ def parse_arguments():
     parser.add_argument("--vpermit_tao_limit", type=int, default=1024)
     return parser.parse_args(namespace=NestedNamespace())
 
-def resync_metagraph(self):
-    """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
-    bt.logging.info("resync_metagraph()")
-    self.metagraph.sync(subtensor=self.subtensor)
-
-    bt.logging.info(
-        "Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages"
-    )
-    # Zero out all hotkeys that have been replaced.
-    for uid, hotkey in enumerate(self.hotkeys):
-        if hotkey != self.metagraph.hotkeys[uid]:
-            self.scores[uid] = 0  # hotkey has been replaced
-            self.past_predictions[uid] = full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan) # reset past predictions
-
-    # Check to see if the metagraph has changed size.
-    # If so, we need to add new hotkeys and moving averages.
-    if len(self.hotkeys) < len(self.metagraph.hotkeys):
-        # Update the size of the moving average scores.
-        new_moving_average = [1.0] * len(self.metagraph.S)
-        min_len = min(len(self.hotkeys), len(self.scores))
-        new_moving_average[:min_len] = self.scores[:min_len]
-        self.scores = new_moving_average
-
 
 def log_wandb(self, responses, rewards, miner_uids):
     wandb_val_log = {
