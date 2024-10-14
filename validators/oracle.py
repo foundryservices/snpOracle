@@ -18,8 +18,7 @@ class Oracle:
         self.prediction_interval = self.config.prediction_interval # in minutes
         self.N_TIMEPOINTS = self.config.N_TIMEPOINTS # number of timepoints to predict
         bt.logging.info(f"Running validator for subnet: {self.config.netuid} on network: {self.config.subtensor.network} with config:")
-        if self.config.subtensor.network == 'test':
-            self.config.subtensor.chain_endpoint = 
+
         # Initialize subtensor.
         self.subtensor = bt.subtensor(config=self.config)
         bt.logging.info(f"Subtensor: {self.subtensor}")
