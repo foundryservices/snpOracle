@@ -170,9 +170,8 @@ class Oracle:
     async def save_state(self):
         """Saves the state of the validator to a file."""
         bt.logging.info("Saving validator state.")
-        state_path = os.path.join(self.config.neuron.full_path, "state.pt")
+        state_path = os.path.join(self.config.full_path, "state.pt")
         state = {
-            "step": self.step,
             "scores": self.scores,
             "hotkeys": self.hotkeys,
         }
@@ -182,7 +181,7 @@ class Oracle:
     def load_state(self):
         """Loads the state of the validator from a file."""
         bt.logging.info("Loading validator state.")
-        state_path = os.path.join(self.config.neuron.full_path, "state.pt")
+        state_path = os.path.join(self.config.full_path, "state.pt")
         if not os.path.exists(state_path):
             bt.logging.info(
                 "Skipping state load due to missing state.pt file."
@@ -193,18 +192,15 @@ class Oracle:
             # Load the state of the validator from file.
             with open(state_path, "rb") as f:
                 state = pickle.load(f)
-            self.step = state["step"]
             self.scores = state["scores"]
             self.hotkeys = state["hotkeys"]
         except Exception:
             try:
                 import torch
-
                 state = torch.load(state_path)
                 bt.logging.info(
                     "Found torch state.pt file, converting to pickle..."
                 )
-                self.step = state["step"]
                 self.scores = state["scores"]
                 self.hotkeys = state["hotkeys"]
                 self.save_state()
