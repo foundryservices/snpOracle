@@ -251,6 +251,8 @@ def get_rewards(
     incentive_ranks = np.nanmean(np.nanmean(ranks, axis=2), axis=1).argsort().argsort()
     reward = np.exp(-0.05*incentive_ranks)
     reward[incentive_ranks>100] = 0
+    isNone = [x.prediction==None for x in responses]
+    reward[isNone] = 0
     reward = reward/np.max(reward)
     return reward
 

@@ -60,6 +60,9 @@ class Oracle:
         self.loop.create_task(self.scheduled_prediction_request())
         self.loop.create_task(self.refresh_metagraph())
 
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.save_state()
+
     async def get_available_uids(self):
         miner_uids = []
         for uid in range(len(self.metagraph.S)):
@@ -119,13 +122,29 @@ class Oracle:
             result = self.node.query(module, method, params).value
         
         return result
-    
+
+    def set_weights(self):
+        # set weights once every tempo + 1
+        if self.last_update > self.tempo + 1:
+            total = sum(self.moving_avg_scores)
+            weights = [score / total for score in self.moving_avg_scores]
+            bt.logging.info(f"Setting weights: {weights}")
+            # Update the incentive mechanism on the Bittensor blockchain.
+            result = self.subtensor.set_weights(
+                netuid=self.config.netuid,
+                wallet=self.wallet,
+                uids=self.metagraph.uids,
+                weights=weights,
+                wait_for_inclusion=True
+            )
+            self.metagraph.sync()
+
     async def scheduled_prediction_request(self):
         timestamp = (datetime.now(timezone('America/New_York'))-timedelta(minutes=self.prediction_interval)).isoformat()
         while True:
             try:
                 if helpers.market_is_open():
-                    # how many seconds since 9:30 am
+                    # how many seconds since 9:30 am EST
                     if helpers.is_query_time(self.prediction_interval, timestamp) or datetime.now(timezone('America/New_York')) - datetime.fromisoformat(timestamp) > timedelta(minutes=self.prediction_interval):
                         responses, timestamp = self.query_miners()
                         bt.logging.info(f"Received responses: {responses}")
@@ -145,25 +164,12 @@ class Oracle:
                         self.last_update = self.current_block - self.node_query('SubtensorModule', 'LastUpdate', [self.config.netuid])[self.my_uid]
                     else:
                         helpers.print_info(self)
-                        await asyncio.sleep(5)
+                        await asyncio.sleep(10)
                 else:
                     bt.logging.info('Market is closed. Sleeping for 2 minutes...')
                     await asyncio.sleep(120)
+                self.set_weights()
 
-                # set weights once every tempo + 1
-                if self.last_update > self.tempo + 1:
-                    total = sum(self.moving_avg_scores)
-                    weights = [score / total for score in self.moving_avg_scores]
-                    bt.logging.info(f"Setting weights: {weights}")
-                    # Update the incentive mechanism on the Bittensor blockchain.
-                    result = self.subtensor.set_weights(
-                        netuid=self.config.netuid,
-                        wallet=self.wallet,
-                        uids=self.metagraph.uids,
-                        weights=weights,
-                        wait_for_inclusion=True
-                    )
-                    self.metagraph.sync()
             except RuntimeError as e:
                 bt.logging.error(e)
 

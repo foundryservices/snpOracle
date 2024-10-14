@@ -72,7 +72,7 @@ def is_query_time(prediction_interval, timestamp):
     sec_since_open = now_ts - open_ts
     tolerance = 120 # in seconds, how long to allow after epoch start for a query
     # if it is within 120 seconds of the start of the prediction epoch and at least prediction_interval minutes have passed, return true
-    result = sec_since_open % (prediction_interval*60) < tolerance and datetime.now(timezone('America/New_York')) - datetime.fromisoformat(timestamp) > timedelta(minutes=tolerance)
+    result = sec_since_open % (prediction_interval*60) < tolerance and datetime.now(timezone('America/New_York')) - datetime.fromisoformat(timestamp) > timedelta(seconds=tolerance)
     return result
 
 def print_info(self):
