@@ -3,7 +3,7 @@ import bittensor as bt
 from numpy import full, nan
 from datetime import datetime, timedelta
 from substrateinterface import SubstrateInterface
-from protocol import Challenge
+from protocol import Challenge, IsAlive
 from pytz import timezone
 import time
 
