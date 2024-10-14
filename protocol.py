@@ -82,15 +82,6 @@ class Challenge(bt.Synapse):
         description="Next 6 5m candles' predictions for closing price of S&P 500",
     )
 
-class IsAlive(bt.Synapse):
-    answer: Optional[str] = None
-    completion: str = pydantic.Field(
-        "",
-        title="Completion",
-        description="Completion status of the current StreamPrompting object. "
-                    "This attribute is mutable and can be updated.",
-    )
-    
     def deserialize(self) -> int:
         """
         Deserialize the dummy output. This method retrieves the response from

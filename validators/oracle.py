@@ -3,7 +3,7 @@ import bittensor as bt
 from numpy import full, nan
 from datetime import datetime, timedelta
 from substrateinterface import SubstrateInterface
-from protocol import Challenge, IsAlive
+from protocol import Challenge
 from pytz import timezone
 import time
 
@@ -62,27 +62,14 @@ class Oracle:
         self.loop.create_task(self.refresh_metagraph())
 
     async def get_available_uids(self):
-        """Get a dictionary of available UIDs and their axons asynchronously."""
-        await self.dendrite.aclose_session()
-        tasks = {uid.item(): self.check_uid(self.metagraph.axons[uid.item()], uid.item()) for uid in
-                 self.metagraph.uids}
-        results = await asyncio.gather(*tasks.values())
-        # Create a dictionary of UID to axon info for active UIDs
-        available_uids = {uid: axon_info for uid, axon_info in zip(tasks.keys(), results) if axon_info is not None}
-        return available_uids
-
-    async def check_uid(self, axon, uid):
-        """Asynchronously check if a UID is available."""
-        try:
-            response = await self.dendrite(axon, IsAlive(), timeout=4)
-            if response.completion == 'True':
-                bt.logging.trace(f"UID {uid} is active")
-                return axon  # Return the axon info instead of the UID
-            return None
-
-        except Exception as err:
-            bt.logging.error(f"Error checking UID {uid}: {err}")
-            return None
+        miner_uids = []
+        for uid in range(len(self.metagraph.S)):
+            uid_is_available = helpers.check_uid_availability(
+                self.metagraph, uid, self.config.neuron.vpermit_tao_limit
+            )
+            if uid_is_available:
+                miner_uids.append(uid)
+        return miner_uids
         
     async def refresh_metagraph(self):
         await self.run_sync_in_async(lambda: self.resync_metagraph())
