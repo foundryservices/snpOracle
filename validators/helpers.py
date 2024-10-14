@@ -90,7 +90,6 @@ def print_info(self):
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Validator Configuration")
-    parser.add_argument("--subtensor.chain_endpoint", type=str, default=None) #for testnet: wss://test.finney.opentensor.ai:443
     parser.add_argument("--subtensor.network", choices=['finney', 'test', 'local'], default='finney')
     parser.add_argument("--wallet.name", type=str, default="default")
     parser.add_argument("--wallet.hotkey", type=str, default="default")
