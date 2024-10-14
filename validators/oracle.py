@@ -18,7 +18,11 @@ class Oracle:
         self.prediction_interval = self.config.prediction_interval # in minutes
         self.N_TIMEPOINTS = self.config.N_TIMEPOINTS # number of timepoints to predict
         bt.logging.info(f"Running validator for subnet: {self.config.netuid} on network: {self.config.subtensor.network} with config:")
-        
+
+        # Initialize subtensor.
+        self.subtensor = bt.subtensor(config=self.config)
+        bt.logging.info(f"Subtensor: {self.subtensor}")
+
         # Initialize metagraph.
         self.metagraph = self.subtensor.metagraph(self.config.netuid)
         bt.logging.info(f"Metagraph: {self.metagraph}")
@@ -27,10 +31,6 @@ class Oracle:
         self.wallet = config.wallet
         self.my_uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
         bt.logging.info(f"Wallet: {self.wallet}")
-
-        # Initialize subtensor.
-        self.subtensor = bt.subtensor(config=self.config)
-        bt.logging.info(f"Subtensor: {self.subtensor}")
 
         # Initialize dendrite.
         self.dendrite = bt.dendrite(wallet=self.wallet)
