@@ -70,7 +70,20 @@ class Oracle:
         # Create a dictionary of UID to axon info for active UIDs
         available_uids = {uid: axon_info for uid, axon_info in zip(tasks.keys(), results) if axon_info is not None}
         return available_uids
-    
+
+    async def check_uid(self, axon, uid):
+        """Asynchronously check if a UID is available."""
+        try:
+            response = await self.dendrite(axon, IsAlive(), timeout=4)
+            if response.completion == 'True':
+                bt.logging.trace(f"UID {uid} is active")
+                return axon  # Return the axon info instead of the UID
+            return None
+
+        except Exception as err:
+            bt.logging.error(f"Error checking UID {uid}: {err}")
+            return None
+        
     async def refresh_metagraph(self):
         await self.run_sync_in_async(lambda: self.resync_metagraph())
         time.sleep(600)
