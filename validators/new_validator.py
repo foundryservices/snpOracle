@@ -43,4 +43,4 @@ class Validator:
 # Run the validator.
 if __name__ == "__main__":
     validator = Validator()
-    validator.run()
+    validator.main()
