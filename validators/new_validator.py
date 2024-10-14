@@ -30,7 +30,7 @@ class Validator:
         self.config.dendrite = bt.dendrite(wallet=self.config.wallet)
         bt.logging.info(f"Config: {vars(self.config)}")
         loop = asyncio.get_event_loop()
-        oracle = Oracle(config=self.config)
+        oracle = Oracle(config=self.config, loop=loop)
         try:
             loop.run_forever()
         except KeyboardInterrupt:
