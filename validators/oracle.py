@@ -74,9 +74,10 @@ class Oracle:
         await self.loop.run_in_executor(None, self.resync_metagraph())
         asyncio.sleep(600)
 
-    def resync_metagraph(self):
+    async def resync_metagraph(self):
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
         bt.logging.info("resync_metagraph()")
+        bt.logging.info(f"{self.metagraph}")
         self.metagraph.sync(subtensor=self.subtensor)
 
         bt.logging.info(
