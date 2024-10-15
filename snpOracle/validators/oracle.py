@@ -9,8 +9,10 @@ from pytz import timezone
 from reward import get_rewards
 from substrateinterface import SubstrateInterface
 
-import validators.helpers as helpers
 from protocol import Challenge
+from snpOracle.utils.helpers import check_uid_availability
+from snpOracle.utils.logging import log_wandb, print_info, setup_wandb
+from snpOracle.utils.time import is_query_time, market_is_open
 
 
 class Oracle:
@@ -78,7 +80,7 @@ class Oracle:
             url=self.config.subtensor.chain_endpoint
         )
         self.hotkeys = self.metagraph.hotkeys
-        helpers.setup_wandb(self)
+        setup_wandb(self)
         self.available_uids = asyncio.run(self.get_available_uids())
         self.past_predictions = {
             uid: full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)
@@ -96,7 +98,7 @@ class Oracle:
     async def get_available_uids(self):
         miner_uids = []
         for uid in range(len(self.metagraph.S)):
-            uid_is_available = helpers.check_uid_availability(
+            uid_is_available = check_uid_availability(
                 self.metagraph, uid, self.config.vpermit_tao_limit
             )
             if uid_is_available:
@@ -193,12 +195,12 @@ class Oracle:
         ).isoformat()
         while True:
             try:
-                if helpers.market_is_open():
+                if market_is_open():
                     # how many seconds since 9:30 am EST
                     query_lag = datetime.now(
                         timezone("America/New_York")
                     ) - datetime.fromisoformat(timestamp)
-                    if helpers.is_query_time(
+                    if is_query_time(
                         self.prediction_interval, timestamp
                     ) or query_lag > timedelta(
                         minutes=self.prediction_interval
@@ -225,9 +227,7 @@ class Oracle:
                         bt.logging.info(
                             f"Moving Average Scores: {self.moving_avg_scores}"
                         )
-                        helpers.log_wandb(
-                            responses, rewards, self.available_uids
-                        )
+                        log_wandb(responses, rewards, self.available_uids)
                         self.current_block = self.node_query(
                             "System", "Number", []
                         )
@@ -240,7 +240,7 @@ class Oracle:
                             )[self.my_uid]
                         )
                     else:
-                        helpers.print_info(self)
+                        print_info(self)
                         await asyncio.sleep(10)
                 else:
                     bt.logging.info(

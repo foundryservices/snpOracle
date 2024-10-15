@@ -2,9 +2,10 @@ import asyncio
 from pathlib import Path
 
 import bittensor as bt
-
-from validators.helpers import parse_arguments, setup_logging
 from validators.oracle import Oracle
+
+from snpOracle.utils.helpers import parse_arguments
+from snpOracle.utils.logging import setup_logging
 
 
 class Config:
