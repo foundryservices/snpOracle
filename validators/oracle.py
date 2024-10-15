@@ -60,6 +60,7 @@ class Oracle:
         self.lock = asyncio.Lock()
         self.loop.create_task(self.scheduled_prediction_request())
         self.loop.create_task(self.refresh_metagraph())
+        self.loop.create_task(self.set_weights())
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.save_state()
@@ -75,10 +76,10 @@ class Oracle:
         return miner_uids
         
     async def refresh_metagraph(self):
-        self.resync_metagraph()
+        await self.resync_metagraph()
         await asyncio.sleep(600)
 
-    def resync_metagraph(self):
+    async def resync_metagraph(self):
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
         bt.logging.info("resync_metagraph()")
         bt.logging.info(f"{self.metagraph}")
@@ -92,7 +93,7 @@ class Oracle:
             if hotkey != self.metagraph.hotkeys[uid]:
                 self.scores[uid] = 0  # hotkey has been replaced
                 self.past_predictions[uid] = full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan) # reset past predictions
-
+        self.available_uids = asyncio.run(self.get_available_uids())
         # Check to see if the metagraph has changed size.
         # If so, we need to add new hotkeys and moving averages.
         if len(self.hotkeys) < len(self.metagraph.hotkeys):
@@ -156,11 +157,7 @@ class Oracle:
                     if helpers.is_query_time(self.prediction_interval, timestamp) or datetime.now(timezone('America/New_York')) - datetime.fromisoformat(timestamp) > timedelta(minutes=self.prediction_interval):
                         responses, timestamp = self.query_miners()
                         bt.logging.info(f"Received responses: {responses}")
-                        try:
-                            rewards = get_rewards(self, responses=responses, miner_uids=self.available_uids)
-                        except:
-                            self.resync_metagraph()
-                            rewards = get_rewards(self, responses=responses, miner_uids=self.available_uids)
+                        rewards = get_rewards(self, responses=responses, miner_uids=self.available_uids)
 
                         # Adjust the scores based on responses from miners and update moving average.
                         for i, value in enumerate(rewards):
@@ -176,7 +173,6 @@ class Oracle:
                 else:
                     bt.logging.info('Market is closed. Sleeping for 2 minutes...')
                     await asyncio.sleep(120)
-                await self.set_weights()
 
             except RuntimeError as e:
                 bt.logging.error(e)
