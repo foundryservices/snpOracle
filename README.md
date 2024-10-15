@@ -1,6 +1,6 @@
 <div align="center">
 <img src="accelerate.png" />
-  
+
 # **Foundry S&P 500 Oracle** <!-- omit in toc -->
 ---
 ---
@@ -23,15 +23,15 @@
 ---
 ## Introduction
 
-Foundry is launching Foundry S&P 500 Oracle to incentivize miners to make predictions on the S&P 500 price frequently throughout trading hours. Validators send miners a timestamp (a future time), which the miners need to use to make predictions on the close price of the S&P 500 for the next six 5m intervals. Miners need to respond with their prediction for the price of the S&P 500 at the given time. Validators store the miner predictions, and then calculate the scores of the miners after the predictions mature. Miners are ranked against eachother, naturally incentivizing competition between the miners. 
+Foundry is launching Foundry S&P 500 Oracle to incentivize miners to make predictions on the S&P 500 price frequently throughout trading hours. Validators send miners a timestamp (a future time), which the miners need to use to make predictions on the close price of the S&P 500 for the next six 5m intervals. Miners need to respond with their prediction for the price of the S&P 500 at the given time. Validators store the miner predictions, and then calculate the scores of the miners after the predictions mature. Miners are ranked against eachother, naturally incentivizing competition between the miners.
 
 ---
 ## Design Decisions
 
 A Bittensor integration into financial markets will expose Bittensor to the largest system in the world; the global economy. The S&P 500 serves as a perfect starting place for financial predictions given its utility and name recognition. Financial market predictions were chosen for three main reasons:
 1) __Utility:__ financial markets provide a massive userbase of professional traders, wealth managers, and individuals alike
-2) __Objective Rewards Mechanism:__ by tying the rewards mechanism to an external source of truth (yahoo finance's S&P Price), the defensibility of the subnet regarding gamification is quite strong. 
-3) __Adversarial Environment:__ the adversarial environment, especially given the rewards mechanism, will allow for significant diversity of models. Miners will be driven to acquire different datasets, implement different training methods, and utilize different model architectures in order to develop the most performant models. 
+2) __Objective Rewards Mechanism:__ by tying the rewards mechanism to an external source of truth (yahoo finance's S&P Price), the defensibility of the subnet regarding gamification is quite strong.
+3) __Adversarial Environment:__ the adversarial environment, especially given the rewards mechanism, will allow for significant diversity of models. Miners will be driven to acquire different datasets, implement different training methods, and utilize different model architectures in order to develop the most performant models.
 ---
 ## Installation
 ### Install PM2
@@ -49,8 +49,8 @@ pm2 --version
 
 | Validator |   Miner   |
 |---------- |-----------|
-|  8gb RAM  |  8gb RAM  | 
-|  2 vCPUs  |  2 vCPUs  | 
+|  8gb RAM  |  8gb RAM  |
+|  2 vCPUs  |  2 vCPUs  |
 
 ### Install-Repo
 
@@ -69,7 +69,7 @@ pip3 install -e snpOracle
 ```
 
 ### Running a Miner
-ecosystem.config.js files have been created to make deployment of miners and validators easier for the node operator. These files are the default configuration files for PM2, and allow the user to define the environment & application in a cleaner way. IMPORTANT: Make sure your have activated your virtual environment before running your validator/miner. 
+ecosystem.config.js files have been created to make deployment of miners and validators easier for the node operator. These files are the default configuration files for PM2, and allow the user to define the environment & application in a cleaner way. IMPORTANT: Make sure your have activated your virtual environment before running your validator/miner.
 First copy the .env.template file to .env
 ```
 cp .env.template .env
@@ -95,7 +95,7 @@ module.exports = {
 };
 ```
 ### Running a Validator
-ecosystem.config.js files have been created to make deployment of miners and validators easier for the node operator. These files are the default configuration files for PM2, and allow the user to define the environment & application in a cleaner way. IMPORTANT: Make sure your have activated your virtual environment before running your validator/miner. 
+ecosystem.config.js files have been created to make deployment of miners and validators easier for the node operator. These files are the default configuration files for PM2, and allow the user to define the environment & application in a cleaner way. IMPORTANT: Make sure your have activated your virtual environment before running your validator/miner.
 
 #### Obtain & Setup WandB API Key
 Before starting the process, validators would be required to procure a WANDB API Key. Please follow the instructions mentioned below:<br>
@@ -112,7 +112,7 @@ To run your validator:
 pm2 start validator.config.js
 ```
 
-The validator.config.js has few flags added. Any standard flags can be passed, for example, wallet name and hotkey name will default to "default"; if you have a different configuration, edit your "args" in validator.config.js. Below shows a validator.config.js with extra configuration flags. 
+The validator.config.js has few flags added. Any standard flags can be passed, for example, wallet name and hotkey name will default to "default"; if you have a different configuration, edit your "args" in validator.config.js. Below shows a validator.config.js with extra configuration flags.
 ```
 module.exports = {
   apps: [
@@ -161,7 +161,7 @@ Once the miners have all been ranked, we convert these ranks to validator weight
 ```math
 W_{m} = e^{-0.05 * rank_m}
 ```
-The constant shown in this equation, −0.05, is a hyperparameter which controls the steepness of the curve (i.e. what proportion of the emissions are allocated to rank 1, 2, 3,... etc.). We chose this value to fairly distribute across miners to mitigate the effect of rank volatility. This ranking system ensures that machine learning or statistical models will inherently perform better than any method of gamification. By effectively performing a commit-reveal on a future S&P Price Prediction, S&P Oracle ensures that only well-tuned models will survive. 
+The constant shown in this equation, −0.05, is a hyperparameter which controls the steepness of the curve (i.e. what proportion of the emissions are allocated to rank 1, 2, 3,... etc.). We chose this value to fairly distribute across miners to mitigate the effect of rank volatility. This ranking system ensures that machine learning or statistical models will inherently perform better than any method of gamification. By effectively performing a commit-reveal on a future S&P Price Prediction, S&P Oracle ensures that only well-tuned models will survive.
 
 ---
 
