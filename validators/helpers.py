@@ -100,7 +100,7 @@ def parse_arguments():
     parser.add_argument("--axon.port", type=int, default=8000)
     parser.add_argument("--logging.level", choices=['info', 'debug', 'trace'], default='info')
     parser.add_argument("--logging.logging_dir", type=str, default='~/.bittensor/validators')
-    parser.add_argument("--alpha", type=float, default=0.05)
+    parser.add_argument("--alpha", type=float, default=0.1)
     parser.add_argument("--prediction_interval", type=int, default=5)
     parser.add_argument("--N_TIMEPOINTS", type=int, default=6)
     parser.add_argument("--vpermit_tao_limit", type=int, default=1024)

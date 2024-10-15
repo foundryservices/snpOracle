@@ -57,6 +57,7 @@ class Oracle:
         self.available_uids = asyncio.run(self.get_available_uids())
         self.past_predictions = {uid: full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan) for uid in self.available_uids}
         self.load_state()
+        self.lock = asyncio.Lock()
         self.loop.create_task(self.scheduled_prediction_request())
         self.loop.create_task(self.refresh_metagraph())
 
@@ -120,24 +121,31 @@ class Oracle:
             # reinitilize node
             self.node = SubstrateInterface(url=self.config.subtensor.chain_endpoint)
             result = self.node.query(module, method, params).value
-        
         return result
 
-    def set_weights(self):
+    async def set_weights(self):
         # set weights once every tempo + 1
-        if self.last_update > self.tempo + 1:
-            total = sum(self.moving_avg_scores)
-            weights = [score / total for score in self.moving_avg_scores]
-            bt.logging.info(f"Setting weights: {weights}")
-            # Update the incentive mechanism on the Bittensor blockchain.
-            result = self.subtensor.set_weights(
-                netuid=self.config.netuid,
-                wallet=self.wallet,
-                uids=self.metagraph.uids,
-                weights=weights,
-                wait_for_inclusion=True
-            )
-            self.metagraph.sync()
+        async with self.lock:
+            if self.last_update > self.tempo + 1:
+                total = sum(self.moving_avg_scores)
+                if total==0: total=1 # prevent division by zero
+                weights = [score / total for score in self.moving_avg_scores]
+                bt.logging.info(f"Setting weights: {weights}")
+                # Update the incentive mechanism on the Bittensor blockchain.
+                result, msg = self.subtensor.set_weights(
+                    netuid=self.config.netuid,
+                    wallet=self.wallet,
+                    uids=self.metagraph.uids,
+                    weights=weights,
+                    wait_for_inclusion=True
+                )
+                if result:
+                    bt.logging.info("set_weights on chain successfully!")
+                else:
+                    bt.logging.debug(
+                        "Failed to set weights this iteration with message:", msg
+                )
+                self.metagraph.sync()
 
     async def scheduled_prediction_request(self):
         timestamp = (datetime.now(timezone('America/New_York'))-timedelta(minutes=self.prediction_interval)).isoformat()
@@ -168,7 +176,7 @@ class Oracle:
                 else:
                     bt.logging.info('Market is closed. Sleeping for 2 minutes...')
                     await asyncio.sleep(120)
-                self.set_weights()
+                await self.set_weights()
 
             except RuntimeError as e:
                 bt.logging.error(e)
