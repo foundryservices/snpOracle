@@ -102,7 +102,7 @@ class Oracle:
             min_len = min(len(self.hotkeys), len(self.scores))
             new_moving_average[:min_len] = self.scores[:min_len]
             self.scores = new_moving_average
-        self.save_state()
+        await self.save_state()
 
     def query_miners(self):
         timestamp = datetime.now(timezone('America/New_York')).isoformat()
