@@ -1,6 +1,6 @@
 # Running Subnet on Mainnet
 
-This tutorial shows how to use the bittensor `btcli` to create a subnetwork and connect your incentive mechanism to it. 
+This tutorial shows how to use the bittensor `btcli` to create a subnetwork and connect your incentive mechanism to it.
 
 **IMPORTANT:** Before attempting to register on mainnet, we strongly recommend that you:
 - First run [Running Subnet Locally](running_on_staging.md), and
@@ -12,7 +12,7 @@ Your incentive mechanisms running on the mainnet are open to anyone. They emit r
 - Do not expose your private keys.
 - Only use your testnet wallet.
 - Do not reuse the password of your mainnet wallet.
-- Make sure your incentive mechanism is resistant to abuse. 
+- Make sure your incentive mechanism is resistant to abuse.
 
 ## Prerequisites
 
@@ -31,7 +31,7 @@ After installing `bittensor`, proceed as below:
 In your project directory:
 
 ```bash
-git clone https://github.com/opentensor/bittensor-subnet-template.git 
+git clone https://github.com/opentensor/bittensor-subnet-template.git
 ```
 
 Next, `cd` into `bittensor-subnet-template` repo directory:
@@ -46,13 +46,13 @@ Install the Bittensor subnet template package:
 python -m pip install -e . # Install your subnet template package
 ```
 
-## 2. Create wallets 
+## 2. Create wallets
 
 Create wallets for subnet owner, subnet validator and for subnet miner.
-  
-This step creates local coldkey and hotkey pairs for your three identities: subnet owner, subnet validator and subnet miner. 
 
-The owner will create and control the subnet. The owner must have at least 100  TAO before the owner can run next steps. 
+This step creates local coldkey and hotkey pairs for your three identities: subnet owner, subnet validator and subnet miner.
+
+The owner will create and control the subnet. The owner must have at least 100  TAO before the owner can run next steps.
 
 The validator and miner will be registered to the subnet created by the owner. This ensures that the validator and miner can run the respective validator and miner scripts.
 
@@ -89,12 +89,12 @@ btcli wallet new_hotkey --wallet.name validator --wallet.hotkey default
 
 ## 3. Getting the price of subnet creation
 
-Creating subnets on mainnet is competitive. The cost is determined by the rate at which new subnets are being registered onto the Bittensor blockchain. 
+Creating subnets on mainnet is competitive. The cost is determined by the rate at which new subnets are being registered onto the Bittensor blockchain.
 
 By default you must have at least 100 TAO on your owner wallet to create a subnet. However, the exact amount will fluctuate based on demand. The below code shows how to get the current price of creating a subnet.
 
 ```bash
-btcli subnet lock_cost 
+btcli subnet lock_cost
 ```
 
 The above command will show:
@@ -105,12 +105,12 @@ The above command will show:
 
 ## 4. Purchasing a slot
 
-Using your TAO balance, you can register your subnet to the mainchain. This will create a new subnet on the mainchain and give you the owner permissions to it. The below command shows how to purchase a slot. 
+Using your TAO balance, you can register your subnet to the mainchain. This will create a new subnet on the mainchain and give you the owner permissions to it. The below command shows how to purchase a slot.
 
 **NOTE**: Slots cost TAO to lock. You will get this TAO back when the subnet is deregistered.
 
 ```bash
-btcli subnet create  
+btcli subnet create
 ```
 
 Enter the owner wallet name. This gives permissions to the coldkey.
@@ -123,7 +123,7 @@ Enter the owner wallet name. This gives permissions to the coldkey.
 ✅ Registered subnetwork with netuid: 1 # Your subnet netuid will show here, save this for later.
 ```
 
-## 5. (Optional) Register keys 
+## 5. (Optional) Register keys
 
 **NOTE**: While this is not enforced, we recommend subnet owners to run a subnet validator and a subnet miner on the subnet to demonstrate proper use to the community.
 
@@ -168,33 +168,33 @@ Follow the below prompts:
 Check that your subnet validator key has been registered:
 
 ```bash
-btcli wallet overview --wallet.name validator 
+btcli wallet overview --wallet.name validator
 ```
 
 The output will be similar to the below:
 
 ```bash
-Subnet: 1                                                                                                                                                                
-COLDKEY  HOTKEY   UID  ACTIVE  STAKE(τ)     RANK    TRUST  CONSENSUS  INCENTIVE  DIVIDENDS  EMISSION(ρ)   VTRUST  VPERMIT  UPDATED  AXON  HOTKEY_SS58                    
+Subnet: 1
+COLDKEY  HOTKEY   UID  ACTIVE  STAKE(τ)     RANK    TRUST  CONSENSUS  INCENTIVE  DIVIDENDS  EMISSION(ρ)   VTRUST  VPERMIT  UPDATED  AXON  HOTKEY_SS58
 miner    default  0      True   0.00000  0.00000  0.00000    0.00000    0.00000    0.00000            0  0.00000                14  none  5GTFrsEQfvTsh3WjiEVFeKzFTc2xcf…
-1        1        2            τ0.00000  0.00000  0.00000    0.00000    0.00000    0.00000           ρ0  0.00000                                                         
-                                                                          Wallet balance: τ0.0         
+1        1        2            τ0.00000  0.00000  0.00000    0.00000    0.00000    0.00000           ρ0  0.00000
+                                                                          Wallet balance: τ0.0
 ```
 
 Check that your subnet miner has been registered:
 
 ```bash
-btcli wallet overview --wallet.name miner 
+btcli wallet overview --wallet.name miner
 ```
 
 The output will be similar to the below:
 
 ```bash
-Subnet: 1                                                                                                                                                                
-COLDKEY  HOTKEY   UID  ACTIVE  STAKE(τ)     RANK    TRUST  CONSENSUS  INCENTIVE  DIVIDENDS  EMISSION(ρ)   VTRUST  VPERMIT  UPDATED  AXON  HOTKEY_SS58                    
+Subnet: 1
+COLDKEY  HOTKEY   UID  ACTIVE  STAKE(τ)     RANK    TRUST  CONSENSUS  INCENTIVE  DIVIDENDS  EMISSION(ρ)   VTRUST  VPERMIT  UPDATED  AXON  HOTKEY_SS58
 miner    default  1      True   0.00000  0.00000  0.00000    0.00000    0.00000    0.00000            0  0.00000                14  none  5GTFrsEQfvTsh3WjiEVFeKzFTc2xcf…
-1        1        2            τ0.00000  0.00000  0.00000    0.00000    0.00000    0.00000           ρ0  0.00000                                                         
-                                                                          Wallet balance: τ0.0   
+1        1        2            τ0.00000  0.00000  0.00000    0.00000    0.00000    0.00000           ρ0  0.00000
+                                                                          Wallet balance: τ0.0
 ```
 
 ## 7. Run subnet miner and subnet validator
@@ -228,13 +228,13 @@ You will see the below terminal output:
 Register to the root subnet using the `btcli`:
 
 ```bash
-btcli root register 
+btcli root register
 ```
 
 Then set your weights for the subnet:
 
 ```bash
-btcli root weights 
+btcli root weights
 ```
 
 ## 9. Stopping your nodes

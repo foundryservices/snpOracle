@@ -86,7 +86,7 @@ setup_environment() {
 }
 
 # Call setup_environment every time
-setup_environment 
+setup_environment
 
 ## Setup localnet
 # assumes we are in the bittensor-subnet-template/ directory
@@ -132,10 +132,10 @@ cd ../bittensor-subnet-template
 if [ -z "$TMUX" ]; then
     # Start a new tmux session and run the miner in the first pane
     tmux new-session -d -s bittensor -n 'miner' 'python neurons/miner.py --netuid 1 --subtensor.chain_endpoint ws://127.0.0.1:9946 --wallet.name miner --wallet.hotkey default --logging.debug'
-    
+
     # Split the window and run the validator in the new pane
     tmux split-window -h -t bittensor:miner 'python neurons/validator.py --netuid 1 --subtensor.chain_endpoint ws://127.0.0.1:9946 --wallet.name validator --wallet.hotkey default --logging.debug'
-    
+
     # Attach to the new tmux session
     tmux attach-session -t bittensor
 else
