@@ -1,21 +1,21 @@
 # General imports
-import bittensor as bt
-
-# setup_wandb
-import wandb
+import argparse
 import os
 import pathlib
 
 # Is valid time
 from datetime import datetime, timedelta
-from pytz import timezone
-import pandas_market_calendars as mcal
-from numpy import full, nan
 from pathlib import Path
-import argparse
+
+import bittensor as bt
+import pandas_market_calendars as mcal
+
+# setup_wandb
+import wandb
+from pytz import timezone
 
 
-def setup_wandb(self):
+def setup_wandb(self) -> None:
     netrc_path = pathlib.Path.home() / ".netrc"
     wandb_api_key = os.getenv("WANDB_API_KEY")
     if wandb_api_key is not None:
@@ -24,18 +24,19 @@ def setup_wandb(self):
     if wandb_api_key is None and not netrc_path.exists():
         bt.logging.warning("WANDB_API_KEY not found in environment variables.")
     wandb.init(
-            project=f"sn{self.config.netuid}-validators",
-            entity="foundryservices",
-            config={
-                "hotkey": self.wallet.hotkey.ss58_address,
-            },
-            name=f"validator-{self.my_uid}-{'0.0.1'}",
-            resume="auto",
-            dir=self.config.full_path,
-            reinit=True,
-        )
+        project=f"sn{self.config.netuid}-validators",
+        entity="foundryservices",
+        config={
+            "hotkey": self.wallet.hotkey.ss58_address,
+        },
+        name=f"validator-{self.my_uid}-{'0.0.1'}",
+        resume="auto",
+        dir=self.config.full_path,
+        reinit=True,
+    )
 
-def market_is_open():
+
+def market_is_open() -> bool:
     """
     This function checks if the NYSE is open and validators should send requests.
     The final valid time is 3:55 PM EST
@@ -49,14 +50,14 @@ def market_is_open():
     Timezone is set to America/New_York
 
     """
-    est = timezone('America/New_York')
+    est = timezone("America/New_York")
     now = datetime.now(est)
     # Check if today is Monday through Friday
     if now.weekday() >= 5:  # 0 is Monday, 6 is Sunday
         return False
     # Check if the NYSE is open (i.e. not a holiday)
     result = mcal.get_calendar("NYSE").schedule(start_date=now, end_date=now)
-    if result.empty == True:
+    if result.empty:
         return False
     # Check if the current time is between 9:30 AM and 4:00 PM
     start_time = now.replace(hour=9, minute=30, second=0, microsecond=0)
@@ -66,16 +67,28 @@ def market_is_open():
     # if all checks pass, return true
     return True
 
-def is_query_time(prediction_interval, timestamp):
-    now_ts = datetime.now(timezone('America/New_York')).timestamp()
-    open_ts = datetime.now(timezone('America/New_York')).replace(hour=9, minute=30, second=0, microsecond=0).timestamp()
+
+def is_query_time(prediction_interval, timestamp) -> bool:
+    now_ts = datetime.now(timezone("America/New_York")).timestamp()
+    open_ts = (
+        datetime.now(timezone("America/New_York"))
+        .replace(hour=9, minute=30, second=0, microsecond=0)
+        .timestamp()
+    )
     sec_since_open = now_ts - open_ts
-    tolerance = 120 # in seconds, how long to allow after epoch start for a query
-    # if it is within 120 seconds of the start of the prediction epoch and at least prediction_interval minutes have passed, return true
-    result = sec_since_open % (prediction_interval*60) < tolerance and datetime.now(timezone('America/New_York')) - datetime.fromisoformat(timestamp) > timedelta(seconds=tolerance)
+    tolerance = 120  # in seconds, how long to allow after epoch start
+    # if it is within 120 seconds of the start of the prediction epoch
+    beginning_of_epoch = (
+        sec_since_open % (prediction_interval * 60) < tolerance
+    )
+    been_long_enough = datetime.now(
+        timezone("America/New_York")
+    ) - datetime.fromisoformat(timestamp) > timedelta(seconds=tolerance)
+    result = beginning_of_epoch and been_long_enough
     return result
 
-def print_info(self):
+
+def print_info(self) -> None:
     metagraph = self.metagraph
     self.uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
     log = (
@@ -89,17 +102,28 @@ def print_info(self):
     )
     bt.logging.info(log)
 
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Validator Configuration")
-    parser.add_argument("--subtensor.chain_endpoint", type=str, default=None) #for testnet: wss://test.finney.opentensor.ai:443
-    parser.add_argument("--subtensor.network", choices=['finney', 'test', 'local'], default='finney')
+    parser.add_argument(
+        "--subtensor.chain_endpoint", type=str, default=None
+    )  # for testnet: wss://test.finney.opentensor.ai:443
+    parser.add_argument(
+        "--subtensor.network",
+        choices=["finney", "test", "local"],
+        default="finney",
+    )
     parser.add_argument("--wallet.name", type=str, default="default")
     parser.add_argument("--wallet.hotkey", type=str, default="default")
     parser.add_argument("--netuid", type=int, default=28)
-    parser.add_argument("--neuron.name", type=str, default='validator')
+    parser.add_argument("--neuron.name", type=str, default="validator")
     parser.add_argument("--axon.port", type=int, default=8000)
-    parser.add_argument("--logging.level", choices=['info', 'debug', 'trace'], default='info')
-    parser.add_argument("--logging.logging_dir", type=str, default='~/.bittensor/validators')
+    parser.add_argument(
+        "--logging.level", choices=["info", "debug", "trace"], default="info"
+    )
+    parser.add_argument(
+        "--logging.logging_dir", type=str, default="~/.bittensor/validators"
+    )
     parser.add_argument("--alpha", type=float, default=0.1)
     parser.add_argument("--prediction_interval", type=int, default=5)
     parser.add_argument("--N_TIMEPOINTS", type=int, default=6)
@@ -107,7 +131,7 @@ def parse_arguments():
     return parser.parse_args(namespace=NestedNamespace())
 
 
-def log_wandb(self, responses, rewards, miner_uids):
+def log_wandb(responses, rewards, miner_uids):
     wandb_val_log = {
         "miners_info": {
             miner_uid: {
@@ -124,23 +148,25 @@ def log_wandb(self, responses, rewards, miner_uids):
 
 class NestedNamespace(argparse.Namespace):
     def __setattr__(self, name, value):
-        if '.' in name:
-            group, name = name.split('.', 1)
+        if "." in name:
+            group, name = name.split(".", 1)
             ns = getattr(self, group, NestedNamespace())
             setattr(ns, name, value)
             self.__dict__[group] = ns
         else:
             self.__dict__[name] = value
+
     def get(self, key, default=None):
-        if '.' in key:
-            group, key = key.split('.', 1)
+        if "." in key:
+            group, key = key.split(".", 1)
             return getattr(self, group, NestedNamespace()).get(key, default)
         return self.__dict__.get(key, default)
-    
+
+
 def setup_logging(config):
-    if config.logging.level == 'trace':
+    if config.logging.level == "trace":
         bt.logging.set_trace()
-    elif config.logging.level == 'debug':
+    elif config.logging.level == "debug":
         bt.logging.set_debug()
     else:
         # set to info by default
@@ -148,11 +174,13 @@ def setup_logging(config):
     bt.logging.info(f"Set logging level to {config.logging.level}")
 
     full_path = Path(
-        f"~/.bittensor/validators/{config.wallet.name}/{config.wallet.hotkey}/netuid{config.netuid}/validator").expanduser()
+        f"~/.bittensor/validators/{config.wallet.name}/{config.wallet.hotkey}/netuid{config.netuid}/validator"
+    ).expanduser()
     full_path.mkdir(parents=True, exist_ok=True)
     config.full_path = str(full_path)
 
     bt.logging.info(f"Arguments: {vars(config)}")
+
 
 def check_uid_availability(
     metagraph: "bt.metagraph.Metagraph", uid: int, vpermit_tao_limit: int

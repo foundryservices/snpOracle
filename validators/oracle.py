@@ -1,26 +1,41 @@
 import asyncio
+import os
+import pickle
+from datetime import datetime, timedelta
+
 import bittensor as bt
 from numpy import full, nan
-from datetime import datetime, timedelta
-from substrateinterface import SubstrateInterface
-from protocol import Challenge
 from pytz import timezone
-import os
-import validators.helpers as helpers
 from reward import get_rewards
-import pickle
+from substrateinterface import SubstrateInterface
+
+import validators.helpers as helpers
+from protocol import Challenge
+
 
 class Oracle:
     def __init__(self, config=None, loop=None):
         self.config = config
         self.loop = loop
-        self.prediction_interval = self.config.prediction_interval # in minutes
-        self.N_TIMEPOINTS = self.config.N_TIMEPOINTS # number of timepoints to predict
-        bt.logging.info(f"Running validator for subnet: {self.config.netuid} on network: {self.config.subtensor.network} with config:")
+        self.prediction_interval = (
+            self.config.prediction_interval
+        )  # in minutes
+        self.N_TIMEPOINTS = (
+            self.config.N_TIMEPOINTS
+        )  # number of timepoints to predict
+        bt.logging.info(
+            f"Running validator for subnet: {self.config.netuid} on network: {self.config.subtensor.network} with config:"
+        )
         if self.config.subtensor.chain_endpoint is None:
-            self.config.subtensor.chain_endpoint = bt.subtensor.determine_chain_endpoint_and_network(self.config.subtensor.network)[1]
+            self.config.subtensor.chain_endpoint = (
+                bt.subtensor.determine_chain_endpoint_and_network(
+                    self.config.subtensor.network
+                )[1]
+            )
         # Initialize subtensor.
-        self.subtensor = bt.subtensor(config=self.config, network=self.config.subtensor.network)
+        self.subtensor = bt.subtensor(
+            config=self.config, network=self.config.subtensor.network
+        )
         bt.logging.info(f"Subtensor: {self.subtensor}")
 
         # Initialize metagraph.
@@ -29,7 +44,9 @@ class Oracle:
 
         # Initialize wallet.
         self.wallet = config.wallet
-        self.my_uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
+        self.my_uid = self.metagraph.hotkeys.index(
+            self.wallet.hotkey.ss58_address
+        )
         bt.logging.info(f"Wallet: {self.wallet}")
 
         # Initialize dendrite.
@@ -38,24 +55,35 @@ class Oracle:
 
         # Connect the validator to the network.
         if self.wallet.hotkey.ss58_address not in self.metagraph.hotkeys:
-            bt.logging.error(f"\nYour validator: {self.wallet} is not registered to chain connection: {self.subtensor} \nRun 'btcli register' and try again.")
+            bt.logging.error(
+                f"\nYour validator: {self.wallet} is not registered to chain connection: {self.subtensor} \nRun 'btcli register' and try again."
+            )
             exit()
         else:
             # Each validator gets a unique identity (UID) in the network.
-            self.my_subnet_uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
+            self.my_subnet_uid = self.metagraph.hotkeys.index(
+                self.wallet.hotkey.ss58_address
+            )
             bt.logging.info(f"Running validator on uid: {self.my_subnet_uid}")
-        
+
         self.scores = [1.0] * len(self.metagraph.S)
         # custom params
         self.last_update = 0
         self.current_block = 0
-        self.tempo = self.node_query('SubtensorModule', 'Tempo', [self.config.netuid])
+        self.tempo = self.node_query(
+            "SubtensorModule", "Tempo", [self.config.netuid]
+        )
         self.moving_avg_scores = [0.0] * len(self.metagraph.S)
-        self.node = SubstrateInterface(url=self.config.subtensor.chain_endpoint)
+        self.node = SubstrateInterface(
+            url=self.config.subtensor.chain_endpoint
+        )
         self.hotkeys = self.metagraph.hotkeys
         helpers.setup_wandb(self)
         self.available_uids = asyncio.run(self.get_available_uids())
-        self.past_predictions = {uid: full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan) for uid in self.available_uids}
+        self.past_predictions = {
+            uid: full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)
+            for uid in self.available_uids
+        }
         self.load_state()
         self.lock = asyncio.Lock()
         self.loop.create_task(self.scheduled_prediction_request())
@@ -74,7 +102,7 @@ class Oracle:
             if uid_is_available:
                 miner_uids.append(uid)
         return miner_uids
-        
+
     async def refresh_metagraph(self):
         await self.resync_metagraph()
         await asyncio.sleep(600)
@@ -92,7 +120,9 @@ class Oracle:
         for uid, hotkey in enumerate(self.hotkeys):
             if hotkey != self.metagraph.hotkeys[uid]:
                 self.scores[uid] = 0  # hotkey has been replaced
-                self.past_predictions[uid] = full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan) # reset past predictions
+                self.past_predictions[uid] = full(
+                    (self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan
+                )  # reset past predictions
         self.available_uids = asyncio.run(self.get_available_uids())
         # Check to see if the metagraph has changed size.
         # If so, we need to add new hotkeys and moving averages.
@@ -105,8 +135,12 @@ class Oracle:
         await self.save_state()
 
     def query_miners(self):
-        timestamp = datetime.now(timezone('America/New_York')).isoformat()
-        synapse = Challenge(timestamp=timestamp, prediction_interval=self.prediction_interval, N_TIMEPOINTS=self.N_TIMEPOINTS)
+        timestamp = datetime.now(timezone("America/New_York")).isoformat()
+        synapse = Challenge(
+            timestamp=timestamp,
+            prediction_interval=self.prediction_interval,
+            N_TIMEPOINTS=self.N_TIMEPOINTS,
+        )
         responses = self.dendrite.query(
             # Send the query to selected miner axons in the network.
             axons=[self.metagraph.axons[uid] for uid in self.available_uids],
@@ -120,7 +154,9 @@ class Oracle:
             result = self.node.query(module, method, params).value
         except Exception:
             # reinitilize node
-            self.node = SubstrateInterface(url=self.config.subtensor.chain_endpoint)
+            self.node = SubstrateInterface(
+                url=self.config.subtensor.chain_endpoint
+            )
             result = self.node.query(module, method, params).value
         return result
 
@@ -129,7 +165,8 @@ class Oracle:
         async with self.lock:
             if self.last_update > self.tempo + 1:
                 total = sum(self.moving_avg_scores)
-                if total==0: total=1 # prevent division by zero
+                if total == 0:
+                    total = 1  # prevent division by zero
                 weights = [score / total for score in self.moving_avg_scores]
                 bt.logging.info(f"Setting weights: {weights}")
                 # Update the incentive mechanism on the Bittensor blockchain.
@@ -138,41 +175,77 @@ class Oracle:
                     wallet=self.wallet,
                     uids=self.metagraph.uids,
                     weights=weights,
-                    wait_for_inclusion=True
+                    wait_for_inclusion=True,
                 )
                 if result:
                     bt.logging.info("set_weights on chain successfully!")
                 else:
                     bt.logging.debug(
-                        "Failed to set weights this iteration with message:", msg
-                )
+                        "Failed to set weights this iteration with message:",
+                        msg,
+                    )
                 self.metagraph.sync()
 
     async def scheduled_prediction_request(self):
-        timestamp = (datetime.now(timezone('America/New_York'))-timedelta(minutes=self.prediction_interval)).isoformat()
+        timestamp = (
+            datetime.now(timezone("America/New_York"))
+            - timedelta(minutes=self.prediction_interval)
+        ).isoformat()
         while True:
             try:
                 if helpers.market_is_open():
                     # how many seconds since 9:30 am EST
-                    if helpers.is_query_time(self.prediction_interval, timestamp) or datetime.now(timezone('America/New_York')) - datetime.fromisoformat(timestamp) > timedelta(minutes=self.prediction_interval):
+                    query_lag = datetime.now(
+                        timezone("America/New_York")
+                    ) - datetime.fromisoformat(timestamp)
+                    if helpers.is_query_time(
+                        self.prediction_interval, timestamp
+                    ) or query_lag > timedelta(
+                        minutes=self.prediction_interval
+                    ):
                         responses, timestamp = self.query_miners()
                         bt.logging.info(f"Received responses: {responses}")
-                        rewards = get_rewards(self, responses=responses, miner_uids=self.available_uids)
+                        rewards = get_rewards(
+                            self,
+                            responses=responses,
+                            miner_uids=self.available_uids,
+                        )
                         for uid, reward in zip(self.available_uids, rewards):
-                            bt.logging.info(f"UID: {uid}  |  Predictions: {responses[uid].prediction}  |  Reward: {reward}")
+                            bt.logging.info(
+                                f"UID: {uid}  |  Predictions: {responses[uid].prediction}  |  Reward: {reward}"
+                            )
                         # Adjust the scores based on responses from miners and update moving average.
                         for i, value in enumerate(rewards):
-                            self.moving_avg_scores[i] = (1 - self.config.alpha) * self.moving_avg_scores[i] + self.config.alpha * value
+                            self.moving_avg_scores[i] = (
+                                1 - self.config.alpha
+                            ) * self.moving_avg_scores[
+                                i
+                            ] + self.config.alpha * value
 
-                        bt.logging.info(f"Moving Average Scores: {self.moving_avg_scores}")
-                        helpers.log_wandb(self, responses, rewards, self.available_uids)
-                        self.current_block = self.node_query('System', 'Number', [])
-                        self.last_update = self.current_block - self.node_query('SubtensorModule', 'LastUpdate', [self.config.netuid])[self.my_uid]
+                        bt.logging.info(
+                            f"Moving Average Scores: {self.moving_avg_scores}"
+                        )
+                        helpers.log_wandb(
+                            responses, rewards, self.available_uids
+                        )
+                        self.current_block = self.node_query(
+                            "System", "Number", []
+                        )
+                        self.last_update = (
+                            self.current_block
+                            - self.node_query(
+                                "SubtensorModule",
+                                "LastUpdate",
+                                [self.config.netuid],
+                            )[self.my_uid]
+                        )
                     else:
                         helpers.print_info(self)
                         await asyncio.sleep(10)
                 else:
-                    bt.logging.info('Market is closed. Sleeping for 2 minutes...')
+                    bt.logging.info(
+                        "Market is closed. Sleeping for 2 minutes..."
+                    )
                     await asyncio.sleep(120)
 
             except RuntimeError as e:
@@ -208,6 +281,7 @@ class Oracle:
         except Exception:
             try:
                 import torch
+
                 state = torch.load(state_path)
                 bt.logging.info(
                     "Found torch state.pt file, converting to pickle..."
