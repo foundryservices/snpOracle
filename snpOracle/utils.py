@@ -47,20 +47,12 @@ def market_is_open() -> bool:
 
 def is_query_time(prediction_interval, timestamp) -> bool:
     now_ts = datetime.now(timezone("America/New_York")).timestamp()
-    open_ts = (
-        datetime.now(timezone("America/New_York"))
-        .replace(hour=9, minute=30, second=0, microsecond=0)
-        .timestamp()
-    )
+    open_ts = datetime.now(timezone("America/New_York")).replace(hour=9, minute=30, second=0, microsecond=0).timestamp()
     sec_since_open = now_ts - open_ts
     tolerance = 120  # in seconds, how long to allow after epoch start
     # if it is within 120 seconds of the start of the prediction epoch
-    beginning_of_epoch = (
-        sec_since_open % (prediction_interval * 60) < tolerance
-    )
-    been_long_enough = datetime.now(
-        timezone("America/New_York")
-    ) - datetime.fromisoformat(timestamp) > timedelta(seconds=tolerance)
+    beginning_of_epoch = sec_since_open % (prediction_interval * 60) < tolerance
+    been_long_enough = datetime.now(timezone("America/New_York")) - datetime.fromisoformat(timestamp) > timedelta(seconds=tolerance)
     result = beginning_of_epoch and been_long_enough
     return result
 
@@ -108,9 +100,7 @@ def log_wandb(responses, rewards, miner_uids):
                 "miner_response": response.prediction,
                 "miner_reward": reward,
             }
-            for miner_uid, response, reward in zip(
-                miner_uids, responses, rewards.tolist()
-            )
+            for miner_uid, response, reward in zip(miner_uids, responses, rewards.tolist())
         }
     }
     wandb.log(wandb_val_log)
@@ -126,9 +116,7 @@ def setup_logging(config):
         pass
     bt.logging.info(f"Set logging level to {config.logging.level}")
 
-    full_path = Path(
-        f"~/.bittensor/validators/{config.wallet.name}/{config.wallet.hotkey}/netuid{config.netuid}/validator"
-    ).expanduser()
+    full_path = Path(f"~/.bittensor/validators/{config.wallet.name}/{config.wallet.hotkey}/netuid{config.netuid}/validator").expanduser()
     full_path.mkdir(parents=True, exist_ok=True)
     config.full_path = str(full_path)
 
@@ -137,9 +125,7 @@ def setup_logging(config):
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Validator Configuration")
-    parser.add_argument(
-        "--subtensor.chain_endpoint", type=str, default=None
-    )  # for testnet: wss://test.finney.opentensor.ai:443
+    parser.add_argument("--subtensor.chain_endpoint", type=str, default=None)  # for testnet: wss://test.finney.opentensor.ai:443
     parser.add_argument(
         "--subtensor.network",
         choices=["finney", "test", "local"],
@@ -150,13 +136,9 @@ def parse_arguments():
     parser.add_argument("--netuid", type=int, default=28)
     parser.add_argument("--neuron.name", type=str, default="validator")
     parser.add_argument("--axon.port", type=int, default=8000)
-    parser.add_argument(
-        "--logging.level", choices=["info", "debug", "trace"], default="info"
-    )
+    parser.add_argument("--logging.level", choices=["info", "debug", "trace"], default="info")
     parser.add_argument("--autoupdate", action="store_true", dest="autoupdate")
-    parser.add_argument(
-        "--logging.logging_dir", type=str, default="~/.bittensor/validators"
-    )
+    parser.add_argument("--logging.logging_dir", type=str, default="~/.bittensor/validators")
     parser.add_argument("--alpha", type=float, default=0.1)
     parser.add_argument("--prediction_interval", type=int, default=5)
     parser.add_argument("--N_TIMEPOINTS", type=int, default=6)
@@ -182,9 +164,7 @@ class NestedNamespace(argparse.Namespace):
         return self.__dict__.get(key, default)
 
 
-def check_uid_availability(
-    metagraph: "bt.metagraph.Metagraph", uid: int, vpermit_tao_limit: int
-) -> bool:
+def check_uid_availability(metagraph: "bt.metagraph.Metagraph", uid: int, vpermit_tao_limit: int) -> bool:
     """Check if uid is available. The UID should be available if it is serving and has less than vpermit_tao_limit stake
     Args:
         metagraph (:obj: bt.metagraph.Metagraph): Metagraph object

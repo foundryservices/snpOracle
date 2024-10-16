@@ -9,9 +9,7 @@ import requests
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Validator Configuration")
-    parser.add_argument(
-        "--subtensor.chain_endpoint", type=str, default=None
-    )  # for testnet: wss://test.finney.opentensor.ai:443
+    parser.add_argument("--subtensor.chain_endpoint", type=str, default=None)  # for testnet: wss://test.finney.opentensor.ai:443
     parser.add_argument(
         "--subtensor.network",
         choices=["finney", "test", "local"],
@@ -22,13 +20,9 @@ def parse_arguments():
     parser.add_argument("--netuid", type=int, default=28)
     parser.add_argument("--neuron.name", type=str, default="validator")
     parser.add_argument("--axon.port", type=int, default=8000)
-    parser.add_argument(
-        "--logging.level", choices=["info", "debug", "trace"], default="info"
-    )
+    parser.add_argument("--logging.level", choices=["info", "debug", "trace"], default="info")
     parser.add_argument("--autoupdate", action="store_true", dest="autoupdate")
-    parser.add_argument(
-        "--logging.logging_dir", type=str, default="~/.bittensor/validators"
-    )
+    parser.add_argument("--logging.logging_dir", type=str, default="~/.bittensor/validators")
     parser.add_argument("--alpha", type=float, default=0.1)
     parser.add_argument("--prediction_interval", type=int, default=5)
     parser.add_argument("--N_TIMEPOINTS", type=int, default=6)
@@ -54,9 +48,7 @@ class NestedNamespace(argparse.Namespace):
         return self.__dict__.get(key, default)
 
 
-def check_uid_availability(
-    metagraph: "bt.metagraph.Metagraph", uid: int, vpermit_tao_limit: int
-) -> bool:
+def check_uid_availability(metagraph: "bt.metagraph.Metagraph", uid: int, vpermit_tao_limit: int) -> bool:
     """Check if uid is available. The UID should be available if it is serving and has less than vpermit_tao_limit stake
     Args:
         metagraph (:obj: bt.metagraph.Metagraph): Metagraph object

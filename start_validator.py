@@ -30,10 +30,7 @@ def update_and_restart(args):
             latest_version = get_version()
             print(f"Current version: {current_version}")
             print(f"Latest version: {latest_version}")
-            if (
-                current_version != latest_version
-                and latest_version is not None
-            ):
+            if current_version != latest_version and latest_version is not None:
                 print("Updating to the latest version...")
                 subprocess.run(["pm2", "delete", args.neuron.name])
                 subprocess.run(["git", "reset", "--hard"])

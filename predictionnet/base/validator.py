@@ -85,24 +85,17 @@ class BaseValidatorNeuron(BaseNeuron):
                     netuid=self.config.netuid,
                     axon=self.axon,
                 )
-                bt.logging.info(
-                    f"Running validator {self.axon} on network: {self.config.subtensor.chain_endpoint} with netuid: {self.config.netuid}"
-                )
+                bt.logging.info(f"Running validator {self.axon} on network: {self.config.subtensor.chain_endpoint} with netuid: {self.config.netuid}")
             except Exception as e:
                 bt.logging.error(f"Failed to serve Axon with exception: {e}")
                 pass
 
         except Exception as e:
-            bt.logging.error(
-                f"Failed to create Axon initialize with exception: {e}"
-            )
+            bt.logging.error(f"Failed to create Axon initialize with exception: {e}")
             pass
 
     async def concurrent_forward(self):
-        coroutines = [
-            self.forward()
-            for _ in range(self.config.neuron.num_concurrent_forwards)
-        ]
+        coroutines = [self.forward() for _ in range(self.config.neuron.num_concurrent_forwards)]
         await asyncio.gather(*coroutines)
 
     def run(self):
@@ -156,9 +149,7 @@ class BaseValidatorNeuron(BaseNeuron):
         # In case of unforeseen errors, the validator will log the error and continue operations.
         except Exception as err:
             bt.logging.error("Error during validation", str(err))
-            bt.logging.debug(
-                print_exception(type(err), err, err.__traceback__)
-            )
+            bt.logging.debug(print_exception(type(err), err, err.__traceback__))
 
     def run_in_background_thread(self):
         """
@@ -215,9 +206,7 @@ class BaseValidatorNeuron(BaseNeuron):
 
         # Check if self.scores contains any NaN values and log a warning if it does.
         if isnan(self.scores).any():
-            bt.logging.warning(
-                "Scores contain NaN values. This may be due to a lack of responses from miners, or a bug in your reward functions."
-            )
+            bt.logging.warning("Scores contain NaN values. This may be due to a lack of responses from miners, or a bug in your reward functions.")
 
         # Calculate the average reward for each uid across non-zero values.
         # Replace any NaN values with 0.
@@ -242,9 +231,7 @@ class BaseValidatorNeuron(BaseNeuron):
         (
             uint_uids,
             uint_weights,
-        ) = bt.utils.weight_utils.convert_weights_and_uids_for_emit(
-            uids=processed_weight_uids, weights=processed_weights
-        )
+        ) = bt.utils.weight_utils.convert_weights_and_uids_for_emit(uids=processed_weight_uids, weights=processed_weights)
 
         # Set the weights on chain via our subtensor connection.
         bt.logging.info("Setting weights...")
@@ -261,9 +248,7 @@ class BaseValidatorNeuron(BaseNeuron):
         if result:
             bt.logging.info("set_weights on chain successfully!")
         else:
-            bt.logging.debug(
-                "Failed to set weights this iteration with message:", msg
-            )
+            bt.logging.debug("Failed to set weights this iteration with message:", msg)
 
     def resync_metagraph(self):
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
@@ -279,16 +264,12 @@ class BaseValidatorNeuron(BaseNeuron):
         if previous_metagraph.axons == self.metagraph.axons:
             return
 
-        bt.logging.info(
-            "Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages"
-        )
+        bt.logging.info("Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages")
         # Zero out all hotkeys that have been replaced.
         for uid, hotkey in enumerate(self.hotkeys):
             if hotkey != self.metagraph.hotkeys[uid]:
                 self.scores[uid] = 0  # hotkey has been replaced
-                self.past_predictions[uid] = full(
-                    (self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan
-                )  # reset past predictions
+                self.past_predictions[uid] = full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)  # reset past predictions
 
         # Check to see if the metagraph has changed size.
         # If so, we need to add new hotkeys and moving averages.
@@ -313,9 +294,7 @@ class BaseValidatorNeuron(BaseNeuron):
         # Compute forward pass rewards, assumes uids are mutually exclusive.
         # shape: [ metagraph.n ]
         for i, value in zip(uids, rewards):
-            self.moving_avg_scores[i] = (1 - self.alpha) * self.scores[
-                i
-            ] + self.alpha * value
+            self.moving_avg_scores[i] = (1 - self.alpha) * self.scores[i] + self.alpha * value
         self.scores = array(self.moving_avg_scores)
         bt.logging.info(f"New Average Scores: {self.scores}")
 
@@ -336,9 +315,7 @@ class BaseValidatorNeuron(BaseNeuron):
         bt.logging.info("Loading validator state.")
         state_path = os.path.join(self.config.neuron.full_path, "state.pt")
         if not os.path.exists(state_path):
-            bt.logging.info(
-                "Skipping state load due to missing state.pt file."
-            )
+            bt.logging.info("Skipping state load due to missing state.pt file.")
             return
         # backwards compatability with torch version
         try:
@@ -353,9 +330,7 @@ class BaseValidatorNeuron(BaseNeuron):
                 import torch
 
                 state = torch.load(state_path)
-                bt.logging.info(
-                    "Found torch state.pt file, converting to pickle..."
-                )
+                bt.logging.info("Found torch state.pt file, converting to pickle...")
                 self.step = state["step"]
                 self.scores = state["scores"]
                 self.hotkeys = state["hotkeys"]

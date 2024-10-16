@@ -38,19 +38,11 @@ def market_is_open() -> bool:
 
 def is_query_time(prediction_interval, timestamp) -> bool:
     now_ts = datetime.now(timezone("America/New_York")).timestamp()
-    open_ts = (
-        datetime.now(timezone("America/New_York"))
-        .replace(hour=9, minute=30, second=0, microsecond=0)
-        .timestamp()
-    )
+    open_ts = datetime.now(timezone("America/New_York")).replace(hour=9, minute=30, second=0, microsecond=0).timestamp()
     sec_since_open = now_ts - open_ts
     tolerance = 120  # in seconds, how long to allow after epoch start
     # if it is within 120 seconds of the start of the prediction epoch
-    beginning_of_epoch = (
-        sec_since_open % (prediction_interval * 60) < tolerance
-    )
-    been_long_enough = datetime.now(
-        timezone("America/New_York")
-    ) - datetime.fromisoformat(timestamp) > timedelta(seconds=tolerance)
+    beginning_of_epoch = sec_since_open % (prediction_interval * 60) < tolerance
+    been_long_enough = datetime.now(timezone("America/New_York")) - datetime.fromisoformat(timestamp) > timedelta(seconds=tolerance)
     result = beginning_of_epoch and been_long_enough
     return result

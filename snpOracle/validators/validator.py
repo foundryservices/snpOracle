@@ -30,9 +30,7 @@ class Validator:
 
     def main(self):
         setup_logging(self.config)
-        self.config.wallet = bt.wallet(
-            name=self.config.wallet.name, hotkey=self.config.wallet.hotkey
-        )
+        self.config.wallet = bt.wallet(name=self.config.wallet.name, hotkey=self.config.wallet.hotkey)
         self.config.dendrite = bt.dendrite(wallet=self.config.wallet)
         loop = asyncio.get_event_loop()
         Oracle(config=self.config, loop=loop)

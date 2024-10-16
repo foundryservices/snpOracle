@@ -20,9 +20,9 @@
 from typing import Any, List, Union
 
 import bittensor as bt
+from protocol import Challenge
 
 from predictionnet.api import SubnetsAPI
-from protocol import Challenge
 
 
 class PredictionAPI(SubnetsAPI):
@@ -35,9 +35,7 @@ class PredictionAPI(SubnetsAPI):
         synapse = Challenge(timestamp=timestamp)
         return synapse
 
-    def process_responses(
-        self, responses: List[Union["bt.Synapse", Any]]
-    ) -> List[int]:
+    def process_responses(self, responses: List[Union["bt.Synapse", Any]]) -> List[int]:
         outputs = []
         for response in responses:
             if response.dendrite.status_code != 200:

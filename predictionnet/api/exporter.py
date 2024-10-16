@@ -16,21 +16,15 @@ pg_connection_string = os.environ.get("POSTGRESQL_CONNECTION_STRING")
 # ---------------------------------------------------------------------------- #
 #                             Select/Insert/Update                             #
 # ---------------------------------------------------------------------------- #
-find_miner_by_hot_key_cold_key = sql.SQL(
-    "SELECT * FROM miners_table WHERE hot_key = %s AND cold_key = %s"
-)
+find_miner_by_hot_key_cold_key = sql.SQL("SELECT * FROM miners_table WHERE hot_key = %s AND cold_key = %s")
 update_miner_by_hot_key_cold_key = sql.SQL(
     "UPDATE miners_table SET uid = %s, is_current_uid = %s, rank = %s, trust = %s WHERE hot_key = %s AND cold_key = %s"
 )
 update_miner_uid_to_false_by_hot_key_cold_key = sql.SQL(
     "UPDATE miners_table SET is_current_uid = %s WHERE NOT hot_key = %s AND NOT cold_key = %s AND uid=%s"
 )
-insert_miner_query = sql.SQL(
-    "INSERT INTO miners_table (hot_key, cold_key, uid, is_current_uid, rank, trust) VALUES (%s, %s, %s, %s, %s, %s)"
-)
-insert_prediction_query = sql.SQL(
-    "INSERT INTO predictions_table (prediction, timestamp, miner_id) VALUES (%s, %s, %s)"
-)
+insert_miner_query = sql.SQL("INSERT INTO miners_table (hot_key, cold_key, uid, is_current_uid, rank, trust) VALUES (%s, %s, %s, %s, %s, %s)")
+insert_prediction_query = sql.SQL("INSERT INTO predictions_table (prediction, timestamp, miner_id) VALUES (%s, %s, %s)")
 
 
 # ---------------------------------------------------------------------------- #
@@ -62,9 +56,7 @@ async def test_prediction():
 
     uids = [uid.item() for uid in metagraph.uids if metagraph.trust[uid] > 0]
 
-    axons = await get_query_api_axons(
-        wallet=wallet, metagraph=metagraph, uids=uids
-    )
+    axons = await get_query_api_axons(wallet=wallet, metagraph=metagraph, uids=uids)
 
     # Store some data!
     # Read timestamp from the text file

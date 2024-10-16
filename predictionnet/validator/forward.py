@@ -49,23 +49,17 @@ async def forward(self):
         else:
             bt.logging.info("Market is closed. Sleeping for 2 minutes...")
             time.sleep(120)  # Sleep for 5 minutes before checking again
-            if datetime.now(ny_timezone) - current_time_ny >= timedelta(
-                hours=1
-            ):
+            if datetime.now(ny_timezone) - current_time_ny >= timedelta(hours=1):
                 self.resync_metagraph()
                 self.set_weights()
-                self.past_predictions = [
-                    full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)
-                ] * len(self.hotkeys)
+                self.past_predictions = [full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)] * len(self.hotkeys)
                 current_time_ny = datetime.now(ny_timezone)
 
     # miner_uids = get_random_uids(self, k=min(self.config.neuron.sample_size, self.metagraph.n.item()))
     # get all uids
     miner_uids = []
     for uid in range(len(self.metagraph.S)):
-        uid_is_available = check_uid_availability(
-            self.metagraph, uid, self.config.neuron.vpermit_tao_limit
-        )
+        uid_is_available = check_uid_availability(self.metagraph, uid, self.config.neuron.vpermit_tao_limit)
         if uid_is_available:
             miner_uids.append(uid)
 
@@ -105,9 +99,7 @@ async def forward(self):
                 "miner_response": response.prediction,
                 "miner_reward": reward,
             }
-            for miner_uid, response, reward in zip(
-                miner_uids, responses, rewards.tolist()
-            )
+            for miner_uid, response, reward in zip(miner_uids, responses, rewards.tolist())
         }
     }
 

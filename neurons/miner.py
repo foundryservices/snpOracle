@@ -55,13 +55,9 @@ class Miner(BaseMinerNeuron):
         # TODO(developer): Anything specific to your use case you can do here
         self.model_loc = self.config.model
         if self.config.neuron.device == "cpu":
-            os.environ[
-                "CUDA_VISIBLE_DEVICES"
-            ] = "-1"  # This will force TensorFlow to use CPU only
+            os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # This will force TensorFlow to use CPU only
 
-    async def blacklist(
-        self, synapse: predictionnet.protocol.Challenge
-    ) -> typing.Tuple[bool, str]:
+    async def blacklist(self, synapse: predictionnet.protocol.Challenge) -> typing.Tuple[bool, str]:
         """
         Determines whether an incoming request should be blacklisted and thus ignored. Your implementation should
         define the logic for blacklisting requests based on your needs and desired security parameters.
@@ -99,14 +95,9 @@ class Miner(BaseMinerNeuron):
         uid = self.metagraph.hotkeys.index(synapse.dendrite.hotkey)
         stake = self.metagraph.S[uid].item()
 
-        if (
-            not self.config.blacklist.allow_non_registered
-            and synapse.dendrite.hotkey not in self.metagraph.hotkeys
-        ):
+        if not self.config.blacklist.allow_non_registered and synapse.dendrite.hotkey not in self.metagraph.hotkeys:
             # Ignore requests from un-registered entities.
-            bt.logging.trace(
-                f"Blacklisting un-registered hotkey {synapse.dendrite.hotkey}"
-            )
+            bt.logging.trace(f"Blacklisting un-registered hotkey {synapse.dendrite.hotkey}")
             return True, "Unrecognized hotkey"
 
         uid = self.metagraph.hotkeys.index(synapse.dendrite.hotkey)
@@ -114,27 +105,19 @@ class Miner(BaseMinerNeuron):
 
         if stake <= self.config.validator.min_stake:
             # Ignore requests if the stake is below minimum
-            bt.logging.info(
-                f"Hotkey: {synapse.dendrite.hotkey}: stake below minimum threshold of {self.config.validator.min_stake}"
-            )
+            bt.logging.info(f"Hotkey: {synapse.dendrite.hotkey}: stake below minimum threshold of {self.config.validator.min_stake}")
             return True, "Stake below minimum threshold"
 
         if self.config.blacklist.force_validator_permit:
             # If the config is set to force validator permit, then we should only allow requests from validators.
             if not self.metagraph.validator_permit[uid]:
-                bt.logging.warning(
-                    f"Blacklisting a request from non-validator hotkey {synapse.dendrite.hotkey}"
-                )
+                bt.logging.warning(f"Blacklisting a request from non-validator hotkey {synapse.dendrite.hotkey}")
                 return True, "Non-validator hotkey"
 
-        bt.logging.trace(
-            f"Not Blacklisting recognized hotkey {synapse.dendrite.hotkey}"
-        )
+        bt.logging.trace(f"Not Blacklisting recognized hotkey {synapse.dendrite.hotkey}")
         return False, "Hotkey recognized!"
 
-    async def priority(
-        self, synapse: predictionnet.protocol.Challenge
-    ) -> float:
+    async def priority(self, synapse: predictionnet.protocol.Challenge) -> float:
         """
         The priority function determines the order in which requests are handled. More valuable or higher-priority
         requests are processed before others. You should design your own priority mechanism with care.
@@ -155,20 +138,12 @@ class Miner(BaseMinerNeuron):
         - A higher stake results in a higher priority value.
         """
         # TODO(developer): Define how miners should prioritize requests.
-        caller_uid = self.metagraph.hotkeys.index(
-            synapse.dendrite.hotkey
-        )  # Get the caller index.
-        prirority = float(
-            self.metagraph.S[caller_uid]
-        )  # Return the stake as the priority.
-        bt.logging.trace(
-            f"Prioritizing {synapse.dendrite.hotkey} with value: ", prirority
-        )
+        caller_uid = self.metagraph.hotkeys.index(synapse.dendrite.hotkey)  # Get the caller index.
+        prirority = float(self.metagraph.S[caller_uid])  # Return the stake as the priority.
+        bt.logging.trace(f"Prioritizing {synapse.dendrite.hotkey} with value: ", prirority)
         return prirority
 
-    async def forward(
-        self, synapse: predictionnet.protocol.Challenge
-    ) -> predictionnet.protocol.Challenge:
+    async def forward(self, synapse: predictionnet.protocol.Challenge) -> predictionnet.protocol.Challenge:
         """
         Processes the incoming 'Challenge' synapse by performing a predefined operation on the input data.
         This method should be replaced with actual logic relevant to the miner's purpose.
@@ -182,31 +157,23 @@ class Miner(BaseMinerNeuron):
         The 'forward' function is a placeholder and should be overridden with logic that is appropriate for
         the miner's intended operation. This method demonstrates a basic transformation of input data.
         """
-        bt.logging.info(
-            f"👈 Received prediction request from: {synapse.dendrite.hotkey} for timestamp: {synapse.timestamp}"
-        )
+        bt.logging.info(f"👈 Received prediction request from: {synapse.dendrite.hotkey} for timestamp: {synapse.timestamp}")
 
         timestamp = synapse.timestamp
         # Download the file
         if self.config.hf_repo_id == "LOCAL":
             model_path = f"./{self.config.model}"
-            bt.logging.info(
-                f"Model weights file from a local folder will be loaded - Local weights file path: {self.config.model}"
-            )
+            bt.logging.info(f"Model weights file from a local folder will be loaded - Local weights file path: {self.config.model}")
         else:
             if not os.getenv("HF_ACCESS_TOKEN"):
-                print(
-                    "Cannot find a Huggingface Access Token - model download halted."
-                )
+                print("Cannot find a Huggingface Access Token - model download halted.")
             token = os.getenv("HF_ACCESS_TOKEN")
             model_path = hf_hub_download(
                 repo_id=self.config.hf_repo_id,
                 filename=self.config.model,
                 use_auth_token=token,
             )
-            bt.logging.info(
-                f"Model downloaded from huggingface at {model_path}"
-            )
+            bt.logging.info(f"Model downloaded from huggingface at {model_path}")
 
         model = load_model(model_path)
         data = prep_data()
@@ -237,9 +204,7 @@ class Miner(BaseMinerNeuron):
 
     def print_info(self):
         metagraph = self.metagraph
-        self.uid = self.metagraph.hotkeys.index(
-            self.wallet.hotkey.ss58_address
-        )
+        self.uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
 
         log = (
             "Miner | "

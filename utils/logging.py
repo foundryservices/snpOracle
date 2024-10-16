@@ -48,9 +48,7 @@ def log_wandb(responses, rewards, miner_uids):
                 "miner_response": response.prediction,
                 "miner_reward": reward,
             }
-            for miner_uid, response, reward in zip(
-                miner_uids, responses, rewards.tolist()
-            )
+            for miner_uid, response, reward in zip(miner_uids, responses, rewards.tolist())
         }
     }
     wandb.log(wandb_val_log)
@@ -66,9 +64,7 @@ def setup_logging(config):
         pass
     bt.logging.info(f"Set logging level to {config.logging.level}")
 
-    full_path = Path(
-        f"~/.bittensor/validators/{config.wallet.name}/{config.wallet.hotkey}/netuid{config.netuid}/validator"
-    ).expanduser()
+    full_path = Path(f"~/.bittensor/validators/{config.wallet.name}/{config.wallet.hotkey}/netuid{config.netuid}/validator").expanduser()
     full_path.mkdir(parents=True, exist_ok=True)
     config.full_path = str(full_path)
 

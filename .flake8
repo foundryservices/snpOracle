@@ -30,5 +30,5 @@ exclude =
     scripts,
     .venv
 max-complexity = 10
-max-line-length = 79
+max-line-length = 150
 per-file-ignores = __init__.py:F401
