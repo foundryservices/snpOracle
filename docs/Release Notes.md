@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+2.2.0
+-----
+Released on October 16th 2024
+- Adopt standard python formatting and linter tools
+- Leverage pre-commit hooks to enforce clean software development
+
+
 2.1.1
 -----
 Released on October 10th 2024
