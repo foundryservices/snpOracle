@@ -4,7 +4,7 @@ import pickle
 from datetime import datetime, timedelta
 
 import bittensor as bt
-from numpy import array, full, nan
+from numpy import full, nan
 from pytz import timezone
 from substrateinterface import SubstrateInterface
 
@@ -143,8 +143,8 @@ class Oracle:
             if total == 0:
                 total = 1  # prevent division by zero
             weights = [score / total for score in self.moving_avg_scores]
-            empty_weights = array([0.0] * len(self.metagraph.uids))
-            weights = empty_weights[self.available_uids] = weights
+            # empty_weights = array([0.0] * len(self.metagraph.uids))
+            # weights = empty_weights[self.available_uids] = weights
             bt.logging.info(f"Setting weights: {weights}")
             # Update the incentive mechanism on the Bittensor blockchain.
             result, msg = self.subtensor.set_weights(
