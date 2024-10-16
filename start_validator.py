@@ -15,7 +15,7 @@ def update_and_restart(args):
         "pm2",
         "start",
         f" --name {args.neuron.name}",
-        f"python3 -m validators.validator --wallet.name {args.wallet.name}"
+        f"python3 -m snpOracle.validators.validator --wallet.name {args.wallet.name}"
         f" --wallet.hotkey {args.wallet.hotkey}"
         f" --netuid {args.netuid}"
         f" --subtensor.network {args.subtensor.network}"
