@@ -49,15 +49,13 @@ class Oracle:
             # Each validator gets a unique identity (UID) in the network.
             self.my_subnet_uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
             bt.logging.info(f"Running validator on uid: {self.my_subnet_uid}")
-
+        self.node = SubstrateInterface(url=self.config.subtensor.chain_endpoint)
         self.scores = [1.0] * len(self.metagraph.S)
-        # custom params
-        self.last_update = 0
-        self.current_block = 0
+        self.current_block = self.node_query("System", "Number", [])
+        self.blocks_since_last_update = self.current_block - self.node_query("SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
         self.tempo = self.node_query("SubtensorModule", "Tempo", [self.config.netuid])
         self.set_weights_rate = 10  # in blocks, 30 minutes
         self.moving_avg_scores = [0.0] * len(self.metagraph.S)
-        self.node = SubstrateInterface(url=self.config.subtensor.chain_endpoint)
         self.hotkeys = self.metagraph.hotkeys
         if self.config.wandb_on:
             setup_wandb(self)
@@ -65,7 +63,7 @@ class Oracle:
         self.past_predictions = {uid: full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan) for uid in self.available_uids}
         self.load_state()
         self.lock = asyncio.Lock()
-        # self.loop.create_task(self.scheduled_prediction_request())
+        self.loop.create_task(self.scheduled_prediction_request())
         self.loop.create_task(self.refresh_metagraph())
         self.loop.create_task(self.set_weights_loop())
 
@@ -137,10 +135,8 @@ class Oracle:
 
     async def set_weights(self):
         # set weights once every tempo + 1
-        bt.logging.info(
-            f"last_update: {self.last_update}  |  set_weights_rate: {self.set_weights_rate}  |  result: {self.last_update > self.set_weights_rate}"
-        )
-        if self.last_update > self.set_weights_rate:
+        self.blocks_since_last_update = self.current_block - self.node_query("SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
+        if self.blocks_since_last_update > self.set_weights_rate:
             total = sum(self.moving_avg_scores)
             bt.logging.info(f"total: {total}")
             if total == 0:
@@ -184,7 +180,6 @@ class Oracle:
                         if self.config.wandb_on:
                             log_wandb(responses, rewards, self.available_uids)
                         self.current_block = self.node_query("System", "Number", [])
-                        self.last_update = self.current_block - self.node_query("SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
                     else:
                         print_info(self)
                         await asyncio.sleep(10)
