@@ -55,7 +55,7 @@ class Oracle:
         self.last_update = 0
         self.current_block = 0
         self.tempo = self.node_query("SubtensorModule", "Tempo", [self.config.netuid])
-        self.set_weights_rate = 150  # in blocks, 30 minutes
+        self.set_weights_rate = 10  # in blocks, 30 minutes
         self.moving_avg_scores = [0.0] * len(self.metagraph.S)
         self.node = SubstrateInterface(url=self.config.subtensor.chain_endpoint)
         self.hotkeys = self.metagraph.hotkeys
@@ -65,7 +65,7 @@ class Oracle:
         self.past_predictions = {uid: full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan) for uid in self.available_uids}
         self.load_state()
         self.lock = asyncio.Lock()
-        self.loop.create_task(self.scheduled_prediction_request())
+        # self.loop.create_task(self.scheduled_prediction_request())
         self.loop.create_task(self.refresh_metagraph())
         self.loop.create_task(self.set_weights())
 
@@ -82,7 +82,7 @@ class Oracle:
 
     async def refresh_metagraph(self):
         await self.resync_metagraph()
-        await asyncio.sleep(600)
+        await asyncio.sleep(120)
 
     async def resync_metagraph(self):
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
@@ -172,14 +172,9 @@ class Oracle:
                             responses=responses,
                             miner_uids=self.available_uids,
                         )
-                        bt.logging.info(
-                            f"len_responses: {len(responses)}  |  len_rewards: {len(rewards)}  |  len_available_uids: {len(self.available_uids)}"
-                        )
                         # Adjust the scores based on responses from miners and update moving average.
-                        for i, value in enumerate(rewards):
+                        for i, value in zip(self.available_uids, rewards):
                             self.moving_avg_scores[i] = (1 - self.config.alpha) * self.moving_avg_scores[i] + self.config.alpha * value
-                        for uid, avg, reward in zip(self.available_uids, self.moving_avg_scores, rewards):
-                            bt.logging.info(f"UID: {uid}  |  Avg: {avg}  |  Reward: {reward}")
                         if self.config.wandb_on:
                             log_wandb(responses, rewards, self.available_uids)
                         self.current_block = self.node_query("System", "Number", [])
