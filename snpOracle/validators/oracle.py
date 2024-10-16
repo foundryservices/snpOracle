@@ -49,13 +49,13 @@ class Oracle:
             # Each validator gets a unique identity (UID) in the network.
             self.my_subnet_uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
             bt.logging.info(f"Running validator on uid: {self.my_subnet_uid}")
-        self.load_state()
         self.node = SubstrateInterface(url=self.config.subtensor.chain_endpoint)
         self.scores = [1.0] * len(self.metagraph.S)
+        self.load_state()
         self.current_block = self.node_query("System", "Number", [])
         self.blocks_since_last_update = self.current_block - self.node_query("SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
         self.tempo = self.node_query("SubtensorModule", "Tempo", [self.config.netuid])
-        self.set_weights_rate = 100  # in blocks, 30 minutes
+        self.set_weights_rate = 100  # in blocks
         self.moving_avg_scores = self.scores
         self.hotkeys = self.metagraph.hotkeys
         if self.config.wandb_on:
@@ -136,7 +136,8 @@ class Oracle:
 
     async def set_weights(self):
         # set weights once every tempo + 1
-        self.blocks_since_last_update = self.current_block - self.node_query("SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
+        async with self.lock:
+            self.blocks_since_last_update = self.current_block - self.node_query("SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
         if self.blocks_since_last_update > self.set_weights_rate:
             total = sum(self.scores)
             bt.logging.info(f"total: {total}")
