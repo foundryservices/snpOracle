@@ -23,8 +23,9 @@ from typing import List
 import bittensor as bt
 import numpy as np
 import yfinance as yf
-from protocol import Challenge
 from pytz import timezone
+
+from snpOracle.protocol import Challenge
 
 
 ################################################################################
