@@ -143,12 +143,13 @@ class Oracle:
                 total = 1  # prevent division by zero
             weights = [score / total for score in self.moving_avg_scores]
             bt.logging.info(f"Setting weights: {weights}")
+            uint_uids, uint_weights = bt.utils.weight_utils.convert_weights_and_uids_for_emit(uids=self.available_uids, weights=weights)
             # Update the incentive mechanism on the Bittensor blockchain.
             result, msg = self.subtensor.set_weights(
                 netuid=self.config.netuid,
                 wallet=self.wallet,
-                uids=self.metagraph.uids,
-                weights=weights,
+                uids=uint_uids,
+                weights=uint_weights,
                 wait_for_inclusion=True,
             )
             if result:
