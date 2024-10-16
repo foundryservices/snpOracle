@@ -136,8 +136,9 @@ class Oracle:
 
     async def set_weights(self):
         # set weights once every tempo + 1
+        blocks_since_last_update = self.current_block - await self.node_query("SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
         async with self.lock:
-            self.blocks_since_last_update = self.current_block - self.node_query("SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
+            self.blocks_since_last_update = blocks_since_last_update
         if self.blocks_since_last_update > self.set_weights_rate:
             total = sum(self.scores)
             bt.logging.info(f"total: {total}")
