@@ -6,11 +6,11 @@ from datetime import datetime, timedelta
 import bittensor as bt
 from numpy import full, nan
 from pytz import timezone
-from reward import get_rewards
 from substrateinterface import SubstrateInterface
 
 from snpOracle.protocol import Challenge
 from snpOracle.utils import check_uid_availability, is_query_time, log_wandb, market_is_open, print_info, setup_wandb
+from snpOracle.validators.reward import get_rewards
 
 
 class Oracle:
@@ -172,8 +172,9 @@ class Oracle:
                             responses=responses,
                             miner_uids=self.available_uids,
                         )
-                        for uid, reward in zip(self.available_uids, rewards):
-                            bt.logging.info(f"UID: {uid}  |  Predictions: {responses[uid].prediction}  |  Reward: {reward}")
+                        bt.logging.info(
+                            f"len_responses: {len(responses)}  |  len_rewards: {len(rewards)}  |  len_available_uids: {len(self.available_uids)}"
+                        )
                         # Adjust the scores based on responses from miners and update moving average.
                         for i, value in enumerate(rewards):
                             self.moving_avg_scores[i] = (1 - self.config.alpha) * self.moving_avg_scores[i] + self.config.alpha * value
