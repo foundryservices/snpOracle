@@ -81,8 +81,13 @@ class Oracle:
         return miner_uids
 
     async def refresh_metagraph(self):
-        await self.resync_metagraph()
-        await asyncio.sleep(120)
+        while True:
+            await self.resync_metagraph()
+            await asyncio.sleep(120)
+
+    async def set_weights_loop(self):
+        while True:
+            await self.set_weights()
 
     async def resync_metagraph(self):
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
@@ -133,8 +138,8 @@ class Oracle:
 
     async def set_weights(self):
         # set weights once every tempo + 1
-        async with self.lock:
-            if self.last_update > self.set_weights_rate:
+        if self.last_update > self.set_weights_rate:
+            async with self.lock:
                 total = sum(self.moving_avg_scores)
                 if total == 0:
                     total = 1  # prevent division by zero
@@ -156,6 +161,8 @@ class Oracle:
                         msg,
                     )
                 self.metagraph.sync()
+        else:
+            await asyncio.sleep(120)
 
     async def scheduled_prediction_request(self):
         timestamp = (datetime.now(timezone("America/New_York")) - timedelta(minutes=self.prediction_interval)).isoformat()
