@@ -90,7 +90,7 @@ class Oracle:
 
     async def resync_metagraph(self):
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
-        with self.lock():
+        async with self.lock:
             bt.logging.info("Syncing Metagraph...")
             self.metagraph.sync(subtensor=self.subtensor)
             # Zero out all hotkeys that have been replaced.
