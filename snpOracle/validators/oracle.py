@@ -138,19 +138,17 @@ class Oracle:
         # set weights once every tempo + 1
         self.blocks_since_last_update = self.current_block - self.node_query("SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
         if self.blocks_since_last_update > self.set_weights_rate:
-            total = sum(self.moving_avg_scores)
+            total = sum(self.scores)
             bt.logging.info(f"total: {total}")
             if total == 0:
                 total = 1  # prevent division by zero
-            weights = [score / total for score in self.moving_avg_scores]
-            # empty_weights = array([0.0] * len(self.metagraph.uids))
-            # weights = empty_weights[self.available_uids] = weights
+            weights = [score / total for score in self.scores]
             bt.logging.info(f"Setting weights: {weights}")
             # Update the incentive mechanism on the Bittensor blockchain.
             result, msg = self.subtensor.set_weights(
                 netuid=self.config.netuid,
                 wallet=self.wallet,
-                uids=self.available_uids,
+                uids=self.metagraph.uids,
                 weights=weights,
                 wait_for_inclusion=True,
             )
@@ -180,6 +178,7 @@ class Oracle:
                         # Adjust the scores based on responses from miners and update moving average.
                         for i, value in zip(self.available_uids, rewards):
                             self.moving_avg_scores[i] = (1 - self.config.alpha) * self.moving_avg_scores[i] + self.config.alpha * value
+                        self.scores = self.moving_avg_scores
                         if self.config.wandb_on:
                             log_wandb(responses, rewards, self.available_uids)
                         self.current_block = self.node_query("System", "Number", [])
