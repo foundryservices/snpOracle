@@ -10,9 +10,14 @@ from reward import get_rewards
 from substrateinterface import SubstrateInterface
 
 from snpOracle.protocol import Challenge
-from snpOracle.utils.helpers import check_uid_availability
-from snpOracle.utils.logging import log_wandb, print_info, setup_wandb
-from snpOracle.utils.time import is_query_time, market_is_open
+from snpOracle.utils import (
+    check_uid_availability,
+    is_query_time,
+    log_wandb,
+    market_is_open,
+    print_info,
+    setup_wandb,
+)
 
 
 class Oracle:
