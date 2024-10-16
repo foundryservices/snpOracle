@@ -49,19 +49,19 @@ class Oracle:
             # Each validator gets a unique identity (UID) in the network.
             self.my_subnet_uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
             bt.logging.info(f"Running validator on uid: {self.my_subnet_uid}")
+        self.load_state()
         self.node = SubstrateInterface(url=self.config.subtensor.chain_endpoint)
         self.scores = [1.0] * len(self.metagraph.S)
         self.current_block = self.node_query("System", "Number", [])
         self.blocks_since_last_update = self.current_block - self.node_query("SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
         self.tempo = self.node_query("SubtensorModule", "Tempo", [self.config.netuid])
-        self.set_weights_rate = 10  # in blocks, 30 minutes
-        self.moving_avg_scores = [0.0] * len(self.metagraph.S)
+        self.set_weights_rate = 150  # in blocks, 30 minutes
+        self.moving_avg_scores = self.scores
         self.hotkeys = self.metagraph.hotkeys
         if self.config.wandb_on:
             setup_wandb(self)
         self.available_uids = asyncio.run(self.get_available_uids())
         self.past_predictions = {uid: full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan) for uid in self.available_uids}
-        self.load_state()
         self.lock = asyncio.Lock()
         self.loop.create_task(self.scheduled_prediction_request())
         self.loop.create_task(self.refresh_metagraph())
@@ -90,24 +90,25 @@ class Oracle:
 
     async def resync_metagraph(self):
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
-        bt.logging.info("Syncing Metagraph...")
-        self.metagraph.sync(subtensor=self.subtensor)
-        # Zero out all hotkeys that have been replaced.
-        for uid, hotkey in enumerate(self.hotkeys):
-            if hotkey != self.metagraph.hotkeys[uid]:
-                self.scores[uid] = 0  # hotkey has been replaced
-                self.past_predictions[uid] = full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)  # reset past predictions
-        self.available_uids = asyncio.run(self.get_available_uids())
-        # Check to see if the metagraph has changed size.
-        # If so, we need to add new hotkeys and moving averages.
-        if len(self.hotkeys) < len(self.metagraph.hotkeys):
-            # Update the size of the moving average scores.
-            new_moving_average = [1.0] * len(self.metagraph.S)
-            min_len = min(len(self.hotkeys), len(self.scores))
-            new_moving_average[:min_len] = self.scores[:min_len]
-            self.scores = new_moving_average
-        bt.logging.info("Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages")
-        await self.save_state()
+        with self.lock():
+            bt.logging.info("Syncing Metagraph...")
+            self.metagraph.sync(subtensor=self.subtensor)
+            # Zero out all hotkeys that have been replaced.
+            for uid, hotkey in enumerate(self.hotkeys):
+                if hotkey != self.metagraph.hotkeys[uid]:
+                    self.scores[uid] = 0  # hotkey has been replaced
+                    self.past_predictions[uid] = full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)  # reset past predictions
+            self.available_uids = asyncio.run(self.get_available_uids())
+            # Check to see if the metagraph has changed size.
+            # If so, we need to add new hotkeys and moving averages.
+            if len(self.hotkeys) < len(self.metagraph.hotkeys):
+                # Update the size of the moving average scores.
+                new_moving_average = [1.0] * len(self.metagraph.S)
+                min_len = min(len(self.hotkeys), len(self.scores))
+                new_moving_average[:min_len] = self.scores[:min_len]
+                self.scores = new_moving_average
+            bt.logging.info("Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages")
+            await self.save_state()
 
     def query_miners(self):
         timestamp = datetime.now(timezone("America/New_York")).isoformat()
@@ -143,13 +144,12 @@ class Oracle:
                 total = 1  # prevent division by zero
             weights = [score / total for score in self.moving_avg_scores]
             bt.logging.info(f"Setting weights: {weights}")
-            uint_uids, uint_weights = bt.utils.weight_utils.convert_weights_and_uids_for_emit(uids=self.available_uids, weights=weights)
             # Update the incentive mechanism on the Bittensor blockchain.
             result, msg = self.subtensor.set_weights(
                 netuid=self.config.netuid,
                 wallet=self.wallet,
-                uids=uint_uids,
-                weights=uint_weights,
+                uids=self.available_uids,
+                weights=weights,
                 wait_for_inclusion=True,
             )
             if result:
@@ -211,20 +211,8 @@ class Oracle:
             bt.logging.info("Skipping state load due to missing state.pt file.")
             return
         # backwards compatability with torch version
-        try:
-            # Load the state of the validator from file.
-            with open(state_path, "rb") as f:
-                state = pickle.load(f)
-            self.scores = state["scores"]
-            self.hotkeys = state["hotkeys"]
-        except Exception:
-            try:
-                import torch
-
-                state = torch.load(state_path)
-                bt.logging.info("Found torch state.pt file, converting to pickle...")
-                self.scores = state["scores"]
-                self.hotkeys = state["hotkeys"]
-                self.save_state()
-            except Exception as e:
-                bt.logging.info(f"Failed to load state file with error: {e}")
+        # Load the state of the validator from file.
+        with open(state_path, "rb") as f:
+            state = pickle.load(f)
+        self.scores = state["scores"]
+        self.hotkeys = state["hotkeys"]
