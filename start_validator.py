@@ -12,16 +12,16 @@ def update_and_restart(args):
     global current_version
     wandb = "--wandb_on" if args.wandb_on else ""
     start_command = [
-        " pm2 ",
-        " start ",
-        f" --name {args.neuron.name} ",
+        "pm2",
+        "start",
+        f" --name {args.neuron.name}",
         f"python3 -m validators.validator --wallet.name {args.wallet.name}"
-        f" --wallet.hotkey {args.wallet.hotkey} "
-        f" --netuid {args.netuid} "
-        f" --subtensor.network {args.subtensor.network} "
-        f" --subtensor.chain_endpoint {args.subtensor.chain_endpoint} "
-        f" --logging.level {args.logging.level} "
-        f" --axon.port {args.axon.port} "
+        f" --wallet.hotkey {args.wallet.hotkey}"
+        f" --netuid {args.netuid}"
+        f" --subtensor.network {args.subtensor.network}"
+        f" --subtensor.chain_endpoint {args.subtensor.chain_endpoint}"
+        f" --logging.level {args.logging.level}"
+        f" --axon.port {args.axon.port}"
         f"{wandb}",
     ]
     subprocess.run(start_command)
