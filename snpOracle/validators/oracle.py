@@ -138,28 +138,26 @@ class Oracle:
     async def set_weights(self):
         # set weights once every tempo + 1
         if self.last_update > self.set_weights_rate:
-            async with self.lock:
-                total = sum(self.moving_avg_scores)
-                if total == 0:
-                    total = 1  # prevent division by zero
-                weights = [score / total for score in self.moving_avg_scores]
-                bt.logging.info(f"Setting weights: {weights}")
-                # Update the incentive mechanism on the Bittensor blockchain.
-                result, msg = self.subtensor.set_weights(
-                    netuid=self.config.netuid,
-                    wallet=self.wallet,
-                    uids=self.metagraph.uids,
-                    weights=weights,
-                    wait_for_inclusion=True,
+            total = sum(self.moving_avg_scores)
+            if total == 0:
+                total = 1  # prevent division by zero
+            weights = [score / total for score in self.moving_avg_scores]
+            bt.logging.info(f"Setting weights: {weights}")
+            # Update the incentive mechanism on the Bittensor blockchain.
+            result, msg = self.subtensor.set_weights(
+                netuid=self.config.netuid,
+                wallet=self.wallet,
+                uids=self.metagraph.uids,
+                weights=weights,
+                wait_for_inclusion=True,
+            )
+            if result:
+                bt.logging.info("set_weights on chain successfully!")
+            else:
+                bt.logging.debug(
+                    "Failed to set weights this iteration with message:",
+                    msg,
                 )
-                if result:
-                    bt.logging.info("set_weights on chain successfully!")
-                else:
-                    bt.logging.debug(
-                        "Failed to set weights this iteration with message:",
-                        msg,
-                    )
-                self.metagraph.sync()
 
     async def scheduled_prediction_request(self):
         timestamp = (datetime.now(timezone("America/New_York")) - timedelta(minutes=self.prediction_interval)).isoformat()
@@ -195,7 +193,7 @@ class Oracle:
 
     async def save_state(self):
         """Saves the state of the validator to a file."""
-        bt.logging.info("Saving validator state.")
+
         state_path = os.path.join(self.config.full_path, "state.pt")
         state = {
             "scores": self.scores,
@@ -203,6 +201,7 @@ class Oracle:
         }
         with open(state_path, "wb") as f:
             pickle.dump(state, f)
+        bt.logging.info("Saved validator state.")
 
     def load_state(self):
         """Loads the state of the validator from a file."""
