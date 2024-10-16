@@ -137,8 +137,12 @@ class Oracle:
 
     async def set_weights(self):
         # set weights once every tempo + 1
+        bt.logging.info(
+            f"last_update: {self.last_update}  |  set_weights_rate: {self.set_weights_rate}  |  result: {self.last_update > self.set_weights_rate}"
+        )
         if self.last_update > self.set_weights_rate:
             total = sum(self.moving_avg_scores)
+            bt.logging.info(f"total: {total}")
             if total == 0:
                 total = 1  # prevent division by zero
             weights = [score / total for score in self.moving_avg_scores]
