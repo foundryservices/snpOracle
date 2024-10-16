@@ -178,8 +178,8 @@ class Oracle:
                         # Adjust the scores based on responses from miners and update moving average.
                         for i, value in enumerate(rewards):
                             self.moving_avg_scores[i] = (1 - self.config.alpha) * self.moving_avg_scores[i] + self.config.alpha * value
-
-                        bt.logging.info(f"Moving Average Scores: {self.moving_avg_scores}")
+                        for uid, avg, reward in zip(self.available_uids, self.moving_avg_scores, rewards):
+                            bt.logging.info(f"UID: {uid}  |  Avg: {avg}  |  Reward: {reward}")
                         if self.config.wandb_on:
                             log_wandb(responses, rewards, self.available_uids)
                         self.current_block = self.node_query("System", "Number", [])
