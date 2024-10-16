@@ -67,7 +67,7 @@ class Oracle:
         self.lock = asyncio.Lock()
         # self.loop.create_task(self.scheduled_prediction_request())
         self.loop.create_task(self.refresh_metagraph())
-        self.loop.create_task(self.set_weights())
+        self.loop.create_task(self.set_weights_loop())
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.save_state()
@@ -88,14 +88,12 @@ class Oracle:
     async def set_weights_loop(self):
         while True:
             await self.set_weights()
+            await asyncio.sleep(120)
 
     async def resync_metagraph(self):
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
-        bt.logging.info("resync_metagraph()")
-        bt.logging.info(f"{self.metagraph}")
+        bt.logging.info("Syncing Metagraph...")
         self.metagraph.sync(subtensor=self.subtensor)
-
-        bt.logging.info("Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages")
         # Zero out all hotkeys that have been replaced.
         for uid, hotkey in enumerate(self.hotkeys):
             if hotkey != self.metagraph.hotkeys[uid]:
@@ -110,6 +108,7 @@ class Oracle:
             min_len = min(len(self.hotkeys), len(self.scores))
             new_moving_average[:min_len] = self.scores[:min_len]
             self.scores = new_moving_average
+        bt.logging.info("Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages")
         await self.save_state()
 
     def query_miners(self):
@@ -161,8 +160,6 @@ class Oracle:
                         msg,
                     )
                 self.metagraph.sync()
-        else:
-            await asyncio.sleep(120)
 
     async def scheduled_prediction_request(self):
         timestamp = (datetime.now(timezone("America/New_York")) - timedelta(minutes=self.prediction_interval)).isoformat()
