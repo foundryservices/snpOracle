@@ -59,8 +59,7 @@ def is_query_time(prediction_interval, timestamp) -> bool:
 
 def print_info(self) -> None:
     metagraph = self.metagraph
-    self.uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
-    weight_timing = (self.set_weights_rate - self.blockes_since_last_update) * 12
+    weight_timing = self.set_weights_rate - self.blocks_since_last_update
     log = (
         "Validator | "
         f"UID:{self.my_uid} | "
@@ -69,7 +68,7 @@ def print_info(self) -> None:
         f"VTrust:{metagraph.Tv[self.my_uid]:.3f} | "
         f"Dividend:{metagraph.D[self.my_uid]:.3f} | "
         f"Emission:{metagraph.E[self.my_uid]:.3f} | "
-        f"Seting weights in {weight_timing} seconds"
+        f"Seting weights in {weight_timing} blocks"
     )
     bt.logging.info(log)
 
