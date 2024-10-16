@@ -245,7 +245,6 @@ def get_rewards(
     # add an extra timepoint for dir_acc calculation
     for i in range(N_TIMEPOINTS + 1):
         prediction_times.append(rounded_up_time - timedelta(minutes=(i + 1) * prediction_interval))
-    bt.logging.info(f"Prediction times: {prediction_times}")
     data = yf.download(tickers=ticker_symbol, period="5d", interval="5m", progress=False)
     close_price = data.iloc[data.index.tz_localize(None).isin(prediction_times)]["Close"].tolist()
     if len(close_price) < (N_TIMEPOINTS + 1):

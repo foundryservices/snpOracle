@@ -86,7 +86,7 @@ class Oracle:
     async def set_weights_loop(self):
         while True:
             await self.set_weights()
-            await asyncio.sleep(120)
+            await asyncio.sleep(12)
 
     async def resync_metagraph(self):
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
