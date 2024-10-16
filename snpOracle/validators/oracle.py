@@ -9,7 +9,7 @@ from pytz import timezone
 from reward import get_rewards
 from substrateinterface import SubstrateInterface
 
-from protocol import Challenge
+from snpOracle.protocol import Challenge
 from snpOracle.utils.helpers import check_uid_availability
 from snpOracle.utils.logging import log_wandb, print_info, setup_wandb
 from snpOracle.utils.time import is_query_time, market_is_open
@@ -80,7 +80,8 @@ class Oracle:
             url=self.config.subtensor.chain_endpoint
         )
         self.hotkeys = self.metagraph.hotkeys
-        setup_wandb(self)
+        if self.config.wandb_on:
+            setup_wandb(self)
         self.available_uids = asyncio.run(self.get_available_uids())
         self.past_predictions = {
             uid: full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)
@@ -227,7 +228,8 @@ class Oracle:
                         bt.logging.info(
                             f"Moving Average Scores: {self.moving_avg_scores}"
                         )
-                        log_wandb(responses, rewards, self.available_uids)
+                        if self.config.wandb_on:
+                            log_wandb(responses, rewards, self.available_uids)
                         self.current_block = self.node_query(
                             "System", "Number", []
                         )

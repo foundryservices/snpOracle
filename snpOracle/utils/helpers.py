@@ -1,6 +1,10 @@
 import argparse
+import re
+from typing import Optional
 
 import bittensor as bt
+import git
+import requests
 
 
 def parse_arguments():
@@ -21,6 +25,7 @@ def parse_arguments():
     parser.add_argument(
         "--logging.level", choices=["info", "debug", "trace"], default="info"
     )
+    parser.add_argument("--autoupdate", action="store_true", dest="autoupdate")
     parser.add_argument(
         "--logging.logging_dir", type=str, default="~/.bittensor/validators"
     )
@@ -28,6 +33,7 @@ def parse_arguments():
     parser.add_argument("--prediction_interval", type=int, default=5)
     parser.add_argument("--N_TIMEPOINTS", type=int, default=6)
     parser.add_argument("--vpermit_tao_limit", type=int, default=1024)
+    parser.add_argument("--wandb_on", action="store_true", dest="wandb_on")
     return parser.parse_args(namespace=NestedNamespace())
 
 
@@ -68,3 +74,20 @@ def check_uid_availability(
             return False
     # Available otherwise.
     return True
+
+
+def get_version() -> Optional[str]:
+    repo = git.Repo(search_parent_directories=True)
+    branch_name = repo.active_branch.name
+    url = f"https://github.com/foundryservices/snpOracle/blob/{branch_name}/snpOracle/__init__.py"
+    response = requests.get(url, timeout=10)
+    if not response.ok:
+        bt.logging.error("github api call failed")
+        return None
+    match = re.search(r"__version__ = (.{1,10})", response.text)
+
+    version_match = re.search(r"\d+\.\d+\.\d+", match.group(1))
+    if not version_match:
+        raise Exception("Version information not found")
+
+    return version_match.group()
