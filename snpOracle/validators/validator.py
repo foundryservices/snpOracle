@@ -3,8 +3,7 @@ from pathlib import Path
 
 import bittensor as bt
 
-from snpOracle.utils.helpers import parse_arguments
-from snpOracle.utils.logging import setup_logging
+from snpOracle.utils import parse_arguments, setup_logging
 from snpOracle.validators.oracle import Oracle
 
 
