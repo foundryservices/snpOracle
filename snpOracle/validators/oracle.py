@@ -4,7 +4,7 @@ import pickle
 from datetime import datetime, timedelta
 
 import bittensor as bt
-from numpy import full, nan
+from numpy import array, full, nan
 from pytz import timezone
 from substrateinterface import SubstrateInterface
 
@@ -55,7 +55,7 @@ class Oracle:
         self.current_block = self.node_query("System", "Number", [])
         self.blocks_since_last_update = self.current_block - self.node_query("SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
         self.tempo = self.node_query("SubtensorModule", "Tempo", [self.config.netuid])
-        self.set_weights_rate = 150  # in blocks, 30 minutes
+        self.set_weights_rate = 100  # in blocks, 30 minutes
         self.moving_avg_scores = self.scores
         self.hotkeys = self.metagraph.hotkeys
         if self.config.wandb_on:
@@ -143,6 +143,8 @@ class Oracle:
             if total == 0:
                 total = 1  # prevent division by zero
             weights = [score / total for score in self.moving_avg_scores]
+            empty_weights = array([0.0] * len(self.metagraph.uids))
+            weights = empty_weights[self.available_uids] = weights
             bt.logging.info(f"Setting weights: {weights}")
             # Update the incentive mechanism on the Bittensor blockchain.
             result, msg = self.subtensor.set_weights(
