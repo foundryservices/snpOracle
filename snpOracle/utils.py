@@ -64,10 +64,11 @@ def print_info(self) -> None:
         "Validator | "
         f"UID:{self.my_uid} | "
         f"Block:{self.current_block} | "
-        f"Stake:{metagraph.S[self.my_uid]} | "
-        f"VTrust:{metagraph.Tv[self.my_uid]} | "
-        f"Dividend:{metagraph.D[self.my_uid]} | "
-        f"Emission:{metagraph.E[self.my_uid]}"
+        f"Stake:{metagraph.S[self.my_uid]:.3f} | "
+        f"VTrust:{metagraph.Tv[self.my_uid]:.3f} | "
+        f"Dividend:{metagraph.D[self.my_uid]:.3f} | "
+        f"Emission:{metagraph.E[self.my_uid]:.3f} | "
+        f"Seting weights in {(self.set_weights_rate-self.blockes_since_last_update)*12} seconds"
     )
     bt.logging.info(log)
 

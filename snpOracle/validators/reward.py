@@ -251,9 +251,6 @@ def get_rewards(
     if len(close_price) < (N_TIMEPOINTS + 1):
         # edge case where its between 9:30am and 10am
         close_price = data.iloc[-N_TIMEPOINTS - 1 :]["Close"].tolist()
-    close_price_revealed = " ".join(str(price) for price in close_price)
-
-    bt.logging.info(f"Revealing close prices for this interval: {close_price_revealed}")
 
     # Preallocate an array (nMiners x N_TIMEPOINTS x N_TIMEPOINTS) where the third dimension is t-1, t-2,...,t-N_TIMEPOINTS for past predictions
     raw_deltas = np.full((len(responses), N_TIMEPOINTS, N_TIMEPOINTS), np.nan)
