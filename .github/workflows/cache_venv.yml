@@ -37,10 +37,11 @@ jobs:
       # install dependencies if cache does not exist
       #----------------------------------------------
       - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           python -m venv .venv
           source .venv/bin/activate
-          python -m pip install .
+          python -m pip install .[DEV]
           echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
           echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
 
@@ -48,6 +49,7 @@ jobs:
       #             save venv to cache
       #----------------------------------------------
       - name: Saved cached virtualenv
+        if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('requirements.txt') }}-${{ hashFiles('dev_requirements.txt') }}
