@@ -168,7 +168,9 @@ class Oracle:
                     query_lag = datetime.now(timezone("America/New_York")) - datetime.fromisoformat(timestamp)
                     if is_query_time(self.prediction_interval, timestamp) or query_lag > timedelta(minutes=self.prediction_interval):
                         responses, timestamp = self.query_miners()
-                        bt.logging.info(f"Received responses: {responses}")
+                        for uid, response in zip(self.available_uids, responses):
+                            if response is not None:
+                                bt.logging.info(f"UID: {uid}  |  Prediction: {response.prediction}")
                         rewards = get_rewards(
                             self,
                             responses=responses,
