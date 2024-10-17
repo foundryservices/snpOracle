@@ -139,6 +139,7 @@ class Oracle:
         # set weights once every tempo + 1
         async with self.lock:
             if self.blocks_since_last_update > self.set_weights_rate:
+                self.resync_metagraph()
                 total = sum(self.scores)
                 if total == 0:
                     total = 1  # prevent division by zero
