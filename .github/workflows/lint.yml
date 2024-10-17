@@ -1,0 +1,59 @@
+name: Python Linting
+
+on:
+  pull_request:
+  push:
+    branches: [main, dev]
+
+jobs:
+  #----------------------------------------------
+  #       Cache Virtual Environment
+  #----------------------------------------------
+  venv-setup:
+    name: Cache Venv
+    uses: ./.github/workflows/cache_venv.yml
+    with:
+      command: |
+        python -m pip list
+        python --version
+        echo "Successfully setup venv"
+
+  #----------------------------------------------
+  #       Run Black
+  #----------------------------------------------
+  black:
+    name: Black
+    needs: venv-setup
+    uses: ./.github/workflows/cache_venv.yml
+    with:
+      command: python -m black --check .
+
+  #----------------------------------------------
+  #       Run Isort
+  #----------------------------------------------
+  isort:
+    name: isort
+    needs: venv-setup
+    uses: ./.github/workflows/cache_venv.yml
+    with:
+      command: python -m isort --check-only .
+
+  # #----------------------------------------------
+  # #       Run Mypy
+  # #----------------------------------------------
+  # mypy:
+  #   name: MyPy
+  #   needs: venv-setup
+  #   uses: ./.github/workflows/cache_venv.yml
+  #   with:
+  #     command: python -m mypy .
+
+  #----------------------------------------------
+  #       Run Flake8
+  #----------------------------------------------
+  flake8:
+    name: Flake8
+    needs: venv-setup
+    uses: ./.github/workflows/cache_venv.yml
+    with:
+      command: python -m flake8 .
