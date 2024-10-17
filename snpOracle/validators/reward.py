@@ -17,7 +17,6 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-import warnings
 from datetime import datetime, timedelta
 from typing import List
 
@@ -101,9 +100,7 @@ def rank_miners_by_epoch(deltas: np.ndarray, correct_dirs: np.ndarray) -> np.nda
     incorrect_deltas = np.full(deltas.shape, np.nan)
     incorrect_deltas[~correct_dirs] = deltas[~correct_dirs]
     correct_ranks = rank_columns(correct_deltas)
-    with warnings.catch_warnings():
-        warnings.simplerfilter("ignore")
-        incorrect_ranks = rank_columns(incorrect_deltas) + np.nanmax(correct_ranks, axis=0)
+    incorrect_ranks = rank_columns(incorrect_deltas) + np.nanmax(correct_ranks, axis=0)
     all_ranks = correct_ranks
     all_ranks[~correct_dirs] = incorrect_ranks[~correct_dirs]
     return all_ranks
@@ -278,9 +275,7 @@ def get_rewards(
     ranks = np.full((len(responses), N_TIMEPOINTS, N_TIMEPOINTS), np.nan)
     for t in range(N_TIMEPOINTS):
         ranks[:, :, t] = rank_miners_by_epoch(raw_deltas[:, :, t], raw_correct_dir[:, :, t])
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        incentive_ranks = np.nanmean(np.nanmean(ranks, axis=2), axis=1).argsort().argsort()
+    incentive_ranks = np.nanmean(np.nanmean(ranks, axis=2), axis=1).argsort().argsort()
     reward = np.exp(-0.05 * incentive_ranks)
     reward[incentive_ranks > 100] = 0
     isNone = [x.prediction is None for x in responses]
