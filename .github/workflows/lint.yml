@@ -32,7 +32,7 @@ jobs:
   #       Run Isort
   #----------------------------------------------
   isort:
-    name: isort
+    name: Isort
     needs: venv-setup
     uses: ./.github/workflows/cache_venv.yml
     with:
