@@ -47,7 +47,7 @@ class Oracle:
         else:
             # Each validator gets a unique identity (UID) in the network.
             self.my_uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
-            bt.logging.info(f"Running validator on uid: {self.my_subnet_uid}")
+            bt.logging.info(f"Running validator on uid: {self.my_uid}")
         self.node = SubstrateInterface(url=self.config.subtensor.chain_endpoint)
         self.scores = [1.0] * len(self.metagraph.S)
         self.load_state()
