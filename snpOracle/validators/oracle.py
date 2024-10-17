@@ -50,7 +50,7 @@ class Oracle:
             bt.logging.info(f"Running validator on uid: {self.my_uid}")
         if self.config.reset_state:
             self.save_state()
-            self.scores = [1.0] * len(self.metagraph.S)
+            self.scores = [0.0] * len(self.metagraph.S)
             self.moving_avg_scores = self.scores
         else:
             self.load_state()
