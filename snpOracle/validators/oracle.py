@@ -79,7 +79,7 @@ class Oracle:
 
     async def refresh_metagraph(self):
         while True:
-            self.resync_metagraph()
+            await self.resync_metagraph()
             await asyncio.sleep(120)
 
     async def set_weights_loop(self):
