@@ -100,7 +100,7 @@ class Oracle:
             self.available_uids = asyncio.run(self.get_available_uids())
             # Check to see if the metagraph has changed size.
             # If so, we need to add new hotkeys and moving averages.
-            if len(self.hotkeys) < len(self.metagraph.hotkeys):
+            if len(self.hotkeys) < len(self.metagraph.hotkeys) or len(self.scores) < len(self.metagraph.S):
                 # Update the size of the moving average scores.
                 new_moving_average = [0.0] * len(self.metagraph.S)
                 min_len = min(len(self.hotkeys), len(self.scores))
