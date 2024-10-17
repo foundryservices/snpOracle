@@ -144,6 +144,11 @@ class Oracle:
                     total = 1  # prevent division by zero
                 weights = [score / total for score in self.scores]
                 bt.logging.info(f"Setting weights: {weights}")
+                bt.logging.info(f"len(weights): {len(weights)}")
+                bt.logging.info(f"len(self.scores): {len(self.scores)}")
+                bt.logging.info(f"len(self.metagraph.uids): {len(self.metagraph.uids)}")
+                bt.logging.info(f"len(self.available_uids): {len(self.available_uids)}")
+                bt.logging.info(f"len(self.hotkeys): {len(self.hotkeys)}")
                 # Update the incentive mechanism on the Bittensor blockchain.
                 result, msg = self.subtensor.set_weights(
                     netuid=self.config.netuid,
