@@ -3,18 +3,8 @@ from pathlib import Path
 
 import bittensor as bt
 
-from snpOracle.utils import parse_arguments, setup_logging
+from snpOracle.utils import Config, parse_arguments, setup_logging
 from snpOracle.validators.oracle import Oracle
-
-
-class Config:
-    def __init__(self, args):
-        # Add command-line arguments to the Config object
-        for key, value in vars(args).items():
-            setattr(self, key, value)
-
-    def get(self, key, default=None):
-        return getattr(self, key, default)
 
 
 class Validator:

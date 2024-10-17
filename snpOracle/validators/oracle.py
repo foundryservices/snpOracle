@@ -32,7 +32,6 @@ class Oracle:
 
         # Initialize wallet.
         self.wallet = config.wallet
-        self.my_uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
         bt.logging.info(f"Wallet: {self.wallet}")
 
         # Initialize dendrite.
@@ -47,7 +46,7 @@ class Oracle:
             exit()
         else:
             # Each validator gets a unique identity (UID) in the network.
-            self.my_subnet_uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
+            self.my_uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
             bt.logging.info(f"Running validator on uid: {self.my_subnet_uid}")
         self.node = SubstrateInterface(url=self.config.subtensor.chain_endpoint)
         self.scores = [1.0] * len(self.metagraph.S)
@@ -103,10 +102,11 @@ class Oracle:
             # If so, we need to add new hotkeys and moving averages.
             if len(self.hotkeys) < len(self.metagraph.hotkeys):
                 # Update the size of the moving average scores.
-                new_moving_average = [1.0] * len(self.metagraph.S)
+                new_moving_average = [0.0] * len(self.metagraph.S)
                 min_len = min(len(self.hotkeys), len(self.scores))
                 new_moving_average[:min_len] = self.scores[:min_len]
                 self.scores = new_moving_average
+                self.hotkeys = self.metagraph.hotkeys
             bt.logging.info("Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages")
             await self.save_state()
 
@@ -136,28 +136,28 @@ class Oracle:
 
     async def set_weights(self):
         # set weights once every tempo + 1
-        if self.blocks_since_last_update > self.set_weights_rate:
-            total = sum(self.scores)
-            bt.logging.info(f"total: {total}")
-            if total == 0:
-                total = 1  # prevent division by zero
-            weights = [score / total for score in self.scores]
-            bt.logging.info(f"Setting weights: {weights}")
-            # Update the incentive mechanism on the Bittensor blockchain.
-            result, msg = self.subtensor.set_weights(
-                netuid=self.config.netuid,
-                wallet=self.wallet,
-                uids=self.metagraph.uids,
-                weights=weights,
-                wait_for_inclusion=True,
-            )
-            if result:
-                bt.logging.info("set_weights on chain successfully!")
-            else:
-                bt.logging.debug(
-                    "Failed to set weights this iteration with message:",
-                    msg,
+        async with self.lock:
+            if self.blocks_since_last_update > self.set_weights_rate:
+                total = sum(self.scores)
+                if total == 0:
+                    total = 1  # prevent division by zero
+                weights = [score / total for score in self.scores]
+                bt.logging.info(f"Setting weights: {weights}")
+                # Update the incentive mechanism on the Bittensor blockchain.
+                result, msg = self.subtensor.set_weights(
+                    netuid=self.config.netuid,
+                    wallet=self.wallet,
+                    uids=self.metagraph.uids,
+                    weights=weights,
+                    wait_for_inclusion=True,
                 )
+                if result:
+                    bt.logging.info("set_weights on chain successfully!")
+                else:
+                    bt.logging.debug(
+                        "Failed to set weights this iteration with message:",
+                        msg,
+                    )
 
     async def scheduled_prediction_request(self):
         timestamp = (datetime.now(timezone("America/New_York")) - timedelta(minutes=self.prediction_interval)).isoformat()
@@ -186,7 +186,7 @@ class Oracle:
                             self.current_block - self.node_query("SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
                         )
                         print_info(self)
-                        await asyncio.sleep(10)
+                        await asyncio.sleep(12)
                 else:
                     bt.logging.info("Market is closed. Sleeping for 2 minutes...")
                     await asyncio.sleep(120)

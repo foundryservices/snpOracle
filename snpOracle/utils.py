@@ -200,3 +200,13 @@ def get_version() -> Optional[str]:
         raise Exception("Version information not found")
 
     return version_match.group()
+
+
+class Config:
+    def __init__(self, args):
+        # Add command-line arguments to the Config object
+        for key, value in vars(args).items():
+            setattr(self, key, value)
+
+    def get(self, key, default=None):
+        return getattr(self, key, default)
