@@ -2,28 +2,22 @@ import subprocess
 import time
 
 import snpOracle
-from snpOracle.utils import get_version, parse_arguments
+from snpOracle.utils import Config, NestedNamespace, get_version, parse_arguments
 
 webhook_url = ""
 current_version = snpOracle.__version__
 
 
-def update_and_restart(args):
+def update_and_restart(config):
     global current_version
-    wandb = "--wandb_on" if args.wandb_on else ""
-    start_command = [
-        "pm2",
-        "start",
-        f" --name {args.neuron.name}",
-        f"python3 -m snpOracle.validators.validator --wallet.name {args.wallet.name}"
-        f" --wallet.hotkey {args.wallet.hotkey}"
-        f" --netuid {args.netuid}"
-        f" --subtensor.network {args.subtensor.network}"
-        f" --subtensor.chain_endpoint {args.subtensor.chain_endpoint}"
-        f" --logging.level {args.logging.level}"
-        f" --axon.port {args.axon.port}"
-        f"{wandb}",
-    ]
+    start_command = ["pm2 start python3 -m snpOracle.validators.validator "]
+    for key, value in vars(config).items():
+        if isinstance(value, NestedNamespace):
+            for key_2, value_2 in vars(value).items():
+                start_command.append(f" --{key}.{key_2} {value_2} ")
+        else:
+            start_command.append(f" --{key} {value} ")
+
     subprocess.run(start_command)
     if args.autoupdate:
         while True:
@@ -44,8 +38,8 @@ def update_and_restart(args):
 
 if __name__ == "__main__":
     args = parse_arguments()
-
+    config = Config(args)
     try:
-        update_and_restart(args)
+        update_and_restart(config)
     except Exception as e:
         print(e)

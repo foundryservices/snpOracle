@@ -6,26 +6,29 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
 import bittensor as bt
-import yfinance as yf
 from dotenv import load_dotenv
+from huggingface_hub import hf_hub_download
 from pytz import timezone
 
-import predictionnet
-from predictionnet.base.miner import BaseMinerNeuron
+from snpOracle.protocol import Challenge
+from snpOracle.utils import Config, load_model, parse_arguments, predict, prep_data, scale_data, setup_logging
 
 # Use an executor to offload blocking operations
 executor = ThreadPoolExecutor(max_workers=5)
 load_dotenv()
 
 
-class Miner(BaseMinerNeuron):
+class Miner:
     """
     Optimized Miner to handle ultra-fast requests with low latency.
     """
 
     def __init__(self, config=None):
-        super(Miner, self).__init__(config=config)
+        args = parse_arguments()
+        config = Config(args)
+        self.config = config
         self.model_loc = self.config.model
+        setup_logging(self.config)
         self.current_prediction = [datetime.now(timezone("America/New_York")), [0]]
         if self.config.neuron.device == "cpu":
             os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # Force TensorFlow to use CPU only
@@ -33,38 +36,44 @@ class Miner(BaseMinerNeuron):
     # Async function to avoid blocking I/O operations
     async def download_data(self):
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(executor, yf.download, "^GSPC", "5d", "1m", False)
+        return await loop.run_in_executor(executor, prep_data())
 
     async def fit_model(self, y):
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(executor, self._fit_arima, y)
 
-    async def forward(self, synapse: predictionnet.protocol.Challenge) -> predictionnet.protocol.Challenge:
+    async def forward(self, synapse: Challenge) -> Challenge:
         """
         Optimized forward function for low latency and caching.
         """
         bt.logging.info(f"👈 Received prediction request from: {synapse.dendrite.hotkey} for timestamp: {synapse.timestamp}")
 
         timestamp = synapse.timestamp
-        time_diff = datetime.fromisoformat(timestamp) - self.current_prediction[0]
-
-        if time_diff.seconds < 180 and self.current_prediction[1][0] != 0:
-            # Serve cached prediction if less than 3 minutes old
-            synapse.prediction = self.current_prediction[1]
-            self.current_prediction[0] = datetime.fromisoformat(timestamp)
+        # Download the file
+        if self.config.hf_repo_id == "LOCAL":
+            model_path = f"./{self.config.model}"
+            bt.logging.info(f"Model weights file from a local folder will be loaded - Local weights file path: {self.config.model}")
         else:
-            # Async call to download data and fit the model to avoid blocking
-            data = await self.download_data()
-            y = data["Close"].values[-500:]  # Only use the latest 500 data points
+            if not os.getenv("HF_ACCESS_TOKEN"):
+                print("Cannot find a Huggingface Access Token - model download halted.")
+            token = os.getenv("HF_ACCESS_TOKEN")
+            model_path = hf_hub_download(repo_id=self.config.hf_repo_id, filename=self.config.model, use_auth_token=token)
+            bt.logging.info(f"Model downloaded from huggingface at {model_path}")
 
-            model_fit = await self.fit_model(y)
-            forecast = model_fit.forecast(steps=30)
-            forecast = forecast[[4, 9, 14, 19, 24, 29]]  # Pick specific points from forecast
+        model = load_model(model_path)
+        data = self.download_data()
+        scaler, _, _ = scale_data(data)
 
-            self.current_prediction = [datetime.fromisoformat(timestamp), forecast.tolist()]
-            synapse.prediction = forecast.tolist()
+        # type needs to be changed based on the algo you're running
+        # any algo specific change logic can be added to predict function in predict.py
+        prediction = predict(timestamp, scaler, model, type="lstm")
+        bt.logging.info(f"Prediction: {prediction}")
+        # pred_np_array = np.array(prediction).reshape(-1, 1)
 
-        if synapse.prediction:
+        # logic to ensure that only past 20 day context exists in synapse
+        synapse.prediction = list(prediction[0])
+
+        if synapse.prediction is None:
             bt.logging.success(f"Predicted price 🎯: {synapse.prediction}")
         else:
             bt.logging.info("No price predicted for this request.")
@@ -93,7 +102,7 @@ class Miner(BaseMinerNeuron):
         )
         bt.logging.info(log)
 
-    async def blacklist(self, synapse: predictionnet.protocol.Challenge) -> typing.Tuple[bool, str]:
+    async def blacklist(self, synapse: Challenge) -> typing.Tuple[bool, str]:
         """
         Determines whether an incoming request should be blacklisted and thus ignored. Your implementation should
         define the logic for blacklisting requests based on your needs and desired security parameters.
@@ -138,7 +147,7 @@ class Miner(BaseMinerNeuron):
 
         bt.logging.trace(f"Not Blacklisting recognized hotkey {synapse.dendrite.hotkey}")
 
-    async def priority(self, synapse: predictionnet.protocol.Challenge) -> float:
+    async def priority(self, synapse: Challenge) -> float:
         """
         The priority function determines the order in which requests are handled. More valuable or higher-priority
         requests are processed before others. You should design your own priority mechanism with care.
