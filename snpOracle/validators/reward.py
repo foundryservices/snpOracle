@@ -209,19 +209,19 @@ def get_rewards(
     miner_uids: List[int],
 ) -> np.ndarray:
     """
-    Returns a tensor of rewards for the given query and responses.
+    Returns an array of rewards for the given query and responses.
 
     Args:
     - query (int): The query sent to the miner.
     - responses (List[Challenge]): A list of responses from the miner.
 
     Returns:
-    - np.ndarray: A tensor of rewards for the given query and responses.
+    - np.ndarray: An array of rewards for the given query and responses.
     """
     N_TIMEPOINTS = self.N_TIMEPOINTS
     prediction_interval = self.prediction_interval
     if len(responses) == 0:
-        bt.logging.info("Got no responses. Returning reward tensor of zeros.")
+        bt.logging.info("Got no responses. Returning reward array of zeros.")
         return [], np.full(len(self.metagraph.S), 0.0)  # Fallback strategy: Log and return 0.
 
     # Prepare to extract close price for this timestamp
