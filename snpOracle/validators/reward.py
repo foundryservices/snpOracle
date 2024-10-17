@@ -256,17 +256,14 @@ def get_rewards(
     raw_correct_dir = np.full((len(responses), N_TIMEPOINTS, N_TIMEPOINTS), False)
     ranks = np.full((len(responses), N_TIMEPOINTS, N_TIMEPOINTS), np.nan)
     for x, response in enumerate(responses):
-        # calc_raw also does many helpful things like shifting epoch to
-        delta, correct = calc_raw(self, miner_uids[x], response, close_price)
-        if delta is None or correct is None:
-            if response.prediction is None:
-                # no response generated
-                raw_deltas[x, :, :], raw_correct_dir[x, :, :] = np.nan, np.nan
-            else:
-                # wrong size response generated
-                raw_deltas[x, :, :], raw_correct_dir[x, :, :] = np.nan, np.nan
-            continue
+        if response.prediction is None:
+            # no response generated
+            raw_deltas[x, :, :], raw_correct_dir[x, :, :] = np.nan, np.nan
+        elif len(response.prediction) != N_TIMEPOINTS:
+            # wrong size response generated
+            raw_deltas[x, :, :], raw_correct_dir[x, :, :] = np.nan, np.nan
         else:
+            delta, correct = calc_raw(self, miner_uids[x], response, close_price)
             raw_deltas[x, :, :] = delta
             raw_correct_dir[x, :, :] = correct
         update_synapse(self, miner_uids[x], response)

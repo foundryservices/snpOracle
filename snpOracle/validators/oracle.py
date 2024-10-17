@@ -105,6 +105,7 @@ class Oracle:
                 new_moving_average = [0.0] * len(self.metagraph.S)
                 min_len = min(len(self.hotkeys), len(self.scores))
                 new_moving_average[:min_len] = self.scores[:min_len]
+                self.moving_average = new_moving_average
                 self.scores = new_moving_average
                 self.hotkeys = self.metagraph.hotkeys
             bt.logging.info("Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages")

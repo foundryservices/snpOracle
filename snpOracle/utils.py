@@ -59,7 +59,7 @@ def is_query_time(prediction_interval, timestamp) -> bool:
 
 def print_info(self) -> None:
     metagraph = self.metagraph
-    weight_timing = self.set_weights_rate - self.blocks_since_last_update
+    weight_timing = self.set_weights_rate - self.blocks_since_last_update + 1
     log = (
         "Validator | "
         f"UID:{self.my_uid} | "
