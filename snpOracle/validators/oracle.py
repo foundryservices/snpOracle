@@ -79,7 +79,7 @@ class Oracle:
 
     async def refresh_metagraph(self):
         while True:
-            await self.resync_metagraph()
+            self.resync_metagraph()
             await asyncio.sleep(120)
 
     async def set_weights_loop(self):
@@ -87,9 +87,9 @@ class Oracle:
             await self.set_weights()
             await asyncio.sleep(12)
 
-    async def resync_metagraph(self):
+    def resync_metagraph(self):
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
-        async with self.lock:
+        with self.lock:
             bt.logging.info("Syncing Metagraph...")
             self.metagraph.sync(subtensor=self.subtensor)
             # Zero out all hotkeys that have been replaced.
@@ -109,7 +109,7 @@ class Oracle:
                 self.scores = new_moving_average
                 self.hotkeys = self.metagraph.hotkeys
             bt.logging.info("Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages")
-            await self.save_state()
+            self.save_state()
 
     def query_miners(self):
         timestamp = datetime.now(timezone("America/New_York")).isoformat()
@@ -139,7 +139,6 @@ class Oracle:
         # set weights once every tempo + 1
         async with self.lock:
             if self.blocks_since_last_update > self.set_weights_rate:
-                self.resync_metagraph()
                 total = sum(self.scores)
                 if total == 0:
                     total = 1  # prevent division by zero
