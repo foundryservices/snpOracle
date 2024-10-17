@@ -173,18 +173,19 @@ class Oracle:
                     query_lag = datetime.now(timezone("America/New_York")) - datetime.fromisoformat(timestamp)
                     if is_query_time(self.prediction_interval, timestamp) or query_lag > timedelta(minutes=self.prediction_interval):
                         responses, timestamp = self.query_miners()
-                        for uid, response in zip(self.available_uids, responses):
-                            if response.prediction is not None:
-                                bt.logging.info(f"UID: {uid}  |  Prediction: {response.prediction}")
                         rewards = get_rewards(
                             self,
                             responses=responses,
                             miner_uids=self.available_uids,
                         )
+                        for uid, response, reward in zip(self.available_uids, responses, rewards):
+                            if response.prediction is not None:
+                                bt.logging.info(f"UID: {uid}  |  Prediction: {response.prediction}  |  Reward: {reward}")
                         # Adjust the scores based on responses from miners and update moving average.
                         for i, value in zip(self.available_uids, rewards):
                             self.moving_avg_scores[i] = (1 - self.config.alpha) * self.moving_avg_scores[i] + self.config.alpha * value
                         self.scores = self.moving_avg_scores
+                        bt.logging.info(f"Scores: {self.scores}")
                         if self.config.wandb_on:
                             log_wandb(responses, rewards, self.available_uids)
                     else:
