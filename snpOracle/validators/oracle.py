@@ -51,9 +51,10 @@ class Oracle:
         if self.config.reset_state:
             self.save_state()
             self.scores = [1.0] * len(self.metagraph.S)
-            self.self.moving_avg_scores = self.scores
+            self.moving_avg_scores = self.scores
         else:
             self.load_state()
+            self.moving_avg_scores = self.scores
         self.node = SubstrateInterface(url=self.config.subtensor.chain_endpoint)
         self.current_block = self.node_query("System", "Number", [])
         self.blocks_since_last_update = self.current_block - self.node_query("SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
