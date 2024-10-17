@@ -184,7 +184,8 @@ class Oracle:
                         # Adjust the scores based on responses from miners and update moving average.
                         for i, value in zip(self.available_uids, rewards):
                             self.moving_avg_scores[i] = (1 - self.config.alpha) * self.moving_avg_scores[i] + self.config.alpha * value
-                        self.scores = self.moving_avg_scores
+
+                        self.scores = self.moving_avg_scores.copy()
                         bt.logging.info(f"Scores: {self.scores}")
                         if self.config.wandb_on:
                             log_wandb(responses, rewards, self.available_uids)
