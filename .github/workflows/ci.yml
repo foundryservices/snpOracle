@@ -38,15 +38,16 @@ jobs:
     with:
       command: python -m isort --check-only .
 
-  # #----------------------------------------------
-  # #       Run Mypy
-  # #----------------------------------------------
-  # mypy:
-  #   name: MyPy
-  #   needs: venv-setup
-  #   uses: ./.github/workflows/cache_venv.yml
-  #   with:
-  #     command: python -m mypy .
+  #----------------------------------------------
+  #       Run Mypy
+  #----------------------------------------------
+  mypy:
+    name: MyPy
+    needs: venv-setup
+    if: false  # This condition ensures the job is never executed
+    uses: ./.github/workflows/cache_venv.yml
+    with:
+      command: python -m mypy --verbose 0 .
 
   #----------------------------------------------
   #       Run Flake8
@@ -57,3 +58,20 @@ jobs:
     uses: ./.github/workflows/cache_venv.yml
     with:
       command: python -m flake8 .
+
+  #----------------------------------------------
+  #       Run Unittests
+  #----------------------------------------------
+  unittest:
+    name: Unittest
+    needs: [
+      venv-setup,
+      black,
+      isort,
+      mypy,
+      flake8,
+    ]
+    if: false  # This condition ensures the job is never executed
+    uses: ./.github/workflows/cache_venv.yml
+    with:
+      command: pytest tests/
