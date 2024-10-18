@@ -3,7 +3,7 @@ from pathlib import Path
 
 import bittensor as bt
 
-from snpOracle.utils import Config, parse_arguments, setup_logging
+from snpOracle.utils import Config, parse_arguments
 from snpOracle.validators.oracle import Oracle
 
 
@@ -18,7 +18,6 @@ class Validator:
         self.config.full_path = str(full_path)
 
     def main(self):
-        setup_logging(self.config)
         self.config.wallet = bt.wallet(name=self.config.wallet.name, hotkey=self.config.wallet.hotkey)
         self.config.dendrite = bt.dendrite(wallet=self.config.wallet)
         loop = asyncio.get_event_loop()

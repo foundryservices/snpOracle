@@ -68,19 +68,66 @@ def is_query_time(prediction_interval, timestamp) -> bool:
     return result
 
 
+def setup_bittensor_objects(self):
+    if self.config.subtensor.chain_endpoint is None:
+        self.config.subtensor.chain_endpoint = bt.subtensor.determine_chain_endpoint_and_network(self.config.subtensor.network)[1]
+    # Initialize subtensor.
+    self.subtensor = bt.subtensor(config=self.config, network=self.config.subtensor.network)
+    self.metagraph = self.subtensor.metagraph(self.config.netuid)
+    self.wallet = self.config.wallet
+    self.dendrite = bt.dendrite(wallet=self.wallet)
+    # Connect the validator to the network.
+    if self.wallet.hotkey.ss58_address not in self.metagraph.hotkeys:
+        bt.logging.error(
+            f"\nYour validator: {self.wallet} is not registered to chain connection: {self.subtensor} \nRun 'btcli register' and try again."
+        )
+        exit()
+    else:
+        # Each validator gets a unique identity (UID) in the network.
+        self.my_uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
+        bt.logging.info(f"Running validator on uid: {self.my_uid}")
+    # logging setup
+    if self.config.logging.level == "trace":
+        bt.logging.set_trace()
+    elif self.config.logging.level == "debug":
+        bt.logging.set_debug()
+    else:
+        # set to info by default
+        pass
+    bt.logging.info(f"Set logging level to {self.config.logging.level}")
+    full_path = Path(
+        f"~/.bittensor/validators/{self.config.wallet.name}/{self.config.wallet.hotkey}/netuid{self.config.netuid}/validator"
+    ).expanduser()
+    full_path.mkdir(parents=True, exist_ok=True)
+    self.config.full_path = str(full_path)
+    bt.logging.info(f"Arguments: {vars(self.config)}")
+
+
 def print_info(self) -> None:
     metagraph = self.metagraph
     weight_timing = self.set_weights_rate - self.blocks_since_last_update + 1
-    log = (
-        "Validator | "
-        f"UID:{self.my_uid} | "
-        f"Block:{self.current_block} | "
-        f"Stake:{metagraph.S[self.my_uid]:.3f} | "
-        f"VTrust:{metagraph.Tv[self.my_uid]:.3f} | "
-        f"Dividend:{metagraph.D[self.my_uid]:.3f} | "
-        f"Emission:{metagraph.E[self.my_uid]:.3f} | "
-        f"Seting weights in {weight_timing} blocks"
-    )
+    if self.neuron_type == "Validator":
+        log = (
+            "Validator | "
+            f"UID:{self.my_uid} | "
+            f"Block:{self.current_block} | "
+            f"Stake:{metagraph.S[self.my_uid]:.3f} | "
+            f"VTrust:{metagraph.Tv[self.my_uid]:.3f} | "
+            f"Dividend:{metagraph.D[self.my_uid]:.3f} | "
+            f"Emission:{metagraph.E[self.my_uid]:.3f} | "
+            f"Seting weights in {weight_timing} blocks"
+        )
+    elif self.neuron_type == "Miner":
+        log = (
+            "Miner | "
+            f"Step:{self.step} | "
+            f"UID:{self.uid} | "
+            f"Block:{self.block} | "
+            f"Stake:{metagraph.S[self.uid]} | "
+            f"Trust:{metagraph.T[self.uid]} | "
+            f"Incentive:{metagraph.I[self.uid]} | "
+            f"Emission:{metagraph.E[self.uid]}"
+        )
     bt.logging.info(log)
 
 
@@ -116,23 +163,6 @@ def log_wandb(responses, rewards, miner_uids):
         }
     }
     wandb.log(wandb_val_log)
-
-
-def setup_logging(config):
-    if config.logging.level == "trace":
-        bt.logging.set_trace()
-    elif config.logging.level == "debug":
-        bt.logging.set_debug()
-    else:
-        # set to info by default
-        pass
-    bt.logging.info(f"Set logging level to {config.logging.level}")
-
-    full_path = Path(f"~/.bittensor/validators/{config.wallet.name}/{config.wallet.hotkey}/netuid{config.netuid}/validator").expanduser()
-    full_path.mkdir(parents=True, exist_ok=True)
-    config.full_path = str(full_path)
-
-    bt.logging.info(f"Arguments: {vars(config)}")
 
 
 def parse_arguments():
@@ -222,6 +252,11 @@ class Config:
 
     def get(self, key, default=None):
         return getattr(self, key, default)
+
+
+################################################################################
+#                               Miner Functions                                #
+################################################################################
 
 
 def prep_data(drop_na: bool = True) -> DataFrame:
@@ -358,6 +393,79 @@ def predict(timestamp: datetime, scaler: MinMaxScaler, model, type, prediction_i
 
     print(prediction)
     return prediction
+
+
+async def miner_priority(self, synapse: Challenge) -> float:
+    """
+    The priority function determines the order in which requests are handled. More valuable or higher-priority
+    requests are processed before others. You should design your own priority mechanism with care.
+
+    This implementation assigns priority to incoming requests based on the calling entity's stake in the metagraph.
+
+    Args:
+        synapse (predictionnet.protocol.Challenge): The synapse object that contains metadata about the incoming request.
+
+    Returns:
+        float: A priority score derived from the stake of the calling entity.
+
+    Miners may recieve messages from multiple entities at once. This function determines which request should be
+    processed first. Higher values indicate that the request should be processed first. Lower values indicate
+    that the request should be processed later.
+
+    Example priority logic:
+    - A higher stake results in a higher priority value.
+    """
+    # TODO(developer): Define how miners should prioritize requests.
+    caller_uid = self.metagraph.hotkeys.index(synapse.dendrite.hotkey)  # Get the caller index.
+    prirority = float(self.metagraph.S[caller_uid])  # Return the stake as the priority.
+    bt.logging.trace(f"Prioritizing {synapse.dendrite.hotkey} with value: ", prirority)
+    return prirority
+
+
+async def miner_blacklist(self, synapse: Challenge) -> Tuple[bool, str]:
+    """
+    Determines whether an incoming request should be blacklisted and thus ignored. Your implementation should
+    define the logic for blacklisting requests based on your needs and desired security parameters.
+
+    Blacklist runs before the synapse data has been deserialized (i.e. before synapse.data is available).
+    The synapse is instead contructed via the headers of the request. It is important to blacklist
+    requests before they are deserialized to avoid wasting resources on requests that will be ignored.
+
+    Args:
+        synapse (predictionnet.protocol.Challenge): A synapse object constructed from the headers of the incoming request.
+
+    Returns:
+        Tuple[bool, str]: A tuple containing a boolean indicating whether the synapse's hotkey is blacklisted,
+                        and a string providing the reason for the decision.
+
+    This function is a security measure to prevent resource wastage on undesired requests. It should be enhanced
+    to include checks against the metagraph for entity registration, validator status, and sufficient stake
+    before deserialization of synapse data to minimize processing overhead.
+
+    Example blacklist logic:
+    - Reject if the hotkey is not a registered entity within the metagraph.
+    - Consider blacklisting entities that are not validators or have insufficient stake.
+
+    In practice it would be wise to blacklist requests from entities that are not validators, or do not have
+    enough stake. This can be checked via metagraph.S and metagraph.validator_permit. You can always attain
+    the uid of the sender via a metagraph.hotkeys.index( synapse.dendrite.hotkey ) call.
+
+    Otherwise, allow the request to be processed further.
+    """
+    # TODO(developer): Define how miners should blacklist requests.
+    uid = self.metagraph.hotkeys.index(synapse.dendrite.hotkey)
+    if not self.config.blacklist.allow_non_registered and synapse.dendrite.hotkey not in self.metagraph.hotkeys:
+        # Ignore requests from un-registered entities.
+        bt.logging.trace(f"Blacklisting un-registered hotkey {synapse.dendrite.hotkey}")
+        return True, "Unrecognized hotkey"
+
+    if self.config.blacklist.force_validator_permit:
+        # If the config is set to force validator permit, then we should only allow requests from validators.
+        if not self.metagraph.validator_permit[uid]:
+            bt.logging.warning(f"Blacklisting a request from non-validator hotkey {synapse.dendrite.hotkey}")
+            return True, "Non-validator hotkey"
+
+    bt.logging.trace(f"Not Blacklisting recognized hotkey {synapse.dendrite.hotkey}")
 
 
 async def verify(self, synapse: Challenge) -> None:

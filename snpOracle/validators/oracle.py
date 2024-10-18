@@ -9,45 +9,22 @@ from pytz import timezone
 from substrateinterface import SubstrateInterface
 
 from snpOracle.protocol import Challenge
-from snpOracle.utils import check_uid_availability, is_query_time, log_wandb, market_is_open, print_info, setup_wandb
+from snpOracle.utils import check_uid_availability, is_query_time, log_wandb, market_is_open, print_info, setup_bittensor_objects, setup_wandb
 from snpOracle.validators.reward import get_rewards
 
 
 class Oracle:
+    neuron_type: str = "Validator"
+
     def __init__(self, config=None, loop=None):
         self.config = config
         self.loop = loop
         self.prediction_interval = self.config.prediction_interval  # in minutes
         self.N_TIMEPOINTS = self.config.N_TIMEPOINTS  # number of timepoints to predict
-        bt.logging.info(f"Running validator for subnet: {self.config.netuid} on network: {self.config.subtensor.network} with config:")
-        if self.config.subtensor.chain_endpoint is None:
-            self.config.subtensor.chain_endpoint = bt.subtensor.determine_chain_endpoint_and_network(self.config.subtensor.network)[1]
-        # Initialize subtensor.
-        self.subtensor = bt.subtensor(config=self.config, network=self.config.subtensor.network)
-        bt.logging.info(f"Subtensor: {self.subtensor}")
-
-        # Initialize metagraph.
-        self.metagraph = self.subtensor.metagraph(self.config.netuid)
-        bt.logging.info(f"Metagraph: {self.metagraph}")
-
-        # Initialize wallet.
-        self.wallet = config.wallet
-        bt.logging.info(f"Wallet: {self.wallet}")
-
-        # Initialize dendrite.
-        self.dendrite = bt.dendrite(wallet=self.wallet)
-        bt.logging.info(f"Dendrite: {self.dendrite}")
-
-        # Connect the validator to the network.
-        if self.wallet.hotkey.ss58_address not in self.metagraph.hotkeys:
-            bt.logging.error(
-                f"\nYour validator: {self.wallet} is not registered to chain connection: {self.subtensor} \nRun 'btcli register' and try again."
-            )
-            exit()
-        else:
-            # Each validator gets a unique identity (UID) in the network.
-            self.my_uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
-            bt.logging.info(f"Running validator on uid: {self.my_uid}")
+        setup_bittensor_objects(self)
+        self.axon = bt.axon(wallet=self.wallet)
+        self.axon.serve(netuid=self.config.netuid, subtensor=self.subtensor)
+        bt.logging.info(f"Running validator for subnet: {self.config.netuid} on network: {self.config.subtensor.network}")
         if self.config.reset_state:
             self.save_state()
             self.scores = [0.0] * len(self.metagraph.S)
@@ -60,7 +37,6 @@ class Oracle:
         self.blocks_since_last_update = self.current_block - self.node_query("SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
         self.tempo = self.node_query("SubtensorModule", "Tempo", [self.config.netuid])
         self.set_weights_rate = 100  # in blocks
-
         self.hotkeys = self.metagraph.hotkeys
         if self.config.wandb_on:
             setup_wandb(self)
