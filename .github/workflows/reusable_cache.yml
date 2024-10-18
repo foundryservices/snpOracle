@@ -1,4 +1,3 @@
-# https://adamj.eu/tech/2023/11/02/github-actions-faster-python-virtual-environments/
 name: Cache Virtual Environment Workflow
 
 on:
@@ -9,14 +8,14 @@ on:
         type: string
 
 jobs:
-  venv-run:
-    name: Setup Venv
+  load-venv:
+    name: Load Venv
     runs-on: ubuntu-latest
     steps:
 
-      #----------------------------------------------
+      #------------------------------------------------
       #       check-out repo and set-up python
-      #----------------------------------------------
+      #------------------------------------------------
       - name: Check out repository
         uses: actions/checkout@v4
       - name: Set up python
@@ -24,9 +23,9 @@ jobs:
         with:
           python-version: '3.11'
 
-      #----------------------------------------------
-      #       load cached venv if cache exists
-      #----------------------------------------------
+      #------------------------------------------------
+      #        load cached venv if cache exists
+      #------------------------------------------------
       - name: Restore cached virtualenv
         uses: actions/cache/restore@v4
         id: restore-cache
@@ -34,9 +33,9 @@ jobs:
           key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('requirements.txt') }}-${{ hashFiles('dev_requirements.txt') }}
           path: .venv
 
-      #----------------------------------------------
-      # install dependencies if cache does not exist
-      #----------------------------------------------
+      #------------------------------------------------
+      # Install dependencies - if cache does not exist
+      #------------------------------------------------
       - name: Install dependencies
         if: steps.restore-cache.outputs.cache-hit != 'true'
         run: |
@@ -46,19 +45,19 @@ jobs:
           echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
           echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
 
-      #----------------------------------------------
-      #             save venv to cache
-      #----------------------------------------------
+      #------------------------------------------------
+      #       Save venv to cache - if not exists
+      #------------------------------------------------
       - name: Saved cached virtualenv
         if: steps.restore-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('requirements.txt') }}-${{ hashFiles('dev_requirements.txt') }}
+          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
           path: .venv
 
-      #----------------------------------------------
-      #        run custom command within venv
-      #----------------------------------------------
+      #------------------------------------------------
+      #        Run custom command(s) within venv
+      #------------------------------------------------
       - name: Run commands
         run: |
             source .venv/bin/activate

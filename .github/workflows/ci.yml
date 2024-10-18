@@ -1,4 +1,4 @@
-name: Python Linting
+name: CI
 
 on:
   pull_request:
@@ -11,7 +11,7 @@ jobs:
   #----------------------------------------------
   venv-setup:
     name: Cache Venv
-    uses: ./.github/workflows/cache_venv.yml
+    uses: ./.github/workflows/reusable_cache.yml
     with:
       command: |
         python -m pip list
@@ -24,7 +24,7 @@ jobs:
   black:
     name: Black
     needs: venv-setup
-    uses: ./.github/workflows/cache_venv.yml
+    uses: ./.github/workflows/reusable_cache.yml
     with:
       command: python -m black --check .
 
@@ -34,7 +34,7 @@ jobs:
   isort:
     name: Isort
     needs: venv-setup
-    uses: ./.github/workflows/cache_venv.yml
+    uses: ./.github/workflows/reusable_cache.yml
     with:
       command: python -m isort --check-only .
 
@@ -42,10 +42,10 @@ jobs:
   #       Run Mypy
   #----------------------------------------------
   mypy:
-    name: MyPy
+    name: Mypy
     needs: venv-setup
     if: false  # This condition ensures the job is never executed
-    uses: ./.github/workflows/cache_venv.yml
+    uses: ./.github/workflows/reusable_cache.yml
     with:
       command: python -m mypy --verbose 0 .
 
@@ -55,7 +55,7 @@ jobs:
   flake8:
     name: Flake8
     needs: venv-setup
-    uses: ./.github/workflows/cache_venv.yml
+    uses: ./.github/workflows/reusable_cache.yml
     with:
       command: python -m flake8 .
 
@@ -72,6 +72,6 @@ jobs:
       flake8,
     ]
     if: false  # This condition ensures the job is never executed
-    uses: ./.github/workflows/cache_venv.yml
+    uses: ./.github/workflows/reusable_cache.yml
     with:
       command: pytest tests/
