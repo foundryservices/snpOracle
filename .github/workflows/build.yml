@@ -1,4 +1,4 @@
-name: Cache Virtual Environment Workflow
+name: Cache and Load Build
 
 on:
   workflow_call:
@@ -6,9 +6,13 @@ on:
       command:
         required: true
         type: string
+      name:
+        required: true
+        type: string
 
 jobs:
   reusable-build:
+    name: ${{ inputs.name }}
     runs-on: ubuntu-latest
     steps:
 

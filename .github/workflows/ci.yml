@@ -13,6 +13,7 @@ jobs:
     name: Build
     uses: ./.github/workflows/build.yml
     with:
+      name: Cache
       command: |
         python -m pip list
         python --version
@@ -22,44 +23,49 @@ jobs:
   #                 Run Linters
   #----------------------------------------------
   lint-black:
-    name: Linter (Black)
+    name: Linter
     needs: build
     uses: ./.github/workflows/build.yml
     with:
+      name: Black
       command: python -m black --check .
   lint-isort:
-    name: Linter (Isort)
+    name: Linter
     needs: build
     uses: ./.github/workflows/build.yml
     with:
+      name: Isort
       command: python -m isort --check-only .
   lint-mypy:
-    name: Linter (Mypy)
+    name: Linter
     needs: build
     if: false  # This condition ensures the job is never executed
     uses: ./.github/workflows/build.yml
     with:
+      name: Mypy
       command: python -m mypy --verbose 0 .
   lint-flake8:
-    name: Linter (Flake8)
+    name: Linter
     needs: build
     uses: ./.github/workflows/build.yml
     with:
+      name: Flake8
       command: python -m flake8 .
 
   #----------------------------------------------
   #                 Run Tests
   #----------------------------------------------
   test-unittest:
-    name: Tests (Unittest)
+    name: Tests
     needs: [
       lint-black,
       lint-isort,
       lint-mypy,
       lint-flake8,
     ]
-    # `always` will run the tests regardless of linting success
-    if: ${{ always() }} & false # This condition ensures the job is never executed
+    # `${{ always() }}` will run the tests regardless of linting success
+    if: false # This condition ensures the job is never executed
     uses: ./.github/workflows/build.yml
     with:
+      name: Unittests
       command: pytest tests/
