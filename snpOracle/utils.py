@@ -1,6 +1,7 @@
 import argparse
 import os
 import re
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Tuple
@@ -14,9 +15,13 @@ import requests
 import ta
 import wandb
 import yfinance as yf
+from bittensor.constants import V_7_2_0
 from pandas import DataFrame
 from pytz import timezone
 from sklearn.preprocessing import MinMaxScaler
+from substrateinterface import Keypair
+
+from snpOracle.protocol import Challenge
 
 
 def market_is_open() -> bool:
@@ -353,3 +358,56 @@ def predict(timestamp: datetime, scaler: MinMaxScaler, model, type, prediction_i
 
     print(prediction)
     return prediction
+
+
+async def verify(self, synapse: Challenge) -> None:
+    # needs to replace the base miner verify logic
+    bt.logging.debug(f"checking nonce: {synapse.dendrite}")
+    # Build the keypair from the dendrite_hotkey
+    if synapse.dendrite is not None:
+        keypair = Keypair(ss58_address=synapse.dendrite.hotkey)
+
+        # Build the signature messages.
+        message = f"{synapse.dendrite.nonce}.{synapse.dendrite.hotkey}.{self.wallet.hotkey.ss58_address}.{synapse.dendrite.uuid}.{synapse.computed_body_hash}"
+
+        # Build the unique endpoint key.
+        endpoint_key = f"{synapse.dendrite.hotkey}:{synapse.dendrite.uuid}"
+
+        # Requests must have nonces to be safe from replays
+        if synapse.dendrite.nonce is None:
+            raise Exception("Missing Nonce")
+        if synapse.dendrite.version is not None and synapse.dendrite.version >= V_7_2_0:
+            bt.logging.debug("Using custom synapse verification logic")
+            # If we don't have a nonce stored, ensure that the nonce falls within
+            # a reasonable delta.
+            cur_time = time.time_ns()
+
+            allowed_delta = min(self.neuron_config.neuron.synapse_verify_allowed_delta, self._to_nanoseconds(synapse.timeout or 0))
+
+            latest_allowed_nonce = synapse.dendrite.nonce + allowed_delta
+
+            bt.logging.debug(f"synapse.dendrite.nonce: {synapse.dendrite.nonce}")
+            bt.logging.debug(f"latest_allowed_nonce: {latest_allowed_nonce}")
+            bt.logging.debug(f"cur time: {cur_time}")
+            bt.logging.debug(f"delta: {self._to_seconds(cur_time - synapse.dendrite.nonce)}")
+
+            if self.nonces.get(endpoint_key) is None and synapse.dendrite.nonce > latest_allowed_nonce:
+                raise Exception(
+                    f"Nonce is too old. Allowed delta in seconds: {self._to_seconds(allowed_delta)}, got delta: {self._to_seconds(cur_time - synapse.dendrite.nonce)}"
+                )
+            if self.nonces.get(endpoint_key) is not None and synapse.dendrite.nonce <= self.nonces[endpoint_key]:
+                raise Exception(
+                    f"Nonce is too small, already have a newer nonce in the nonce store, got: {synapse.dendrite.nonce}, already have: {self.nonces[endpoint_key]}"
+                )
+        else:
+            bt.logging.warning(f"Using synapse verification logic for version < 7.2.0: {synapse.dendrite.version}")
+            if endpoint_key in self.nonces.keys() and self.nonces[endpoint_key] is not None and synapse.dendrite.nonce <= self.nonces[endpoint_key]:
+                raise Exception(
+                    f"Nonce is too small, already have a newer nonce in the nonce store, got: {synapse.dendrite.nonce}, already have: {self.nonces[endpoint_key]}"
+                )
+
+        if not keypair.verify(message, synapse.dendrite.signature):
+            raise Exception(f"Signature mismatch with {message} and {synapse.dendrite.signature}, from hotkey {synapse.dendrite.hotkey}")
+
+        # Success
+        self.nonces[endpoint_key] = synapse.dendrite.nonce  # type: ignore
