@@ -8,13 +8,12 @@ on:
         type: string
 
 jobs:
-  load-venv:
-    name: Load Venv
+  reusable-build:
     runs-on: ubuntu-latest
     steps:
 
       #------------------------------------------------
-      #       check-out repo and set-up python
+      #       Checkout repo and setup python
       #------------------------------------------------
       - name: Check out repository
         uses: actions/checkout@v4
@@ -24,7 +23,7 @@ jobs:
           python-version: '3.11'
 
       #------------------------------------------------
-      #        load cached venv if cache exists
+      #        Load cached venv if cache exists
       #------------------------------------------------
       - name: Restore cached virtualenv
         uses: actions/cache/restore@v4

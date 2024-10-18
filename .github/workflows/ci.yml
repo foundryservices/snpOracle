@@ -1,4 +1,4 @@
-name: CI
+name: Continuous Integration
 
 on:
   pull_request:
@@ -7,90 +7,59 @@ on:
 
 jobs:
   #----------------------------------------------
-  #          Cache Virtual Environment
+  #                Build Environment
   #----------------------------------------------
-  venv-setup:
-    name: Cache Venv
-    uses: ./.github/workflows/reusable_cache.yml
+  build:
+    name: Build
+    uses: ./.github/workflows/build.yml
     with:
       command: |
         python -m pip list
         python --version
-        echo "Successfully setup venv"
+        echo "Build successful"
 
   #----------------------------------------------
-  #       Run Black
+  #                 Run Linters
   #----------------------------------------------
-  black:
-    name: Black
-    needs: venv-setup
-    runs-on: ubuntu-latest
-    steps:
-
-      #------------------------------------------------
-      #       check-out repo and set-up python
-      #------------------------------------------------
-      - name: Check out repository
-        uses: actions/checkout@v4
-      - name: Set up python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      #------------------------------------------------
-      #        Run custom command(s) within venv
-      #------------------------------------------------
-      - name: Run commands
-        run: |
-          echo "Attempting Black Run"
-          ls -al
-          source .venv/bin/activate
-          python -m black --check .
-
-  #----------------------------------------------
-  #       Run Isort
-  #----------------------------------------------
-  isort:
-    name: Isort
-    needs: venv-setup
-    uses: ./.github/workflows/reusable_cache.yml
+  lint-black:
+    name: Linter (Black)
+    needs: build
+    uses: ./.github/workflows/build.yml
+    with:
+      command: python -m black --check .
+  lint-isort:
+    name: Linter (Isort)
+    needs: build
+    uses: ./.github/workflows/build.yml
     with:
       command: python -m isort --check-only .
-
-  #----------------------------------------------
-  #       Run Mypy
-  #----------------------------------------------
-  mypy:
-    name: Mypy
-    needs: venv-setup
+  lint-mypy:
+    name: Linter (Mypy)
+    needs: build
     if: false  # This condition ensures the job is never executed
-    uses: ./.github/workflows/reusable_cache.yml
+    uses: ./.github/workflows/build.yml
     with:
       command: python -m mypy --verbose 0 .
-
-  #----------------------------------------------
-  #       Run Flake8
-  #----------------------------------------------
-  flake8:
-    name: Flake8
-    needs: venv-setup
-    uses: ./.github/workflows/reusable_cache.yml
+  lint-flake8:
+    name: Linter (Flake8)
+    needs: build
+    uses: ./.github/workflows/build.yml
     with:
       command: python -m flake8 .
 
   #----------------------------------------------
-  #       Run Unittests
+  #                 Run Tests
   #----------------------------------------------
-  unittest:
-    name: Unittest
+  test-unittest:
+    name: Tests (Unittest)
     needs: [
-      venv-setup,
-      black,
-      isort,
-      mypy,
-      flake8,
+      lint-black,
+      lint-isort,
+      lint-mypy,
+      lint-flake8,
     ]
-    if: false  # This condition ensures the job is never executed
-    uses: ./.github/workflows/reusable_cache.yml
+    # `always` will run the tests regardless of linting success
+    if: ${{ always() }} & false # This condition ensures the job is never executed
+    uses: ./.github/workflows/build.yml
     with:
       command: pytest tests/
