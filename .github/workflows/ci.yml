@@ -7,7 +7,7 @@ on:
 
 jobs:
   #----------------------------------------------
-  #       Cache Virtual Environment
+  #          Cache Virtual Environment
   #----------------------------------------------
   venv-setup:
     name: Cache Venv
@@ -24,9 +24,28 @@ jobs:
   black:
     name: Black
     needs: venv-setup
-    uses: ./.github/workflows/reusable_cache.yml
-    with:
-      command: python -m black --check .
+    runs-on: ubuntu-latest
+    steps:
+
+      #------------------------------------------------
+      #       check-out repo and set-up python
+      #------------------------------------------------
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      #------------------------------------------------
+      #        Run custom command(s) within venv
+      #------------------------------------------------
+      - name: Run commands
+        run: |
+          echo "Attempting Black Run"
+          ls -al
+          source .venv/bin/activate
+          python -m black --check .
 
   #----------------------------------------------
   #       Run Isort
