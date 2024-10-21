@@ -62,7 +62,7 @@ class BaseMinerNeuron(BaseNeuron):
             else None,
         )
         bt.logging.info(f"Axon created: {self.axon}")
-
+        self.nonces = {}
         # Instantiate runners
         self.should_exit: bool = False
         self.is_running: bool = False
