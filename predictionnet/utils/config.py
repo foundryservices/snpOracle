@@ -102,6 +102,12 @@ def add_args(cls, parser):
         help="If set, we dont save events to a log file.",
         default=False,
     )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=16,
+        help="timeout in seconds",
+    )
 
     # VALIDATOR ONLY CONFIG
     if neuron_type == "validator":
