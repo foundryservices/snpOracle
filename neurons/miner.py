@@ -55,9 +55,9 @@ class Miner(BaseMinerNeuron):
         # TODO(developer): Anything specific to your use case you can do here
         self.model_loc = self.config.model
         if self.config.neuron.device == "cpu":
-            os.environ["CUDA_VISIBLE_DEVICES"] = (
-                "-1"  # This will force TensorFlow to use CPU only
-            )
+            os.environ[
+                "CUDA_VISIBLE_DEVICES"
+            ] = "-1"  # This will force TensorFlow to use CPU only
 
     async def blacklist(
         self, synapse: predictionnet.protocol.Challenge
