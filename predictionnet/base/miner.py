@@ -190,6 +190,9 @@ class BaseMinerNeuron(BaseNeuron):
         self.metagraph.sync(subtensor=self.subtensor)
         self.metagraph.last_update[self.uid] = self.block
 
+    def _to_seconds(nano: int) -> int:
+        return nano / 1_000_000_000
+
     async def verify(self, synapse: Challenge) -> None:
         # needs to replace the base miner verify logic
         bt.logging.debug(f"checking nonce: {synapse.dendrite}")
