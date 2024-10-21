@@ -190,7 +190,7 @@ class BaseMinerNeuron(BaseNeuron):
         self.metagraph.sync(subtensor=self.subtensor)
         self.metagraph.last_update[self.uid] = self.block
 
-    def _to_seconds(nano: int) -> int:
+    def _to_seconds(self, nano: int) -> int:
         return nano / 1_000_000_000
 
     async def verify(self, synapse: Challenge) -> None:
