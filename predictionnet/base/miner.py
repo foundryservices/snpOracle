@@ -215,7 +215,9 @@ class BaseMinerNeuron(BaseNeuron):
                 # a reasonable delta.
                 cur_time = time.time_ns()
 
-                allowed_delta = self.timeout * 1_000_000_000  # nanoseconds
+                allowed_delta = (
+                    self.config.timeout * 1_000_000_000
+                )  # nanoseconds
 
                 latest_allowed_nonce = synapse.dendrite.nonce + allowed_delta
 
