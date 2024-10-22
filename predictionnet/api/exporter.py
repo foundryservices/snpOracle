@@ -1,14 +1,13 @@
-import bittensor as bt
-from predictionnet.api.prediction import PredictionAPI
-from predictionnet.api.get_query_axons import get_query_api_axons
+import os
+from datetime import datetime
 
-from datetime import datetime, timedelta
+import bittensor as bt
+import psycopg
 from dotenv import load_dotenv
 from psycopg import OperationalError, sql
-from pytz import timezone
-import psycopg
-import os
-import datetime
+
+from predictionnet.api.get_query_axons import get_query_api_axons
+from predictionnet.api.prediction import PredictionAPI
 
 bt.debug()
 load_dotenv()
@@ -64,7 +63,9 @@ async def test_prediction():
 
     uids = [uid.item() for uid in metagraph.uids if metagraph.trust[uid] > 0]
 
-    axons = await get_query_api_axons(wallet=wallet, metagraph=metagraph, uids=uids)
+    axons = await get_query_api_axons(
+        wallet=wallet, metagraph=metagraph, uids=uids
+    )
 
     # Store some data!
     # Read timestamp from the text file
@@ -103,14 +104,14 @@ async def test_prediction():
         # -------------------- Insert/Update the miner in the DB: -------------------- #
         # Check if HKey + CKey exists in the DB
         # This returns an array with all the matching rows. You can use array length to check if a miner was found.
-        find_miner_by_hot_key_cold_key_result = cursor.execute(
+        _ = cursor.execute(
             find_miner_by_hot_key_cold_key,
             (export_dict["hotKey"], export_dict["coldKey"]),
         )
         result = cursor.fetchall()
         if len(result) == 0:
             # Miner not found, insert miner:
-            insert_result = cursor.execute(
+            _ = cursor.execute(
                 insert_miner_query,
                 (
                     export_dict["hotKey"],
@@ -124,7 +125,7 @@ async def test_prediction():
             connection.commit()
         else:
             # Miner found, update miner:
-            update_result = cursor.execute(
+            _ = cursor.execute(
                 update_miner_by_hot_key_cold_key,
                 (
                     export_dict["UID"],
@@ -138,14 +139,19 @@ async def test_prediction():
             connection.commit()
 
         # Update the other UID that is not the same HK + CK to False:
-        update_is_current_uid_result = cursor.execute(
+        _ = cursor.execute(
             update_miner_uid_to_false_by_hot_key_cold_key,
-            (False, export_dict["hotKey"], export_dict["coldKey"], export_dict["UID"]),
+            (
+                False,
+                export_dict["hotKey"],
+                export_dict["coldKey"],
+                export_dict["UID"],
+            ),
         )
         connection.commit()
 
         # ------------------------ Fetch the updated version: ------------------------ #
-        find_miner_by_hot_key_cold_key_result = cursor.execute(
+        _ = cursor.execute(
             find_miner_by_hot_key_cold_key,
             (export_dict["hotKey"], export_dict["coldKey"]),
         )

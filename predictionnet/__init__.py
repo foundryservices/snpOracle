@@ -20,21 +20,18 @@
 # TODO(developer): Change this value when updating your code base.
 # Define the version of the template module.
 
+import json
 
-__version__ = "2.1.1"
+# Import all submodules.
+from . import base, protocol, validator
+
+__version__ = "2.2.0"
 version_split = __version__.split(".")
 __spec_version__ = (
     (1000 * int(version_split[0]))
     + (10 * int(version_split[1]))
     + (1 * int(version_split[2]))
 )
-
-# Import all submodules.
-from . import protocol
-from . import base
-from . import validator
-
-import json
 
 SUBNET_LINKS = None
 with open("subnet_links.json") as f:

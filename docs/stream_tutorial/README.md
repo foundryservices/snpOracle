@@ -103,7 +103,7 @@ class MyStreamingSynapse(bt.StreamingSynapse):
         async for chunk in response.content.iter_any():
             tokens = chunk.decode("utf-8").split("\n")
             yield tokens
-    
+
     # implement `extract_response_json` to extract the JSON data from the response headers
     # this will be dependent on the data you are streaming and how you want to structure it
     # it MUST conform to the following format expected by the bittensor dendrite:
@@ -178,15 +178,15 @@ class MyStreamPromptingMiner(bt.Miner):
             # `text` may be the input prompt to your model in a real-world scenario.
             # let's tokenize them into IDs for the sake of this example.
             input_ids = tokenizer(text, return_tensors="pt").input_ids.squeeze()
-            
+
             # You may want to buffer your tokens before sending them back to the client.
             # this can be useful so we aren't flooding the client with individual tokens
-            # and allows you more fine-grained control over how much data is sent back 
+            # and allows you more fine-grained control over how much data is sent back
             # with each yield.
             N = 3  # Number of tokens to send back to the client at a time
             buffer = []
-            # Iterate over the tokens and send the generationed tokens back to the client  
-            # when we have sufficient (N) tokens in the buffer.       
+            # Iterate over the tokens and send the generationed tokens back to the client
+            # when we have sufficient (N) tokens in the buffer.
             for token in model(input_ids):
                 buffer.append(token) # Add token to buffer
 
@@ -194,7 +194,7 @@ class MyStreamPromptingMiner(bt.Miner):
                 if len(buffer) == N:
                     joined_buffer = "".join(buffer)
                     # Send the tokens back to the client
-                    # This is the core of the streaming response and the format 
+                    # This is the core of the streaming response and the format
                     # is important. The `send` function is provided by the ASGI server
                     # and is responsible for sending the response back to the client.
                     # This buffer will be received by the client as a single chunk of
@@ -303,7 +303,7 @@ class StreamingTemplateMiner(prompting.Miner):
             buffer = []
             bt.logging.debug(f"Input text: {text}")
             bt.logging.debug(f"Input ids: {input_ids}")
-             
+
             N = 3  # Number of tokens to send back to the client at a time
             for token in model(input_ids):
                 bt.logging.trace(f"appending token: {token}")
@@ -384,8 +384,8 @@ dendrite = bt.dendrite(wallet=wallet)
 
 This is an async function so we can use the `await` keyword when querying the server with the dendrite object.
 async def main():
-    # Send a request to the Axon using the Dendrite, passing in a StreamPrompting 
-    # instance with roles and messages. The response is awaited, as the Dendrite 
+    # Send a request to the Axon using the Dendrite, passing in a StreamPrompting
+    # instance with roles and messages. The response is awaited, as the Dendrite
     # communicates asynchronously with the Axon. Returns a list of async generator.
     responses = await dendrite(
         [axon],
@@ -415,7 +415,7 @@ async def main():
 if __name__ == "__main__":
     # Run the main function with asyncio
     asyncio.run(main())
-    
+
 ```
 There you have it!
 
@@ -424,7 +424,7 @@ If you would like to see a complete standalone example that only depends on bitt
 
 - client.py
 - streaming_miner.py
-- 
+-
 
 # client.py
 ```python
@@ -434,7 +434,7 @@ import prompting
 
 # Create a StreamPrompting synapse object to house the request body
 syn = prompting.protocol.StreamPrompting(
-    roles=["user"], 
+    roles=["user"],
     messages=["hello this is a test of a streaming response. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."])
 syn
 
@@ -458,9 +458,9 @@ d
 
 
 async def main():
-        
-    # Send a request to the Axon using the Dendrite, passing in a StreamPrompting 
-    # instance with roles and messages. The response is awaited, as the Dendrite 
+
+    # Send a request to the Axon using the Dendrite, passing in a StreamPrompting
+    # instance with roles and messages. The response is awaited, as the Dendrite
     # communicates asynchronously with the Axon. Returns a list of async generator.
     responses = await d(
         [axon],
@@ -468,7 +468,7 @@ async def main():
         deserialize=False,
         streaming=True
     )
-    responses 
+    responses
 
     # iterate over the async generator to extract the yielded tokens on server side
     for resp in responses:

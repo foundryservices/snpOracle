@@ -1,0 +1,71 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+  push:
+    branches: [main, dev]
+
+jobs:
+  #----------------------------------------------
+  #                Build Environment
+  #----------------------------------------------
+  build:
+    name: Build
+    uses: ./.github/workflows/build.yml
+    with:
+      name: Cache
+      command: |
+        python -m pip list
+        python --version
+        echo "Build successful"
+
+  #----------------------------------------------
+  #                 Run Linters
+  #----------------------------------------------
+  lint-black:
+    name: Linter
+    needs: build
+    uses: ./.github/workflows/build.yml
+    with:
+      name: Black
+      command: python -m black --check .
+  lint-isort:
+    name: Linter
+    needs: build
+    uses: ./.github/workflows/build.yml
+    with:
+      name: Isort
+      command: python -m isort --check-only .
+  lint-mypy:
+    name: Linter
+    needs: build
+    if: false  # This condition ensures the job is never executed
+    uses: ./.github/workflows/build.yml
+    with:
+      name: Mypy
+      command: python -m mypy --verbose 0 .
+  lint-flake8:
+    name: Linter
+    needs: build
+    uses: ./.github/workflows/build.yml
+    with:
+      name: Flake8
+      command: python -m flake8 .
+
+  #----------------------------------------------
+  #                 Run Tests
+  #----------------------------------------------
+  test-unittest:
+    name: Tests
+    needs: [
+      lint-black,
+      lint-isort,
+      lint-mypy,
+      lint-flake8,
+    ]
+    # `${{ always() }}` will run the tests regardless of linting success
+    if: false # This condition ensures the job is never executed
+    uses: ./.github/workflows/build.yml
+    with:
+      name: Unittests
+      command: pytest tests/

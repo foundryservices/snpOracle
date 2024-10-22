@@ -18,18 +18,18 @@
 # DEALINGS IN THE SOFTWARE.
 
 
-import copy
 import asyncio
-import threading
-import bittensor as bt
-
-from typing import List
-from traceback import print_exception
-from predictionnet.base.neuron import BaseNeuron
-from numpy import full, nan, array, isnan, ndarray, nan_to_num
+import copy
 import os
 import pickle
+import threading
+from traceback import print_exception
+from typing import List
 
+import bittensor as bt
+from numpy import array, full, isnan, nan, nan_to_num, ndarray
+
+from predictionnet.base.neuron import BaseNeuron
 
 
 class BaseValidatorNeuron(BaseNeuron):
@@ -55,7 +55,7 @@ class BaseValidatorNeuron(BaseNeuron):
         # Load state because self.sync() will overwrite it
         self.load_state()
         # Init sync with the network. Updates the metagraph.
-        self.resync_metagraph() # this ensures that the state file is up to date with the metagraph
+        self.resync_metagraph()  # this ensures that the state file is up to date with the metagraph
         self.sync()
 
         # Serve axon to enable external connections.
@@ -216,16 +216,15 @@ class BaseValidatorNeuron(BaseNeuron):
         # Check if self.scores contains any NaN values and log a warning if it does.
         if isnan(self.scores).any():
             bt.logging.warning(
-                f"Scores contain NaN values. This may be due to a lack of responses from miners, or a bug in your reward functions."
+                "Scores contain NaN values. This may be due to a lack of responses from miners, or a bug in your reward functions."
             )
 
         # Calculate the average reward for each uid across non-zero values.
         # Replace any NaN values with 0.
         total = sum(self.scores)
-        if total==0:
-            total=1
+        if total == 0:
+            total = 1
         raw_weights = [score / total for score in self.scores]
-
 
         # Process the raw weights to final_weights via subtensor limitations.
         (
@@ -248,7 +247,7 @@ class BaseValidatorNeuron(BaseNeuron):
         )
 
         # Set the weights on chain via our subtensor connection.
-        bt.logging.info(f"Setting weights...")
+        bt.logging.info("Setting weights...")
         result, msg = self.subtensor.set_weights(
             wallet=self.wallet,
             netuid=self.config.netuid,
@@ -256,13 +255,15 @@ class BaseValidatorNeuron(BaseNeuron):
             weights=uint_weights,
             wait_for_finalization=False,
             wait_for_inclusion=False,
-            version_key=self.spec_version
+            version_key=self.spec_version,
         )
 
         if result:
             bt.logging.info("set_weights on chain successfully!")
         else:
-            bt.logging.debug("Failed to set weights this iteration with message:", msg)
+            bt.logging.debug(
+                "Failed to set weights this iteration with message:", msg
+            )
 
     def resync_metagraph(self):
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
@@ -285,7 +286,9 @@ class BaseValidatorNeuron(BaseNeuron):
         for uid, hotkey in enumerate(self.hotkeys):
             if hotkey != self.metagraph.hotkeys[uid]:
                 self.scores[uid] = 0  # hotkey has been replaced
-                self.past_predictions[uid] = full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan) # reset past predictions
+                self.past_predictions[uid] = full(
+                    (self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan
+                )  # reset past predictions
 
         # Check to see if the metagraph has changed size.
         # If so, we need to add new hotkeys and moving averages.
@@ -308,23 +311,24 @@ class BaseValidatorNeuron(BaseNeuron):
             # Replace any NaN values in rewards with 0.
             rewards = nan_to_num(rewards, 0)
         # Compute forward pass rewards, assumes uids are mutually exclusive.
-        # shape: [ metagraph.n ]  
-        for i, value in zip(uids,rewards):
-            self.moving_avg_scores[i] = (1 - self.alpha) * self.scores[i] + self.alpha * value
+        # shape: [ metagraph.n ]
+        for i, value in zip(uids, rewards):
+            self.moving_avg_scores[i] = (1 - self.alpha) * self.scores[
+                i
+            ] + self.alpha * value
         self.scores = array(self.moving_avg_scores)
-        bt.logging.info(f'New Average Scores: {self.scores}')
-
+        bt.logging.info(f"New Average Scores: {self.scores}")
 
     def save_state(self):
         """Saves the state of the validator to a file."""
         bt.logging.info("Saving validator state.")
         state_path = os.path.join(self.config.neuron.full_path, "state.pt")
         state = {
-                "step": self.step,
-                "scores": self.scores,
-                "hotkeys": self.hotkeys,
-            }
-        with open(state_path, 'wb') as f:
+            "step": self.step,
+            "scores": self.scores,
+            "hotkeys": self.hotkeys,
+        }
+        with open(state_path, "wb") as f:
             pickle.dump(state, f)
 
     def load_state(self):
@@ -332,24 +336,29 @@ class BaseValidatorNeuron(BaseNeuron):
         bt.logging.info("Loading validator state.")
         state_path = os.path.join(self.config.neuron.full_path, "state.pt")
         if not os.path.exists(state_path):
-            bt.logging.info("Skipping state load due to missing state.pt file.")
+            bt.logging.info(
+                "Skipping state load due to missing state.pt file."
+            )
             return
         # backwards compatability with torch version
         try:
             # Load the state of the validator from file.
-            with open(state_path, 'rb') as f:
+            with open(state_path, "rb") as f:
                 state = pickle.load(f)
             self.step = state["step"]
             self.scores = state["scores"]
             self.hotkeys = state["hotkeys"]
-        except:
+        except Exception:
             try:
                 import torch
+
                 state = torch.load(state_path)
-                bt.logging.info("Found torch state.pt file, converting to pickle...")
+                bt.logging.info(
+                    "Found torch state.pt file, converting to pickle..."
+                )
                 self.step = state["step"]
                 self.scores = state["scores"]
                 self.hotkeys = state["hotkeys"]
                 self.save_state()
             except Exception as e:
-                bt.logging.info(f'Failed to load state file with error: {e}')
+                bt.logging.info(f"Failed to load state file with error: {e}")

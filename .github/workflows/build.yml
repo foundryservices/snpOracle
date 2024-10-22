@@ -1,0 +1,67 @@
+name: Cache and Load Build
+
+on:
+  workflow_call:
+    inputs:
+      command:
+        required: true
+        type: string
+      name:
+        required: true
+        type: string
+
+jobs:
+  reusable-build:
+    name: ${{ inputs.name }}
+    runs-on: ubuntu-latest
+    steps:
+
+      #------------------------------------------------
+      #       Checkout repo and setup python
+      #------------------------------------------------
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      #------------------------------------------------
+      #        Load cached venv if cache exists
+      #------------------------------------------------
+      - name: Restore cached virtualenv
+        uses: actions/cache/restore@v4
+        id: restore-cache
+        with:
+          key: venv-${{ runner.os }}-${{ steps.setup_python.outputs.python-version }}-${{ hashFiles('requirements.txt') }}-${{ hashFiles('dev_requirements.txt') }}
+          path: .venv
+
+      #------------------------------------------------
+      # Install dependencies - if cache does not exist
+      #------------------------------------------------
+      - name: Install dependencies
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install .[DEV]
+          echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
+          echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
+
+      #------------------------------------------------
+      #       Save venv to cache - if not exists
+      #------------------------------------------------
+      - name: Saved cached virtualenv
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
+          path: .venv
+
+      #------------------------------------------------
+      #        Run custom command(s) within venv
+      #------------------------------------------------
+      - name: Run commands
+        run: |
+            source .venv/bin/activate
+            ${{ inputs.command }}

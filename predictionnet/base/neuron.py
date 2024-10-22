@@ -16,16 +16,15 @@
 # DEALINGS IN THE SOFTWARE.
 
 import copy
-import typing
+from abc import ABC, abstractmethod
 
 import bittensor as bt
 
-from abc import ABC, abstractmethod
+from predictionnet import __spec_version__ as spec_version
 
 # Sync calls set weights and also resyncs the metagraph.
-from predictionnet.utils.config import check_config, add_args, config
+from predictionnet.utils.config import add_args, check_config, config
 from predictionnet.utils.misc import ttl_get_block
-from predictionnet import __spec_version__ as spec_version
 
 
 class BaseNeuron(ABC):
@@ -75,7 +74,7 @@ class BaseNeuron(ABC):
         if self.config.logging.trace:
             bt.logging.set_trace()
             bt.logging.trace("Enabled Trace")
-        
+
         # Log the configuration for reference.
         bt.logging.info(self.config)
 
