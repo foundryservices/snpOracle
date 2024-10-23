@@ -1,10 +1,10 @@
 bittensor==7.4.0
 huggingface_hub==0.22.2
+joblib
 loguru
 numpy
 pandas
 pandas_market_calendars
-psycopg
 pydantic
 python_dotenv
 pytz
@@ -12,7 +12,6 @@ rich
 scikit_learn
 setuptools
 starlette
-statsmodels
 ta
 template
 tensorflow==2.17.0
