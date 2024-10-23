@@ -102,6 +102,12 @@ def add_args(cls, parser):
         help="If set, we dont save events to a log file.",
         default=False,
     )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=16,
+        help="timeout in seconds",
+    )
 
     # VALIDATOR ONLY CONFIG
     if neuron_type == "validator":
@@ -185,6 +191,13 @@ def add_args(cls, parser):
             type=int,
             default=8192,  # Multiple of 2**X
             help="Minimum validator stake to accept forward requests from as a miner",
+        )
+
+        parser.add_argument(
+            "--neuron.disable_verification",
+            action="store_true",
+            default=False,
+            help="Disables verification to circumvent nonce errors. Not recommended (Dangerous!)",
         )
 
 
