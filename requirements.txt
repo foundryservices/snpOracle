@@ -10,10 +10,8 @@ python_dotenv
 pytz
 scikit_learn
 setuptools
-starlette
 ta
 tensorflow==2.17.0
 torch
-transformers
 wandb==0.16.6
 yfinance==0.2.37
