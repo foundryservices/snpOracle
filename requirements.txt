@@ -8,12 +8,10 @@ pandas_market_calendars
 pydantic
 python_dotenv
 pytz
-rich
 scikit_learn
 setuptools
 starlette
 ta
-template
 tensorflow==2.17.0
 torch
 transformers
