@@ -1,5 +1,5 @@
 <div align="center">
-<img src="accelerate.png" />
+<img src="docs/images/accelerate.png" />
 
 # **Foundry S&P 500 Oracle** <!-- omit in toc -->
 ---
@@ -15,9 +15,17 @@
 - [Design Decisions](#design-decisions)
 - [Installation](#installation)
   - [Install PM2](#install-pm2)
-  - [Install Repo](#install-repo)
+  - [Compute Requirements](#compute-requirements)
+  - [Install-Repo](#install-repo)
+  - [Running a Miner](#running-a-miner)
+  - [Running a Validator](#running-a-validator)
+    - [Obtain \& Setup WandB API Key](#obtain--setup-wandb-api-key)
+  - [Running Miner/Validator in Docker](#running-minervalidator-in-docker)
 - [About the Rewards Mechanism](#about-the-rewards-mechanism)
-- [Road Map](#road-map)
+  - [Miner Ranking](#miner-ranking)
+  - [$\\Delta$ Calculation for ranking miners](#delta-calculation-for-ranking-miners)
+  - [Exponential Decay Weighting](#exponential-decay-weighting)
+- [Roadmap](#roadmap)
 - [License](#license)
 
 ---
