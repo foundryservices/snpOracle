@@ -8,7 +8,6 @@ bt.debug()
 
 # Example usage
 async def test_prediction():
-
     wallet = bt.wallet()
 
     # Fetch the axons of the available API nodes, or specify UIDs directly
