@@ -71,6 +71,8 @@ def is_query_time(prediction_interval, timestamp) -> bool:
 def setup_bittensor_objects(self):
     if self.config.subtensor.chain_endpoint is None:
         self.config.subtensor.chain_endpoint = bt.subtensor.determine_chain_endpoint_and_network(self.config.subtensor.network)[1]
+    else:
+        self.config.subtensor.network = self.config.subtensor.chain_endpoint
     # Initialize subtensor.
     self.subtensor = bt.subtensor(config=self.config, network=self.config.subtensor.network)
     self.metagraph = self.subtensor.metagraph(self.config.netuid)
