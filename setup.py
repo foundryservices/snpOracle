@@ -46,9 +46,13 @@ def read_requirements(path):
         return processed_requirements
 
 
-requirements = read_requirements("requirements.txt")
-dev_requirements = read_requirements("dev_requirements.txt")
 here = path.abspath(path.dirname(__file__))
+requirements = read_requirements(
+    path.join(here, "requirements", "requirements.txt")
+)
+dev_requirements = read_requirements(
+    path.join(here, "requirements", "dev_requirements.txt")
+)
 
 with open(path.join(here, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
