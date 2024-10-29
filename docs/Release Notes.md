@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+2.3.0
+-----
+Released on
+- Reduce dependencies required to deploy miners and validators
+- Move top level files to sensible locations
+
+
 2.2.1
 -----
 Released on October 28th 2024
