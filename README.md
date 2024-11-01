@@ -10,6 +10,13 @@
 [Website](https://foundrydigital.com/accelerate/) • [Validator](https://taostats.io/validators/foundry/) • [Twitter](https://x.com/FoundryServices?s=20)
 </div>
 
+|     |     |
+| :-: | :-: |
+| Status | ![GitHub Release](https://img.shields.io/github/v/release/foundryservices/snpOracle) ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/foundryservices/snpOracle/ci.yml) [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![Checked with mypy](https://img.shields.io/badge/type--checked-mypy-blue?style=flat-square&logo=python)](http://mypy-lang.org/) ![GitHub License](https://img.shields.io/github/license/foundryservices/snpOracle) |
+| Activity | ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/foundryservices/snpOracle) ![GitHub commits since latest release (branch)](https://img.shields.io/github/commits-since/foundryservices/snpOracle/latest/dev) ![GitHub contributors](https://img.shields.io/github/contributors/foundryservices/snpOracle) ![GitHub Release Date](https://img.shields.io/github/release-date/foundryservices/snpOracle) ![GitHub last commit (branch)](https://img.shields.io/github/last-commit/foundryservices/snpOracle/dev) |
+| Compatability | ![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmacrocosm-os%2Fprompting%2Frefs%2Fheads%2Fmain%2Fpyproject.toml&query=%24.tool.poetry.dependencies.bittensor&prefix=v&label=Bittensor) ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fnumpy%2Fnumpy%2Fmain%2Fpyproject.toml&logo=python) |
+| Social | ![Website](https://img.shields.io/website?url=https%3A%2F%2Ffoundrydigital.com%2Faccelerate%2F&up_message=Foundry%20Accelerate&label=Website) ![Website](https://img.shields.io/website?url=https%3A%2F%2Ftaostats.io%2Fvalidators%2Ffoundry%2F&up_message=Foundry%20Accelerate&label=Validator) ![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/FoundryServices)  |
+
 ---
 - [Introduction](#introduction)
 - [Design Decisions](#design-decisions)
