@@ -77,22 +77,16 @@ def calc_raw(self, uid, response: Challenge, close_price: float):
             # add the timepoint before the first t from past history for each epoch
             past_timepoint = close_price[0:-1]
             past_timepoint.reverse()
-            before_close_vector = np.array(past_timepoint).reshape(
-                self.N_TIMEPOINTS, 1
-            )
+            before_close_vector = np.array(past_timepoint).reshape(self.N_TIMEPOINTS, 1)
         # take the difference between timepoints and remove the oldest prediction epoch (it is now obselete)
         pred_dir = before_close_vector - prediction_array[:-1, :]
         close_dir = before_close_vector - close_price_array
         correct_dirs = (close_dir >= 0) == time_shift((pred_dir >= 0))
-        deltas = np.abs(
-            close_price_array - time_shift(prediction_array[:-1, :])
-        )
+        deltas = np.abs(close_price_array - time_shift(prediction_array[:-1, :]))
         return deltas, correct_dirs
 
 
-def rank_miners_by_epoch(
-    deltas: np.ndarray, correct_dirs: np.ndarray
-) -> np.ndarray:
+def rank_miners_by_epoch(deltas: np.ndarray, correct_dirs: np.ndarray) -> np.ndarray:
     """
     Generates the rankings for each miner (rows) first according to their correct_dirs (bool), then by deltas (float)
 
@@ -108,9 +102,7 @@ def rank_miners_by_epoch(
     incorrect_deltas = np.full(deltas.shape, np.nan)
     incorrect_deltas[~correct_dirs] = deltas[~correct_dirs]
     correct_ranks = rank_columns(correct_deltas)
-    incorrect_ranks = rank_columns(incorrect_deltas) + np.nanmax(
-        correct_ranks, axis=0
-    )
+    incorrect_ranks = rank_columns(incorrect_deltas) + np.nanmax(correct_ranks, axis=0)
     all_ranks = correct_ranks
     all_ranks[~correct_dirs] = incorrect_ranks[~correct_dirs]
     return all_ranks
@@ -190,20 +182,14 @@ def update_synapse(self, uid, response: Challenge) -> None:
     past_predictions = self.past_predictions[uid]
     # does not save predictions that mature after market close
     if (
-        datetime.now(timezone("America/New_York")).replace(
-            hour=16, minute=5, second=0, microsecond=0
-        )
+        datetime.now(timezone("America/New_York")).replace(hour=16, minute=5, second=0, microsecond=0)
         - datetime.fromisoformat(response.timestamp)
     ).seconds < self.prediction_interval * 60:
         sec_to_market_close = (
-            datetime.now(timezone("America/New_York")).replace(
-                hour=16, minute=0, second=0, microsecond=0
-            )
+            datetime.now(timezone("America/New_York")).replace(hour=16, minute=0, second=0, microsecond=0)
             - datetime.fromisoformat(response.timestamp)
         ).seconds
-        epochs_to_market_close = int(
-            (sec_to_market_close / 60) / self.prediction_interval
-        )
+        epochs_to_market_close = int((sec_to_market_close / 60) / self.prediction_interval)
         prediction_vector = np.concatenate(
             (
                 np.array(response.prediction[0:epochs_to_market_close]),
@@ -212,15 +198,9 @@ def update_synapse(self, uid, response: Challenge) -> None:
             axis=0,
         )
     else:
-        prediction_vector = np.array(response.prediction).reshape(
-            1, self.N_TIMEPOINTS
-        )
-    new_past_predictions = np.concatenate(
-        (prediction_vector, past_predictions), axis=0
-    )
-    self.past_predictions[uid] = new_past_predictions[
-        0:-1, :
-    ]  # remove the oldest epoch
+        prediction_vector = np.array(response.prediction).reshape(1, self.N_TIMEPOINTS)
+    new_past_predictions = np.concatenate((prediction_vector, past_predictions), axis=0)
+    self.past_predictions[uid] = new_past_predictions[0:-1, :]  # remove the oldest epoch
 
 
 ################################################################################
@@ -245,9 +225,7 @@ def get_rewards(
     prediction_interval = self.prediction_interval
     if len(responses) == 0:
         bt.logging.info("Got no responses. Returning reward tensor of zeros.")
-        return [], np.full(
-            len(self.metagraph.S), 0.0
-        )  # Fallback strategy: Log and return 0.
+        return [], np.full(len(self.metagraph.S), 0.0)  # Fallback strategy: Log and return 0.
 
     # Prepare to extract close price for this timestamp
     ticker_symbol = "^GSPC"
@@ -275,35 +253,23 @@ def get_rewards(
         time.sleep(15)
 
     prediction_times = []
-    rounded_up_time = rounded_up_time.replace(tzinfo=None) - timedelta(
-        seconds=10
-    )
+    rounded_up_time = rounded_up_time.replace(tzinfo=None) - timedelta(seconds=10)
     # add an extra timepoint for dir_acc calculation
     for i in range(N_TIMEPOINTS + 1):
-        prediction_times.append(
-            rounded_up_time - timedelta(minutes=(i + 1) * prediction_interval)
-        )
+        prediction_times.append(rounded_up_time - timedelta(minutes=(i + 1) * prediction_interval))
     bt.logging.info(f"Prediction times: {prediction_times}")
-    data = yf.download(
-        tickers=ticker_symbol, period="5d", interval="5m", progress=False
-    )
-    close_price = data.iloc[
-        data.index.tz_localize(None).isin(prediction_times)
-    ]["Close"].tolist()
+    data = yf.download(tickers=ticker_symbol, period="5d", interval="5m", progress=False)
+    close_price = data.iloc[data.index.tz_localize(None).isin(prediction_times)]["Close"].tolist()
     if len(close_price) < (N_TIMEPOINTS + 1):
         # edge case where its between 9:30am and 10am
         close_price = data.iloc[-N_TIMEPOINTS - 1 :]["Close"].tolist()
     close_price_revealed = " ".join(str(price) for price in close_price)
 
-    bt.logging.info(
-        f"Revealing close prices for this interval: {close_price_revealed}"
-    )
+    bt.logging.info(f"Revealing close prices for this interval: {close_price_revealed}")
 
     # Preallocate an array (nMiners x N_TIMEPOINTS x N_TIMEPOINTS) where the third dimension is t-1, t-2,...,t-N_TIMEPOINTS for past predictions
     raw_deltas = np.full((len(responses), N_TIMEPOINTS, N_TIMEPOINTS), np.nan)
-    raw_correct_dir = np.full(
-        (len(responses), N_TIMEPOINTS, N_TIMEPOINTS), False
-    )
+    raw_correct_dir = np.full((len(responses), N_TIMEPOINTS, N_TIMEPOINTS), False)
     ranks = np.full((len(responses), N_TIMEPOINTS, N_TIMEPOINTS), np.nan)
     for x, response in enumerate(responses):
         # calc_raw also does many helpful things like shifting epoch to
@@ -311,9 +277,7 @@ def get_rewards(
         if delta is None or correct is None:
             if response.prediction is None:
                 # no response generated
-                bt.logging.info(
-                    f"Netuid {x} returned no response. Setting incentive to 0"
-                )
+                bt.logging.info(f"Netuid {x} returned no response. Setting incentive to 0")
                 raw_deltas[x, :, :], raw_correct_dir[x, :, :] = np.nan, np.nan
             else:
                 # wrong size response generated
@@ -330,13 +294,9 @@ def get_rewards(
     # raw_deltas is now a full of the last N_TIMEPOINTS of prediction deltas, same for raw_correct_dir
     ranks = np.full((len(responses), N_TIMEPOINTS, N_TIMEPOINTS), np.nan)
     for t in range(N_TIMEPOINTS):
-        ranks[:, :, t] = rank_miners_by_epoch(
-            raw_deltas[:, :, t], raw_correct_dir[:, :, t]
-        )
+        ranks[:, :, t] = rank_miners_by_epoch(raw_deltas[:, :, t], raw_correct_dir[:, :, t])
 
-    incentive_ranks = (
-        np.nanmean(np.nanmean(ranks, axis=2), axis=1).argsort().argsort()
-    )
+    incentive_ranks = np.nanmean(np.nanmean(ranks, axis=2), axis=1).argsort().argsort()
     reward = np.exp(-0.05 * incentive_ranks)
     reward[incentive_ranks > 100] = 0
     reward = reward / np.max(reward)

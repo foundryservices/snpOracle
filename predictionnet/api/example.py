@@ -15,9 +15,7 @@ async def test_prediction():
 
     uids = [uid.item() for uid in metagraph.uids if metagraph.trust[uid] > 0]
 
-    axons = await get_query_api_axons(
-        wallet=wallet, metagraph=metagraph, uids=uids
-    )
+    axons = await get_query_api_axons(wallet=wallet, metagraph=metagraph, uids=uids)
 
     # Store some data!
     # Read timestamp from the text file
