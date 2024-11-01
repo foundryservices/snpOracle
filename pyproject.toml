@@ -58,7 +58,3 @@ skip = [
 
 #[tool.flake8]
 # Refer to the `.flake8` file
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
