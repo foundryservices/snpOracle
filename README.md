@@ -2,13 +2,7 @@
 <img src="docs/images/accelerate.png" />
 
 # **Foundry S&P 500 Oracle** <!-- omit in toc -->
----
----
----
-## Foundry Accelerate <!-- omit in toc -->
 
-[Website](https://foundrydigital.com/accelerate/) • [Validator](https://taostats.io/validators/foundry/) • [Twitter](https://x.com/FoundryServices?s=20)
-</div>
 
 |     |     |
 | :-: | :-: |
@@ -17,7 +11,11 @@
 | Compatability | ![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Ffoundryservices%2FsnpOracle%2Frefs%2Fheads%2F234-readme-badges%2Fpyproject.toml&query=%24.tool.poetry.dependencies.python&logo=python&label=Python&logoColor=yellow) ![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Ffoundryservices%2FsnpOracle%2Frefs%2Fheads%2F234-readme-badges%2Fpyproject.toml&query=%24.tool.poetry.dependencies.bittensor&prefix=v&label=Bittensor) <br> ![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Ffoundryservices%2FsnpOracle%2Frefs%2Fheads%2F234-readme-badges%2Fpyproject.toml&query=%24.tool.poetry.dependencies.tensorflow&prefix=v&logo=tensorflow&label=TensorFlow) ![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Ffoundryservices%2FsnpOracle%2Frefs%2Fheads%2F234-readme-badges%2Fpyproject.toml&query=%24.tool.poetry.dependencies.yfinance&prefix=v&label=yfinance) |
 | Social | [![Website](https://img.shields.io/website?url=https%3A%2F%2Ffoundrydigital.com%2Faccelerate%2F&up_message=Foundry%20Accelerate&label=Website)](https://foundrydigital.com/accelerate/) [![Website](https://img.shields.io/website?url=https%3A%2F%2Ftaostats.io%2Fvalidators%2Ffoundry%2F&up_message=Foundry%20Accelerate&label=Validator)](https://taostats.io/validators/5HEo565WAy4Dbq3Sv271SAi7syBSofyfhhwRNjFNSM2gP9M2) [![X (formerly Twitter) Follow](https://img.shields.io/twitter/follow/FoundryServices)](https://x.com/FoundryServices?s=20)  |
 
+
+</div>
+
 ---
+
 - [Introduction](#introduction)
 - [Design Decisions](#design-decisions)
 - [Installation](#installation)
