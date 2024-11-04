@@ -93,16 +93,11 @@ class BaseValidatorNeuron(BaseNeuron):
                 pass
 
         except Exception as e:
-            bt.logging.error(
-                f"Failed to create Axon initialize with exception: {e}"
-            )
+            bt.logging.error(f"Failed to create Axon initialize with exception: {e}")
             pass
 
     async def concurrent_forward(self):
-        coroutines = [
-            self.forward()
-            for _ in range(self.config.neuron.num_concurrent_forwards)
-        ]
+        coroutines = [self.forward() for _ in range(self.config.neuron.num_concurrent_forwards)]
         await asyncio.gather(*coroutines)
 
     def run(self):
@@ -156,9 +151,7 @@ class BaseValidatorNeuron(BaseNeuron):
         # In case of unforeseen errors, the validator will log the error and continue operations.
         except Exception as err:
             bt.logging.error("Error during validation", str(err))
-            bt.logging.debug(
-                print_exception(type(err), err, err.__traceback__)
-            )
+            bt.logging.debug(print_exception(type(err), err, err.__traceback__))
 
     def run_in_background_thread(self):
         """
@@ -261,9 +254,7 @@ class BaseValidatorNeuron(BaseNeuron):
         if result:
             bt.logging.info("set_weights on chain successfully!")
         else:
-            bt.logging.debug(
-                "Failed to set weights this iteration with message:", msg
-            )
+            bt.logging.debug("Failed to set weights this iteration with message:", msg)
 
     def resync_metagraph(self):
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
@@ -279,16 +270,12 @@ class BaseValidatorNeuron(BaseNeuron):
         if previous_metagraph.axons == self.metagraph.axons:
             return
 
-        bt.logging.info(
-            "Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages"
-        )
+        bt.logging.info("Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages")
         # Zero out all hotkeys that have been replaced.
         for uid, hotkey in enumerate(self.hotkeys):
             if hotkey != self.metagraph.hotkeys[uid]:
                 self.scores[uid] = 0  # hotkey has been replaced
-                self.past_predictions[uid] = full(
-                    (self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan
-                )  # reset past predictions
+                self.past_predictions[uid] = full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)  # reset past predictions
 
         # Check to see if the metagraph has changed size.
         # If so, we need to add new hotkeys and moving averages.
@@ -313,9 +300,7 @@ class BaseValidatorNeuron(BaseNeuron):
         # Compute forward pass rewards, assumes uids are mutually exclusive.
         # shape: [ metagraph.n ]
         for i, value in zip(uids, rewards):
-            self.moving_avg_scores[i] = (1 - self.alpha) * self.scores[
-                i
-            ] + self.alpha * value
+            self.moving_avg_scores[i] = (1 - self.alpha) * self.scores[i] + self.alpha * value
         self.scores = array(self.moving_avg_scores)
         bt.logging.info(f"New Average Scores: {self.scores}")
 
@@ -336,9 +321,7 @@ class BaseValidatorNeuron(BaseNeuron):
         bt.logging.info("Loading validator state.")
         state_path = os.path.join(self.config.neuron.full_path, "state.pt")
         if not os.path.exists(state_path):
-            bt.logging.info(
-                "Skipping state load due to missing state.pt file."
-            )
+            bt.logging.info("Skipping state load due to missing state.pt file.")
             return
         # backwards compatability with torch version
         try:
@@ -353,9 +336,7 @@ class BaseValidatorNeuron(BaseNeuron):
                 import torch
 
                 state = torch.load(state_path)
-                bt.logging.info(
-                    "Found torch state.pt file, converting to pickle..."
-                )
+                bt.logging.info("Found torch state.pt file, converting to pickle...")
                 self.step = state["step"]
                 self.scores = state["scores"]
                 self.hotkeys = state["hotkeys"]

@@ -41,9 +41,7 @@ def prep_data(drop_na: bool = True) -> DataFrame:
     data["SMA_50"] = data["Close"].rolling(window=50).mean()
     data["SMA_200"] = data["Close"].rolling(window=200).mean()
     data["RSI"] = ta.momentum.RSIIndicator(data["Close"]).rsi()
-    data["CCI"] = ta.trend.CCIIndicator(
-        data["High"], data["Low"], data["Close"]
-    ).cci()
+    data["CCI"] = ta.trend.CCIIndicator(data["High"], data["Low"], data["Close"]).cci()
     data["Momentum"] = ta.momentum.ROCIndicator(data["Close"]).roc()
     for i in range(1, 7):
         data[f"NextClose{i}"] = data["Close"].shift(-1 * i)
