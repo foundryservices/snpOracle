@@ -3,7 +3,7 @@
 
 # **Foundry S&P 500 Oracle** <!-- omit in toc -->
 
-<div style="font-size: 20px">
+<div style="font-size: 30px">
 
 |     |     |
 | :-: | :-: |
