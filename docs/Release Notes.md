@@ -6,6 +6,7 @@ Release Notes
 Released on
 - Reduce dependencies required to deploy miners and validators
 - Move top level files to sensible locations
+- Enahnce README with badges and other cosmetic updates
 
 
 2.2.1

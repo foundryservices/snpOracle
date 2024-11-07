@@ -1,3 +1,24 @@
+[tool.poetry]
+name = "snp_oracle"
+version = "2.2.1"
+description = ""
+authors = ["Foundry Digital"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+# Python version - 3.9, 3.10, 3.11
+python = ">= 3.9, < 3.12"
+
+# Copied from requirements.txt
+bittensor = "7.4.0"
+huggingface_hub = "0.22.2"
+tensorflow = "2.17.0"
+wandb = "0.16.6"
+yfinance = "0.2.37"
+
+[tool.poetry.group.dev.dependencies]
+pre-commit-hooks = "5.0.0"
+
 [tool.black]
 line-length = 120
 include = '\.pyi?$'
