@@ -1,16 +1,18 @@
-network = test
+testnet = wss://test.finney.opentensor.ai:443
+local_network = ws://127.0.0.1:9944
 netuid = 1
 logging_level = trace # options= ['info', 'debug', 'trace']
 coldkey = owner
 
+network = $(testnet)
 metagraph:
-	btcli subnet metagraph --netuid $(netuid) --subtensor.chain_endpoint $(network)
+	btcli subnet metagraph --netuid $(netuid) --network $(network)
 
 register:
 	{ \
 		read -p 'Wallet name?: ' wallet_name ;\
 		read -p 'Hotkey?: ' hotkey_name ;\
-		btcli subnet register --netuid $(netuid) --wallet.name "$$wallet_name" --wallet.hotkey "$$hotkey_name" --subtensor.chain_endpoint $(network) ;\
+		btcli subnet register --netuid $(netuid) --wallet.name "$$wallet_name" --wallet.hotkey "$$hotkey_name" --network $(network) ;\
 	}
 validator:
 	python start_validator.py \
