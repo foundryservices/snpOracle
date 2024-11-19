@@ -98,3 +98,6 @@ class MinerHistory:
             item for item in timestamps if item in self.predictions.keys()
         ]
         return filtered_list
+    
+    def latest_timestamp(self):
+        return max(self.predictions.keys())
