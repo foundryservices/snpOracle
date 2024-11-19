@@ -157,7 +157,7 @@ class weight_setter:
         bt.logging.debug("Starting main loop")
         try:
             if market_is_open():
-                query_lag = elapsed_seconds(get_now(), iso8601_to_datetime(self.timestamp))
+                query_lag = elapsed_seconds(get_now(), self.timestamp)
                 if is_query_time(self.prediction_interval, self.timestamp) or query_lag >= 60 * self.prediction_interval:
                     responses = self.query_miners()
                     self.timestamp = iso8601_to_datetime(responses[0].timestamp)
