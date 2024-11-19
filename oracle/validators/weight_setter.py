@@ -120,7 +120,7 @@ class weight_setter:
                     uids = array(self.available_uids)
                     weights = [self.moving_average_scores[uid] for uid in self.available_uids]
                 if isnan(weights).any():
-                    bt.logging.error("Weights contain NaN values. Setting weights to 0.")
+                    bt.logging.error("Weights contain all NaN values. Setting weights to 0.")
                     weights = [0] * len(weights)
                 for i, j in zip(weights, self.available_uids):
                     bt.logging.debug(f"UID: {j}  |  Weight: {i}")
@@ -156,6 +156,7 @@ class weight_setter:
                 )
         except Exception as e:
             bt.logging.error(f"set_weights loop error: {e}")
+            raise e
 
     async def main_function(self):
         try:
