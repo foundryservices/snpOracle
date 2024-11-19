@@ -5,7 +5,7 @@ from typing import Optional
 
 import bittensor as bt
 import git
-from numpy import full, nan, array, repeat, ndarray, copy, arange, empty_like, isnan, nanmax
+from numpy import full, nan, array, repeat, ndarray, copy, arange, empty_like, isnan, nanmax, argsort
 from pandas import DataFrame
 import requests
 
@@ -183,7 +183,7 @@ def rank_miners_by_epoch(deltas: ndarray, correct_dirs: ndarray) -> ndarray:
     incorrect_ranks = rank_columns(incorrect_deltas) + nanmax(correct_ranks, axis=0)
     all_ranks = correct_ranks
     all_ranks[~correct_dirs] = incorrect_ranks[~correct_dirs]
-    return all_ranks
+    return all_ranks - 1 # zero indexing
 
 
 def rank_columns(array: ndarray) -> ndarray:
@@ -205,7 +205,7 @@ def rank_columns(array: ndarray) -> ndarray:
         non_nan_indices = ~isnan(col_data)
         # Extract non-NaN values and sort them
         non_nan_values = col_data[non_nan_indices]
-        sorted_indices = np.argsort(non_nan_values)
+        sorted_indices = argsort(non_nan_values)
         ranks = empty_like(non_nan_values)
         # Assign ranks
         ranks[sorted_indices] = arange(1, len(non_nan_values) + 1)
