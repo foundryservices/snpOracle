@@ -34,7 +34,7 @@ class weight_setter:
         if self.config.reset_state:
             self.scores = [0.0] * len(self.metagraph.S)
             self.moving_average_scores = {uid: 0 for uid in self.metagraph.uids}
-            self.MinerHistory = {uid: MinerHistory(uid, timezone=self.timezone) for uid in self.available_uids}
+            self.MinerHistory = {uid: MinerHistory(uid) for uid in self.available_uids}
             self.timestamp = get_before(minutes=60)
             self.save_state()
         else:
@@ -84,7 +84,7 @@ class weight_setter:
                             bt.logging.info(f"Replacing hotkey on {uid} with {self.metagraph.hotkeys[uid]}")
                             self.hotkeys[uid] = hotkey
                             self.scores[uid] = 0  # hotkey has been replaced
-                            self.MinerHistory[uid] = MinerHistory(uid, timezone=self.timezone)
+                            self.MinerHistory[uid] = MinerHistory(uid)
                             self.moving_average_scores[uid] = 0
                     self.last_sync = self.subtensor.get_current_block()
                     self.save_state()
