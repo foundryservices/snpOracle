@@ -160,7 +160,7 @@ class weight_setter:
                 query_lag = elapsed_seconds(get_now(), iso8601_to_datetime(self.timestamp))
                 if is_query_time(self.prediction_interval, self.timestamp) or query_lag >= 60 * self.prediction_interval:
                     responses = self.query_miners()
-                    self.timestamp = iso8601_to_datetime(responses[0].timestamp).isoformat()
+                    self.timestamp = iso8601_to_datetime(responses[0].timestamp)
                     try:
                         rewards = calc_rewards(
                             self,
