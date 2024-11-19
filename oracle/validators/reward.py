@@ -27,7 +27,7 @@ def calc_rewards(
         current_miner = self.MinerHistory[uid]
         self.MinerHistory[uid].add_prediction(response.timestamp, response.prediction)
         prediction_dict = current_miner.format_predictions(response.timestamp, minutes=self.prediction_interval*N_TIMEPOINTS)
-        raw_deltas[uid, :, :], raw_correct_dir[uid, :, :] = calc_raw(prediction_dict, price_dict, N_TIMEPOINTS=N_TIMEPOINTS)
+        raw_deltas[uid, :, :], raw_correct_dir[uid, :, :] = calc_raw(prediction_dict, price_dict, response.timestamp, N_TIMEPOINTS=N_TIMEPOINTS)
     
     for t in range(N_TIMEPOINTS):
         ranks[:, :, t] = rank_miners_by_epoch(raw_deltas[:, :, t], raw_correct_dir[:, :, t])
