@@ -2,7 +2,7 @@ import argparse
 from datetime import datetime, timedelta
 from typing import List
 
-from oracle.utils.timestamp import get_now, get_timezone, iso8601_to_datetime, round_minute_down
+from oracle.utils.timestamp import get_now, get_timezone, iso8601_to_datetime, round_minute_down, get_before
 
 
 class Config:
@@ -100,4 +100,7 @@ class MinerHistory:
         return filtered_list
     
     def latest_timestamp(self):
-        return max(self.predictions.keys())
+        if not self.predictions:
+            return get_before(minutes=60)
+        else:
+            return max(self.predictions.keys())
