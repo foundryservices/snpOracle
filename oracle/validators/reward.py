@@ -73,35 +73,38 @@ def calc_raw(prediction_dict: dict, price_dict: dict, timestamp: str, N_TIMEPOIN
     return deltas, correct_dirs
 
 
-# from oracle.protocol import Challenge
-# from oracle.utils.timestamp import round_minute_down, get_now
-# from oracle.utils.classes import MinerHistory
-# from oracle.utils.general import convert_predictions_to_matrix, convert_prices_to_matrix, time_shift, pd_to_dict, rank_miners_by_epoch
-# from datetime import timedelta
-# import numpy as np
-# import yfinance as yf
+from oracle.protocol import Challenge
+from oracle.utils.timestamp import round_minute_down, get_now
+from oracle.utils.classes import MinerHistory
+from oracle.utils.general import convert_predictions_to_matrix, convert_prices_to_matrix, time_shift, pd_to_dict, rank_miners_by_epoch
+from datetime import timedelta
+import numpy as np
+import yfinance as yf
 
-# symbol = "^GSPC"
-# data = yf.download(tickers=symbol, period="5d", interval="5m", progress=False)
-# price_dict = pd_to_dict(data)
+symbol = "^GSPC"
+data = yf.download(tickers=symbol, period="5d", interval="5m", progress=False)
+price_dict = pd_to_dict(data)
 
-# now = round_minute_down(get_now())
-# old = now - timedelta(minutes=25)
-# responses = [Challenge(timestamp=now.isoformat()), Challenge(timestamp=now.isoformat())]
-# responses[0].prediction = [6000, 6001, 6002, 6003, 6004, 6005]
-# responses[1].prediction = [5000, 5001, 5002, 5003, 5004, 5005]
-# mh = {0: MinerHistory(uid=0), 1: MinerHistory(uid=1)}
-# mh[0].add_prediction(old, responses[0].prediction)
-# mh[1].add_prediction(old, responses[1].prediction)
+now = round_minute_down(get_now())
+old = now - timedelta(minutes=25)
+responses = [Challenge(timestamp=now.isoformat()), Challenge(timestamp=now.isoformat())]
+responses[0].prediction = [6000, 6001, 6002, 6003, 6004, 6005]
+responses[1].prediction = [5000, 5001, 5002, 5003, 5004, 5005]
+mh = {0: MinerHistory(uid=0), 1: MinerHistory(uid=1)}
+mh[0].add_prediction(old, responses[0].prediction)
+mh[1].add_prediction(old, responses[1].prediction)
 
 
-# N_TIMEPOINTS=6
-# raw_deltas = np.full((len(responses), N_TIMEPOINTS, N_TIMEPOINTS), np.nan)
-# raw_correct_dir = np.full((len(responses), N_TIMEPOINTS, N_TIMEPOINTS), False)
-# ranks = np.full((len(responses), N_TIMEPOINTS, N_TIMEPOINTS), np.nan)
-# for uid, response in zip([0,1], responses):
-#     current_miner = mh[uid]
-#     mh[uid].add_prediction(response.timestamp, response.prediction)
-#     prediction_dict = current_miner.format_predictions(response.timestamp, minutes=5*N_TIMEPOINTS)
-#     raw_deltas[uid, :, :], raw_correct_dir[uid, :, :] = calc_raw(prediction_dict, price_dict, response.timestamp, N_TIMEPOINTS=N_TIMEPOINTS)
+N_TIMEPOINTS=6
+raw_deltas = np.full((len(responses), N_TIMEPOINTS, N_TIMEPOINTS), np.nan)
+raw_correct_dir = np.full((len(responses), N_TIMEPOINTS, N_TIMEPOINTS), False)
+ranks = np.full((len(responses), N_TIMEPOINTS, N_TIMEPOINTS), np.nan)
+for uid, response in zip([0,1], responses):
+    current_miner = mh[uid]
+    mh[uid].add_prediction(response.timestamp, response.prediction)
+    prediction_dict = current_miner.format_predictions(response.timestamp, minutes=5*N_TIMEPOINTS)
+    raw_deltas[uid, :, :], raw_correct_dir[uid, :, :] = calc_raw(prediction_dict, price_dict, response.timestamp, N_TIMEPOINTS=N_TIMEPOINTS)
 
+for t in range(N_TIMEPOINTS):
+    ranks[:, :, t] = rank_miners_by_epoch(raw_deltas[:, :, t], raw_correct_dir[:, :, t])
+incentive_ranks = np.nanmean(np.nanmean(ranks, axis=2), axis=1).argsort().argsort()

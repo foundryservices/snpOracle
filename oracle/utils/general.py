@@ -5,7 +5,7 @@ from typing import Optional
 
 import bittensor as bt
 import git
-from numpy import full, nan, array, repeat, ndarray, copy, arange, empty_like, isnan, nanmax, argsort
+from numpy import full, nan, array, repeat, ndarray, copy, arange, empty_like, isnan, nanmax, argsort, concatenate, cumsum
 from pandas import DataFrame
 import requests
 
@@ -199,20 +199,23 @@ def rank_columns(array: ndarray) -> ndarray:
     ranked_array = copy(array)
     # Iterate over each column
     for col in range(array.shape[1]):
-        # Extract the column
-        col_data = array[:, col]
-        # Get indices of non-NaN values
-        non_nan_indices = ~isnan(col_data)
-        # Extract non-NaN values and sort them
-        non_nan_values = col_data[non_nan_indices]
-        sorted_indices = argsort(non_nan_values)
-        ranks = empty_like(non_nan_values)
-        # Assign ranks
-        ranks[sorted_indices] = arange(1, len(non_nan_values) + 1)
-        # Place ranks back into the original column, preserving NaNs
-        ranked_array[non_nan_indices, col] = ranks
+        ranked_array[:, col] = rank(array[:, col])
     return ranked_array
 
+def rank(vector):
+    if vector is None or len(vector) <= 1:
+        return array([0])
+    else:
+        # Sort the array and get the indices that would sort it
+        sorted_indices = argsort(vector)
+        sorted_vector = vector[sorted_indices]
+        # Create a mask for where each new unique value starts in the sorted array
+        unique_mask = concatenate(([True], sorted_vector[1:] != sorted_vector[:-1]))
+        # Use cumulative sum of the unique mask to get the ranks, then assign back in original order
+        ranks = cumsum(unique_mask) - 1
+        rank_vector = empty_like(vector, dtype=int)
+        rank_vector[sorted_indices] = ranks
+        return rank_vector
 
 async def loop_handler(self, func, sleep_time=120):
         try:
