@@ -124,14 +124,13 @@ def is_query_time(prediction_interval: int, timestamp: str, tolerance: int = 120
         Then, check if we already sent a request in the current epoch
     """
     now = get_now()
-    provided_timestamp = iso8601_to_datetime(timestamp)
 
     # The provided timestamp is the last time a request was made. If this timestamp
     # is from the current epoch, we do not want to make a request. One way to check
     # this is by checking that `now` and `provided_timestamp` are more than `tolerance`
     # apart from each other. When true, this means the `provided_timestamp` is from
     # the previous epoch
-    been_long_enough = elapsed_seconds(now, provided_timestamp) > tolerance
+    been_long_enough = elapsed_seconds(now, timestamp) > tolerance
 
     # return false early if we already know it has not been long enough
     if not been_long_enough:
