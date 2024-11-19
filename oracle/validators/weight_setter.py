@@ -144,6 +144,7 @@ class weight_setter:
                 if is_query_time(self.prediction_interval, self.timestamp) or query_lag >= 60 * self.prediction_interval:
                     bt.logging.info("Querying miners...")
                     responses = self.query_miners()
+                    self.timestamp = iso8601_to_datetime(responses[0].timestamp).isoformat()
                     try:
                         rewards = calc_rewards(
                             self,
