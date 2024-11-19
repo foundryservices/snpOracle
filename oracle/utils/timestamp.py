@@ -2,6 +2,7 @@ from typing import List
 from datetime import datetime, timedelta
 
 from pytz import timezone
+import pandas_market_calendars as mcal
 
 ###############################
 #           GETTERS           #

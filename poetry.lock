@@ -1107,6 +1107,28 @@ files = [
 test = ["pytest (>=6)"]
 
 [[package]]
+name = "exchange-calendars"
+version = "4.5.6"
+description = "Calendars for securities exchanges"
+optional = false
+python-versions = "~=3.9"
+files = [
+    {file = "exchange_calendars-4.5.6-py3-none-any.whl", hash = "sha256:5abf5ebcb8ceef0ced36fe4e20071d42517091bf081e6c44354cb343009d672b"},
+    {file = "exchange_calendars-4.5.6.tar.gz", hash = "sha256:5db77178cf849f81dd6dcc99995e2163b928c0f45dcd0a2c395958beb1dbb145"},
+]
+
+[package.dependencies]
+korean-lunar-calendar = "*"
+numpy = "*"
+pandas = ">=1.5"
+pyluach = "*"
+toolz = "*"
+tzdata = "*"
+
+[package.extras]
+dev = ["flake8", "hypothesis", "pip-tools", "pytest", "pytest-benchmark", "pytest-xdist"]
+
+[[package]]
 name = "fastapi"
 version = "0.110.3"
 description = "FastAPI framework, high performance, easy to learn, fast to code, ready for production"
@@ -1453,6 +1475,17 @@ MarkupSafe = ">=2.0"
 
 [package.extras]
 i18n = ["Babel (>=2.7)"]
+
+[[package]]
+name = "korean-lunar-calendar"
+version = "0.3.1"
+description = "Korean Lunar Calendar"
+optional = false
+python-versions = "*"
+files = [
+    {file = "korean_lunar_calendar-0.3.1-py3-none-any.whl", hash = "sha256:392757135c492c4f42a604e6038042953c35c6f449dda5f27e3f86a7f9c943e5"},
+    {file = "korean_lunar_calendar-0.3.1.tar.gz", hash = "sha256:eb2c485124a061016926bdea6d89efdf9b9fdbf16db55895b6cf1e5bec17b857"},
+]
 
 [[package]]
 name = "levenshtein"
@@ -2307,6 +2340,26 @@ test = ["hypothesis (>=6.46.1)", "pytest (>=7.3.2)", "pytest-xdist (>=2.2.0)"]
 xml = ["lxml (>=4.9.2)"]
 
 [[package]]
+name = "pandas-market-calendars"
+version = "4.4.2"
+description = "Market and exchange trading calendars for pandas"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "pandas_market_calendars-4.4.2-py3-none-any.whl", hash = "sha256:52a0fea562113d511f3f1ae372e2a86e4a37147dacec9644094ff6f88aee8d53"},
+    {file = "pandas_market_calendars-4.4.2.tar.gz", hash = "sha256:4261a2c065565de1cd3646982b2e206e1069714b8140878dd6eba972546dfbcb"},
+]
+
+[package.dependencies]
+exchange-calendars = ">=3.3"
+pandas = ">=1.1"
+python-dateutil = "*"
+pytz = "*"
+
+[package.extras]
+dev = ["black", "pre-commit", "pytest"]
+
+[[package]]
 name = "password-strength"
 version = "0.0.3.post2"
 description = "Password strength and validation"
@@ -3043,6 +3096,21 @@ files = [
 
 [package.extras]
 windows-terminal = ["colorama (>=0.4.6)"]
+
+[[package]]
+name = "pyluach"
+version = "2.2.0"
+description = "A Python package for dealing with Hebrew (Jewish) calendar dates."
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "pyluach-2.2.0-py3-none-any.whl", hash = "sha256:d1eb49d6292087e9290f4661ae01b60c8c933704ec8c9cef82673b349ff96adf"},
+    {file = "pyluach-2.2.0.tar.gz", hash = "sha256:9063a25387cd7624276fd0656508bada08aa8a6f22e8db352844cd858e69012b"},
+]
+
+[package.extras]
+doc = ["sphinx (>=6.1.3,<6.2.0)", "sphinx_rtd_theme (>=1.2.0,<1.3.0)"]
+test = ["beautifulsoup4", "flake8", "pytest", "pytest-cov"]
 
 [[package]]
 name = "pynacl"
@@ -4305,4 +4373,4 @@ repair = ["scipy (>=1.6.3)"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">= 3.9, < 3.12"
-content-hash = "9bb2374c80be84b1196e3804859af91cbe8fc1a37d9e3f690e175103d5bbc86a"
+content-hash = "70083e1460056225dab386a4c2f35ef9d9612d36e1ac26280b0b55a03b392e46"
