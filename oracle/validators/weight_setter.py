@@ -225,6 +225,6 @@ class weight_setter:
             self.MinerHistory = state["MinerHistory"]
             self.moving_average_scores = state["moving_average_scores"]
             all_dates = [mh.latest_timestamp() for mh in self.MinerHistory.values()]
-            self.timestamp = max(all_dates)
+            self.timestamp = max(all_dates).isoformat()
         except Exception as e:
             bt.logging.error(f"Failed to load state with error: {e}")
