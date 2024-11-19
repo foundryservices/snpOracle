@@ -67,6 +67,7 @@ class weight_setter:
 
 
     async def resync_metagraph(self):
+        bt.logging.debug("Starting resync_metagraph loop")
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
         try:
             async with self.lock:
@@ -112,6 +113,7 @@ class weight_setter:
 
 
     async def set_weights(self):
+        bt.logging.debug("Starting set_weights loop")
         if self.blocks_since_last_update >= self.set_weights_rate:
             async with self.lock:
                 uids = array(self.available_uids)
@@ -150,6 +152,7 @@ class weight_setter:
             )
 
     async def main_function(self):
+        bt.logging.debug("Starting main loop")
         try:
             if market_is_open():
                 if not hasattr(self, "timestamp"):
