@@ -121,11 +121,14 @@ class weight_setter:
             async with self.lock:
                 uids = array(self.available_uids)
                 weights = [self.moving_average_scores[uid] for uid in self.available_uids]
-            weights = array(weights)/sum(weights)
+            if isnan(weights).any():
+                bt.logging.error("Weights contain NaN values. Setting weights to 0.")
+                weights = [0] * len(weights)
             for i, j in zip(weights, self.available_uids):
                 bt.logging.debug(f"UID: {j}  |  Weight: {i}")
             if sum(weights) == 0:
                 weights = [1] * len(weights)
+            weights = array(weights)/sum(weights)
             # Convert to uint16 weights and uids.
             (
                 uint_uids,
