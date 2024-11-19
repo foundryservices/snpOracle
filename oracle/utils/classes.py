@@ -63,7 +63,7 @@ class MinerHistory:
         self.uid = uid
         self.timezone = timezone
 
-    def add_prediction(self, timestamp, prediction: float, interval: List[float]):
+    def add_prediction(self, timestamp, prediction: float):
         if isinstance(timestamp, str):
             timestamp = iso8601_to_datetime(timestamp)
         timestamp = round_minute_down(timestamp)
@@ -77,7 +77,6 @@ class MinerHistory:
         self.predictions = filtered_pred_dict
 
     def format_predictions(self, reference_timestamp=None, hours: int = 2, minutes: int = 0):
-        # intervals = []
         if reference_timestamp is None:
             reference_timestamp = round_minute_down(get_now())
         if isinstance(reference_timestamp, str):
