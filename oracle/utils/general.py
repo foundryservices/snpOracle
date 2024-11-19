@@ -75,7 +75,7 @@ def get_version() -> Optional[str]:
     """
     repo = git.Repo(search_parent_directories=True)
     branch_name = repo.active_branch.name
-    url = f"https://github.com/coinmetrics/precog-subnet/blob/{branch_name}/precog/__init__.py"
+    url = f"https://github.com/foundryservices/snpOracle/blob/{branch_name}/snpOracle/__init__.py"
     response = requests.get(url, timeout=10)
     if not response.ok:
         bt.logging.error("Failed to get version from GitHub")
