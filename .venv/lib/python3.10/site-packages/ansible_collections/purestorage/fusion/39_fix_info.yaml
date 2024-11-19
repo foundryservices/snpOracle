@@ -1,0 +1,2 @@
+bugfixes:
+ - fusion_info - Fixed issue with storage endpoint dict formatting

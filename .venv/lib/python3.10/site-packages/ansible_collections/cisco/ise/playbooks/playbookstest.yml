@@ -1,0 +1,69 @@
+---
+- hosts: ise_servers
+  vars_files:
+    - profiler-services.yml
+  vars:
+      inventory_hostname: ise
+      ansible_host: "198.18.133.27"
+  gather_facts: false
+  tasks:
+    # # standalone_to_primary
+    # - name: Standalone to Primary | {{ inventory_hostname }} ({{ ansible_host }})
+    #   cisco.ise.node_standalone_to_primary:
+    #     hostname: ise
+    #   register: standalone_to_primary
+
+    # - ansible.builtin.debug: var=standalone_to_primary
+
+    # primary_to_standalone
+    - name: Primary to Standalone | {{ inventory_hostname }} ({{ ansible_host }})
+      cisco.ise.node_primary_to_standalone:
+        hostname: iseasd
+      register: primary_to_standalone
+
+    - ansible.builtin.debug: var=primary_to_standalone
+
+    # # secondary_to_primary
+    # - name: Secondary to Primary | {{ inventory_hostname }} ({{ ansible_host }})
+    #   cisco.ise.node_secondary_to_primary:
+    #     hostname: iseww
+    #   register: secondary_to_primary
+
+    # - ansible.builtin.debug: var=secondary_to_primary
+      
+
+    # - name: Get System Certificate | {{ inventory_hostname }}
+    #   cisco.ise.system_certificate_info:
+    #     hostName: "{{ inventory_hostname }}"
+    #   register: system_certs
+
+    # - ansible.builtin.debug: var=system_certs.ise_response
+
+    # - name: Delete Unused System Certificates
+    #   ansible.builtin.set_fact:
+    #     unused_system_certificates: "{{ system_certs.ise_response | selectattr('usedBy', 'equalto', 'Not in use' ) }}"
+
+    # - ansible.builtin.debug: var=unused_system_certificates
+
+    # #
+    # # Ⰹ ISE REST API: DELETE /api/v1/certs/system-certificate/{hostName}/{id}
+    # # Delete System Certificate by ID and hostname
+    # # This API deletes a system certificate of a particular node based on the given hostname and ID.
+    # #
+    # - name: Delete Unused System Certificates | {{ inventory_hostname }}
+    #   loop: "{{ unused_system_certificates }}"
+    #   cisco.ise.system_certificate:
+    #     state: absent
+    #     allowWildcardDelete: true
+    #     hostName: "{{ inventory_hostname }}"
+    #     id: "{{ item.id }}"
+    #   register: certs_deleted
+
+    # - ansible.builtin.debug: var=certs_deleted
+
+
+    # - name: Get all Licensing Eval License
+    #   cisco.ise.licensing_eval_license_info:
+    #   register: result
+
+    # - ansible.builtin.debug: var=result

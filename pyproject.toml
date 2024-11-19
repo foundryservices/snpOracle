@@ -1,5 +1,47 @@
+[tool.poetry]
+name = "oracle"
+version = "3.0.0"
+description = "this is the bittensor subnet code for the snpOracle"
+authors = ["Hayden Scott <hscott@foundrydigital.com>"]
+readme = "README.md"
+
+
+[tool.poetry.dependencies]
+# ^1.2.3 means >=1.2.3 and <2.0.0
+# ~1.2.3 means >=1.2.3 and <1.3.0
+
+# Python version - 3.9, 3.10, 3.11
+python = ">= 3.9, < 3.12"
+
+# Bittensor Version Strict
+bittensor = "8.3.1"
+
+# Bittensor Dependencies We Also Need
+setuptools = "~70.0.0"
+numpy = "~2.0.1"
+pydantic = "^2.3.0"
+requests = "^2.32.3"
+
+# Subnet Specific Dependencies
+pytz = "^2024.2"
+pandas = "^2.2.3"
+gitpython = "^3.1.43"
+wandb = "^0.18.6"
+yfinance = "~0.2.49"
+
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^4.0.1"
+pre-commit-hooks = "5.0.0"
+black = "^24.10.0"
+isort = "^5.13.2"
+mypy = "^1.13.0"
+flake8 = "^7.1.1"
+pytest = "^8.3.3"
+
+
 [tool.black]
-line-length = 150
+line-length = 120
 include = '\.pyi?$'
 exclude = '''
 /(
@@ -12,16 +54,13 @@ exclude = '''
   | buck-out
   | build
   | dist
-  | docs
-  | mining_models
-  | contrib
-  | scripts
 )/
 '''
 
+
 [tool.isort]
 profile = "black"
-line_length = 150
+line_length = 120
 skip_gitignore = true
 skip = [
     ".venv",
@@ -29,11 +68,13 @@ skip = [
     ".mypy_cache",
     "build",
     "dist",
-    "docs",
-    "mining_models",
-    "contrib",
-    "scripts",
 ]
+
 
 #[tool.flake8]
 # Refer to the `.flake8` file
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

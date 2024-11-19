@@ -1,0 +1,7 @@
+ncclient
+paramiko
+ipaddress
+ansible-pylibssh
+google
+grpcio
+protobuf

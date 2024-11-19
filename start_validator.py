@@ -1,32 +1,29 @@
 import subprocess
 import time
 
-import snpOracle
-from snpOracle.utils import Config, NestedNamespace, get_version, parse_arguments
+import oracle
+from oracle.utils.classes import Config
+from oracle.utils.general import get_version, parse_arguments
 
 webhook_url = ""
-current_version = snpOracle.__version__
+current_version = oracle.__version__
 
 
 def update_and_restart(config):
     global current_version
-    start_command = ["pm2 start python3 -m snpOracle.validators.validator "]
-    for key, value in vars(config).items():
-        if isinstance(value, NestedNamespace):
-            for key_2, value_2 in vars(value).items():
-                start_command.append(f" --{key}.{key_2} {value_2} ")
-        else:
-            start_command.append(f" --{key} {value} ")
+    start_command = ["pm2", "start", "--name", f"{config.neuron.name}"]
+    arguments = "python3 -m precog.validators.validator" + config.to_str()
 
+    start_command.append(arguments)
     subprocess.run(start_command)
-    if args.autoupdate:
+    if config.autoupdate:
         while True:
             latest_version = get_version()
             print(f"Current version: {current_version}")
             print(f"Latest version: {latest_version}")
             if current_version != latest_version and latest_version is not None:
                 print("Updating to the latest version...")
-                subprocess.run(["pm2", "delete", args.neuron.name])
+                subprocess.run(["pm2", "delete", config.neuron.name])
                 subprocess.run(["git", "reset", "--hard"])
                 subprocess.run(["git", "pull"])
                 subprocess.run(["pip", "install", "-e", "."])
