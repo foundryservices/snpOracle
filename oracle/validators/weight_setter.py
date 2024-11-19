@@ -5,6 +5,7 @@ import pickle
 import bittensor as bt
 from numpy import array
 from substrateinterface import SubstrateInterface
+from aiohttp import ClientConnectorError
 
 from oracle import __spec_version__
 from oracle.protocol import Challenge
