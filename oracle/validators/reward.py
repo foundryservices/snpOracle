@@ -29,8 +29,11 @@ def calc_rewards(
         if response.prediction is not None and len(response.prediction) == N_TIMEPOINTS:
             self.MinerHistory[uid].add_prediction(response.timestamp, response.prediction)
         prediction_dict = current_miner.format_predictions(response.timestamp, minutes=self.prediction_interval*N_TIMEPOINTS)
-        bt.logging.info(f"UID: {uid} | Predictions: {prediction_dict}")
-        raw_deltas[uid, :, :], raw_correct_dir[uid, :, :] = calc_raw(prediction_dict, price_dict, response.timestamp, N_TIMEPOINTS=N_TIMEPOINTS)
+        if len(prediction_dict) == 0:
+            continue
+        else:
+            bt.logging.info(f"UID: {uid} | Predictions: {prediction_dict}")
+            raw_deltas[uid, :, :], raw_correct_dir[uid, :, :] = calc_raw(prediction_dict, price_dict, response.timestamp, N_TIMEPOINTS=N_TIMEPOINTS)
     bt.logging.info(f"finished calculating raw values")
     for t in range(N_TIMEPOINTS):
         ranks[:, :, t] = rank_miners_by_epoch(raw_deltas[:, :, t], raw_correct_dir[:, :, t])
