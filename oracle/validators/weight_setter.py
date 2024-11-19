@@ -149,6 +149,11 @@ class weight_setter:
                         "Failed to set weights this iteration with message:",
                         msg,
                     )
+            async with self.lock:
+                self.current_block = node_query(self, "System", "Number", [])
+                self.blocks_since_last_update = (
+                    self.current_block - node_query(self, "SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
+                )
         except Exception as e:
             bt.logging.error(f"set_weights loop error: {e}")
             raise e
@@ -181,11 +186,6 @@ class weight_setter:
                     if self.config.wandb_on:
                         log_wandb(responses, rewards, self.available_uids)
                 else:
-                    async with self.lock:
-                        self.current_block = node_query(self, "System", "Number", [])
-                        self.blocks_since_last_update = (
-                            self.current_block - node_query(self, "SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
-                        )
                     print_info(self, "Market Open")
             else:
                 print_info(self, "Market Closed")
