@@ -155,11 +155,12 @@ class weight_setter:
                         if response.prediction is not None:
                             bt.logging.info(f"UID: {uid}  |  Prediction: {response.prediction}  |  Reward: {reward}")
                     # Adjust the scores based on responses from miners and update moving average.
-                    for i, value in zip(self.available_uids, rewards):
-                        self.moving_avg_scores[i] = (1 - self.config.alpha) * self.moving_avg_scores[i] + self.config.alpha * value
-
-                    self.scores = self.moving_avg_scores.copy()
-                    bt.logging.info(f"Scores: {self.scores}")
+                    async with self.lock:
+                        for i, value in zip(self.available_uids, rewards):
+                            self.moving_average_scores[i] = (1 - self.config.alpha) * self.moving_average_scores[
+                                i
+                            ] + self.config.alpha * value
+                            self.scores = list(self.moving_average_scores.values())
                     if self.config.wandb_on:
                         log_wandb(responses, rewards, self.available_uids)
                 else:
