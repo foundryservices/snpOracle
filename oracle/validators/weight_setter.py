@@ -53,8 +53,8 @@ class weight_setter:
         self.loop.create_task(
             loop_handler(self, self.main_function, sleep_time=self.config.print_cadence)
         )
-        #self.loop.create_task(loop_handler(self, self.resync_metagraph, sleep_time=self.resync_metagraph_rate))
-        #self.loop.create_task(loop_handler(self, self.set_weights, sleep_time=self.set_weights_rate))
+        self.loop.create_task(loop_handler(self, self.resync_metagraph, sleep_time=self.resync_metagraph_rate))
+        self.loop.create_task(loop_handler(self, self.set_weights, sleep_time=self.set_weights_rate))
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.save_state()
@@ -69,7 +69,6 @@ class weight_setter:
 
 
     async def resync_metagraph(self):
-        bt.logging.debug("Starting resync_metagraph loop")
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
         try:
             async with self.lock:
@@ -116,7 +115,6 @@ class weight_setter:
 
 
     async def set_weights(self):
-        bt.logging.debug("Starting set_weights loop")
         if self.blocks_since_last_update >= self.set_weights_rate:
             async with self.lock:
                 uids = array(self.available_uids)
@@ -158,7 +156,6 @@ class weight_setter:
             )
 
     async def main_function(self):
-        bt.logging.debug("Starting main loop")
         try:
             if market_is_open():
                 query_lag = elapsed_seconds(get_now(), self.timestamp)

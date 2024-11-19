@@ -36,6 +36,7 @@ def calc_rewards(
     for t in range(N_TIMEPOINTS):
         ranks[:, :, t] = rank_miners_by_epoch(raw_deltas[:, :, t], raw_correct_dir[:, :, t])
     incentive_ranks = np.nanmean(np.nanmean(ranks, axis=2), axis=1).argsort().argsort()
+    bt.logging.info(f"Incentive ranks: {incentive_ranks}")
     rewards = decayed_weights[incentive_ranks]
     return rewards
 
