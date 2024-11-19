@@ -68,33 +68,46 @@ class weight_setter:
 
     async def resync_metagraph(self):
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
-        async with self.lock:
-            self.blocks_since_sync = self.current_block - self.last_sync
-            if self.blocks_since_sync >= self.resync_metagraph_rate:
-                bt.logging.info("Syncing Metagraph...")
-                self.metagraph.sync(subtensor=self.subtensor)
-                bt.logging.info("Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages")
-                # Zero out all hotkeys that have been replaced.
-                self.available_uids = asyncio.run(get_available_uids(self))
-                for uid, hotkey in enumerate(self.metagraph.hotkeys):
-                    if (uid not in self.MinerHistory and uid in self.available_uids) or self.hotkeys[uid] != hotkey:
-                        bt.logging.info(f"Replacing hotkey on {uid} with {self.metagraph.hotkeys[uid]}")
-                        self.hotkeys[uid] = hotkey
-                        self.scores[uid] = 0  # hotkey has been replaced
-                        self.MinerHistory[uid] = MinerHistory(uid, timezone=self.timezone)
-                        self.moving_average_scores[uid] = 0
-                self.last_sync = self.subtensor.get_current_block()
-                self.save_state()
+        try:
+            async with self.lock:
+                self.blocks_since_sync = self.current_block - self.last_sync
+                if self.blocks_since_sync >= self.resync_metagraph_rate:
+                    bt.logging.info("Syncing Metagraph...")
+                    self.metagraph.sync(subtensor=self.subtensor)
+                    bt.logging.info("Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages")
+                    # Zero out all hotkeys that have been replaced.
+                    self.available_uids = asyncio.run(get_available_uids(self))
+                    for uid, hotkey in enumerate(self.metagraph.hotkeys):
+                        if (uid not in self.MinerHistory and uid in self.available_uids) or self.hotkeys[uid] != hotkey:
+                            bt.logging.info(f"Replacing hotkey on {uid} with {self.metagraph.hotkeys[uid]}")
+                            self.hotkeys[uid] = hotkey
+                            self.scores[uid] = 0  # hotkey has been replaced
+                            self.MinerHistory[uid] = MinerHistory(uid, timezone=self.timezone)
+                            self.moving_average_scores[uid] = 0
+                    self.last_sync = self.subtensor.get_current_block()
+                    self.save_state()
+        except Exception as e:
+            bt.logging.error(f"Resync metagraph error: {e}")
+            raise e
 
     def query_miners(self):
         timestamp = get_now().isoformat()
         synapse = Challenge(timestamp=timestamp)
-        responses = self.dendrite.query(
-            # Send the query to selected miner axons in the network.
-            axons=[self.metagraph.axons[uid] for uid in self.available_uids],
-            synapse=synapse,
-            deserialize=False,
-        )
+        connect_issues = 0
+        Timeouts = 0
+        try:
+            responses = self.dendrite.query(
+                # Send the query to selected miner axons in the network.
+                axons=[self.metagraph.axons[uid] for uid in self.available_uids],
+                synapse=synapse,
+                deserialize=False,
+            )
+        except ClientConnectorError:
+            connect_issues += 1
+        except TimeoutError:
+            Timeouts += 1
+        finally:
+            bt.logging.info(f"Connect issues: {connect_issues} | Timeouts: {Timeouts}")
         return responses
 
 
@@ -153,6 +166,7 @@ class weight_setter:
                         )
                     except Exception as e:
                         bt.logging.error(f"Error calculating rewards: {e}")
+                        raise e
                     for uid, response, reward in zip(self.available_uids, responses, rewards):
                         if response.prediction is not None:
                             bt.logging.info(f"UID: {uid}  |  Prediction: {response.prediction}  |  Reward: {reward}")
@@ -175,7 +189,7 @@ class weight_setter:
                 bt.logging.info("Market is closed. Sleeping for 2 minutes...")
                 await asyncio.sleep(120)
         except RuntimeError as e:
-                bt.logging.error(e)
+                bt.logging.error(f"main loop error: {e}")
 
     def save_state(self):
         """Saves the state of the validator to a file."""
@@ -200,6 +214,7 @@ class weight_setter:
             self.scores = [0.0] * len(self.metagraph.S)
             self.moving_average_scores = {uid: 0 for uid in self.metagraph.uids}
             self.MinerHistory = {uid: MinerHistory(uid) for uid in self.available_uids}
+            self.timestamp = get_before(minutes=60)
             return
         try:
             with open(state_path, "rb") as f:
@@ -207,5 +222,7 @@ class weight_setter:
             self.scores = state["scores"]
             self.MinerHistory = state["MinerHistory"]
             self.moving_average_scores = state["moving_average_scores"]
+            all_dates = [date for mh in self.MinerHistory.values() for date in mh.keys()]
+            self.timestamp = max(all_dates)
         except Exception as e:
             bt.logging.error(f"Failed to load state with error: {e}")
