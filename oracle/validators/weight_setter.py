@@ -103,6 +103,7 @@ class weight_setter:
             async with self.lock:
                 uids = array(self.available_uids)
                 weights = [self.moving_average_scores[uid] for uid in self.available_uids]
+            weights = array(weights)/sum(weights)
             for i, j in zip(weights, self.available_uids):
                 bt.logging.debug(f"UID: {j}  |  Weight: {i}")
             if sum(weights) == 0:
@@ -111,7 +112,7 @@ class weight_setter:
             (
                 uint_uids,
                 uint_weights,
-            ) = bt.utils.weight_utils.convert_weights_and_uids_for_emit(uids=uids, weights=array(weights))
+            ) = bt.utils.weight_utils.convert_weights_and_uids_for_emit(uids=uids, weights=weights)
             # Update the incentive mechanism on the Bittensor blockchain.
             result, msg = self.subtensor.set_weights(
                 netuid=self.config.netuid,
