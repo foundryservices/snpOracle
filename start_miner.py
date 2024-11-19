@@ -6,7 +6,7 @@ from oracle.utils.general import parse_arguments
 
 def main(config):
     start_command = ["pm2", "start", "--name", f"{config.neuron.name}"]
-    arguments = "python3 -m precog.miners.miner" + config.to_str()
+    arguments = "python3 -m oracle.miners.miner" + config.to_str()
 
     start_command.append(arguments)
     subprocess.run(start_command)

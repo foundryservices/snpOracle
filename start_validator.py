@@ -12,7 +12,7 @@ current_version = oracle.__version__
 def update_and_restart(config):
     global current_version
     start_command = ["pm2", "start", "--name", f"{config.neuron.name}"]
-    arguments = "python3 -m precog.validators.validator" + config.to_str()
+    arguments = "python3 -m oracle.validators.validator" + config.to_str()
 
     start_command.append(arguments)
     subprocess.run(start_command)
