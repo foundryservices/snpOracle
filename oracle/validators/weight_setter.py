@@ -191,9 +191,7 @@ class weight_setter:
                     )
                     print_info(self)
             else:
-                print_info(self)
-                bt.logging.info("Market is closed. Sleeping for 2 minutes...")
-                await asyncio.sleep(120)
+                print_info(self, "Market Closed")
         except Exception as e:
                 bt.logging.error(f"main loop error: {e}")
 

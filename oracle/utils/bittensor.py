@@ -44,7 +44,7 @@ def setup_bittensor_objects(self):
     self.config.full_path = str(full_path)
 
 
-def print_info(self) -> None:
+def print_info(self, additional_info: str = "") -> None:
     if self.config.neuron.type == "Validator":
         weight_timing = self.set_weights_rate - self.blocks_since_last_update
         if weight_timing <= 0:
@@ -58,6 +58,7 @@ def print_info(self) -> None:
             f"Dividend:{self.metagraph.D[self.my_uid]:.3f} | "
             f"Emission:{self.metagraph.E[self.my_uid]:.3f} | "
             f"Seting weights in {weight_timing} blocks"
+            f" | {additional_info}"
         )
     elif self.config.neuron.type == "Miner":
         log = (
