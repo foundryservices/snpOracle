@@ -142,12 +142,16 @@ class weight_setter:
                     self.timestamp = get_before(minutes=self.prediction_interval).isoformat()
                 query_lag = elapsed_seconds(get_now(), iso8601_to_datetime(self.timestamp))
                 if is_query_time(self.prediction_interval, self.timestamp) or query_lag >= 60 * self.prediction_interval:
-                    responses, timestamp = self.query_miners()
-                    rewards = calc_rewards(
-                        self,
-                        responses=responses,
-                        miner_uids=self.available_uids,
-                    )
+                    bt.logging.info("Querying miners...")
+                    responses = self.query_miners()
+                    try:
+                        rewards = calc_rewards(
+                            self,
+                            responses=responses,
+                            miner_uids=self.available_uids,
+                        )
+                    except Exception as e:
+                        bt.logging.error(f"Error calculating rewards: {e}")
                     for uid, response, reward in zip(self.available_uids, responses, rewards):
                         if response.prediction is not None:
                             bt.logging.info(f"UID: {uid}  |  Prediction: {response.prediction}  |  Reward: {reward}")
