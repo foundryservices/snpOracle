@@ -35,6 +35,7 @@ class weight_setter:
             self.scores = [0.0] * len(self.metagraph.S)
             self.moving_average_scores = {uid: 0 for uid in self.metagraph.uids}
             self.MinerHistory = {uid: MinerHistory(uid, timezone=self.timezone) for uid in self.available_uids}
+            self.timestamp = get_before(minutes=60)
             self.save_state()
         else:
             self.load_state()
@@ -92,6 +93,7 @@ class weight_setter:
             raise e
 
     def query_miners(self):
+        bt.logging.info("Querying miners...")
         timestamp = get_now().isoformat()
         synapse = Challenge(timestamp=timestamp)
         connect_issues = 0
@@ -155,11 +157,8 @@ class weight_setter:
         bt.logging.debug("Starting main loop")
         try:
             if market_is_open():
-                if not hasattr(self, "timestamp"):
-                    self.timestamp = get_before(minutes=self.prediction_interval).isoformat()
                 query_lag = elapsed_seconds(get_now(), iso8601_to_datetime(self.timestamp))
                 if is_query_time(self.prediction_interval, self.timestamp) or query_lag >= 60 * self.prediction_interval:
-                    bt.logging.info("Querying miners...")
                     responses = self.query_miners()
                     self.timestamp = iso8601_to_datetime(responses[0].timestamp).isoformat()
                     try:
@@ -191,7 +190,7 @@ class weight_setter:
             else:
                 bt.logging.info("Market is closed. Sleeping for 2 minutes...")
                 await asyncio.sleep(120)
-        except RuntimeError as e:
+        except Exception as e:
                 bt.logging.error(f"main loop error: {e}")
 
     def save_state(self):
