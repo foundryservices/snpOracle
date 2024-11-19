@@ -189,7 +189,7 @@ class weight_setter:
                     self.blocks_since_last_update = (
                         self.current_block - node_query(self, "SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
                     )
-                    print_info(self)
+                    print_info(self, "Market Open")
             else:
                 print_info(self, "Market Closed")
         except Exception as e:

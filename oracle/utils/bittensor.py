@@ -29,6 +29,7 @@ def setup_bittensor_objects(self):
         self.my_uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
         bt.logging.info(f"Running {self.config.neuron.type} on uid: {self.my_uid}")
     # logging setup
+    bt.logging.info(f"Set logging level to {self.config.logging.level}")
     if self.config.logging.level == "trace":
         bt.logging.set_trace()
     elif self.config.logging.level == "debug":
@@ -36,9 +37,8 @@ def setup_bittensor_objects(self):
     else:
         # set to info by default
         pass
-    bt.logging.info(f"Set logging level to {self.config.logging.level}")
     full_path = Path(
-        f"~/.bittensor/{self.config.neuron.type}s/{self.config.wallet.name}/{self.config.wallet.hotkey}/netuid{self.config.netuid}/{self.config.neuron.type}"
+        f"~/.bittensor/{self.config.neuron.type}s/{self.config.wallet.name}/{self.config.wallet.hotkey}/netuid{self.config.netuid}"
     ).expanduser()
     full_path.mkdir(parents=True, exist_ok=True)
     self.config.full_path = str(full_path)
