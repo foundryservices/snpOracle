@@ -148,7 +148,6 @@ class weight_setter:
                         rewards = calc_rewards(
                             self,
                             responses=responses,
-                            miner_uids=self.available_uids,
                         )
                     except Exception as e:
                         bt.logging.error(f"Error calculating rewards: {e}")
