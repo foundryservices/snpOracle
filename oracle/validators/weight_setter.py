@@ -1,4 +1,5 @@
 import asyncio
+from aiohttp import ClientConnectorError
 import os
 import pickle
 
@@ -110,7 +111,7 @@ class weight_setter:
         except TimeoutError:
             Timeouts += 1
         finally:
-            bt.logging.info(f"Connect issues: {connect_issues} | Timeouts: {Timeouts}")
+            bt.logging.debug(f"Connect issues: {connect_issues} | Timeouts: {Timeouts}")
         return responses
 
 
@@ -184,7 +185,7 @@ class weight_setter:
                                 i
                             ] + self.config.alpha * value
                         self.scores = array(list(self.moving_average_scores.values()))
-                        bt.logging.info(f"Scores: {self.scores}")
+                        bt.logging.debug(f"Scores: {self.scores}")
                     if self.config.wandb_on:
                         log_wandb(responses, rewards, self.available_uids)
                 else:

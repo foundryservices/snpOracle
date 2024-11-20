@@ -3,7 +3,7 @@
 from oracle.protocol import Challenge
 
 
-def forward(synapse: Challenge) -> Challenge:
+def forward(self, synapse: Challenge) -> Challenge:
     """
     How miners should process incoming synapses and respond to them.
     """
