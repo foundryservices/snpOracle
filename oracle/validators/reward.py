@@ -35,6 +35,7 @@ def calc_rewards(
             raw_deltas[uid, :, :], raw_correct_dir[uid, :, :] = calc_raw(prediction_dict, price_dict, response.timestamp, N_TIMEPOINTS=N_TIMEPOINTS)
     bt.logging.info(f"example raw deltas: {raw_deltas[42,:,:]}")
     bt.logging.info(f"example raw correct dir: {raw_correct_dir[42,:,:]}")
+    bt.logging.info(f"{self.MinerHistory[168].predictions}")
     for t in range(N_TIMEPOINTS):
         ranks[:, :, t] = rank_miners_by_epoch(raw_deltas[:, :, t], raw_correct_dir[:, :, t])
     incentive_ranks = rank(np.nanmean(np.nanmean(ranks, axis=2), axis=1))
