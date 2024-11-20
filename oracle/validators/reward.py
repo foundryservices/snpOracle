@@ -5,7 +5,7 @@ import numpy as np
 import yfinance as yf
 
 from oracle.utils.general import (
-    convert_predictions_to_matrix, convert_prices_to_matrix, time_shift, pd_to_dict, rank_miners_by_epoch
+    convert_predictions_to_matrix, convert_prices_to_matrix, time_shift, pd_to_dict, rank_miners_by_epoch, rank
     )
 from oracle.protocol import Challenge
 
@@ -35,7 +35,7 @@ def calc_rewards(
             raw_deltas[uid, :, :], raw_correct_dir[uid, :, :] = calc_raw(prediction_dict, price_dict, response.timestamp, N_TIMEPOINTS=N_TIMEPOINTS)
     for t in range(N_TIMEPOINTS):
         ranks[:, :, t] = rank_miners_by_epoch(raw_deltas[:, :, t], raw_correct_dir[:, :, t])
-    incentive_ranks = np.nanmean(np.nanmean(ranks, axis=2), axis=1).argsort().argsort()
+    incentive_ranks = rank(np.nanmean(np.nanmean(ranks, axis=2), axis=1))
     bt.logging.info(f"Incentive ranks: {incentive_ranks}")
     rewards = decayed_weights[incentive_ranks]
     rewards[incentive_ranks == max(incentive_ranks)] = 0 # anyone tied for last place gets no reward
