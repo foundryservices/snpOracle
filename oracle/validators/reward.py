@@ -28,8 +28,9 @@ def calc_rewards(
     for uid, response in enumerate(responses):
         current_miner = self.MinerHistory[uid_map[uid]]
         if (response.prediction is not None):
-            bt.logging.info(f"prediction added for uid: {uid_map[uid]}")
-            self.MinerHistory[uid_map[uid]].add_prediction(response.timestamp, response.prediction)
+            if len(response.prediction) == N_TIMEPOINTS:
+                bt.logging.info(f"prediction added for uid: {uid_map[uid]}")
+                self.MinerHistory[uid_map[uid]].add_prediction(response.timestamp, response.prediction)
         prediction_dict = current_miner.format_predictions(response.timestamp, minutes=self.prediction_interval*N_TIMEPOINTS)
         if not prediction_dict or len(prediction_dict) <= 1:
             raw_deltas[uid, :, :], raw_correct_dir[uid, :, :] = np.inf, False
