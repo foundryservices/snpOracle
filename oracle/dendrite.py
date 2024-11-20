@@ -1,6 +1,6 @@
 import aiohttp
 import asyncio
-from typing import Union
+from typing import Union, Type
 
 from bittensor import dendrite
 from bittensor.core.stream import StreamingSynapse
