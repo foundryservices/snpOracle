@@ -28,6 +28,7 @@ def calc_rewards(
     for uid, response in enumerate(responses):
         current_miner = self.MinerHistory[uid_map[uid]]
         if (response.prediction is not None):
+            bt.logging.info(f"length of pred: {len(response.prediction)} | ntimepoints: {N_TIMEPOINTS}")
             if len(response.prediction) == N_TIMEPOINTS:
                 bt.logging.info(f"prediction added for uid: {uid_map[uid]}")
                 self.MinerHistory[uid_map[uid]].add_prediction(response.timestamp, response.prediction)
