@@ -59,9 +59,11 @@ class Miner:
                 break
 
     async def forward(self, synapse: Challenge) -> Challenge:
+        bt.logging.info(
+        f"👈 Received prediction request from: {synapse.dendrite.hotkey}")
         synapse = self.forward_module.forward(synapse)
         if synapse.prediction is not None:
-            bt.logging.success(f"Predicted price: {synapse.prediction}  |  Predicted Interval: {synapse.interval}")
+            bt.logging.success(f"Predicted price: {synapse.prediction}")
         else:
             bt.logging.info("No price predicted for this request.")
         return synapse
