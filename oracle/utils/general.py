@@ -57,7 +57,7 @@ def parse_arguments(parser: Optional[argparse.ArgumentParser] = None):
     parser.add_argument("--autoupdate", action="store_true", dest="autoupdate")
     parser.add_argument("--alpha", type=float, default=0.1)
     parser.add_argument("--prediction_interval", type=int, default=5)
-    parser.add_argument("--N_TIMEPOINTS", type=int, default=12)
+    parser.add_argument("--N_TIMEPOINTS", type=int, default=6)
     parser.add_argument("--vpermit_tao_limit", type=int, default=1024)
     parser.add_argument("--wandb_on", action="store_true", dest="wandb_on")
     parser.add_argument("--reset_state", action="store_true", dest="reset_state", help="Overwrites the state file")
