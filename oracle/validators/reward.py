@@ -24,6 +24,7 @@ def calc_rewards(
     raw_deltas = np.full((len(responses), N_TIMEPOINTS, N_TIMEPOINTS), np.nan)
     raw_correct_dir = np.full((len(responses), N_TIMEPOINTS, N_TIMEPOINTS), False)
     ranks = np.full((len(responses), N_TIMEPOINTS, N_TIMEPOINTS), np.nan)
+    bt.logging.info(f"len(responses): {len(responses)} | len(self.available_uids): {len(self.available_uids)}")
     for uid, response in zip(self.available_uids, responses):
         current_miner = self.MinerHistory[uid]
         if response.prediction is not None and len(response.prediction) == N_TIMEPOINTS:
