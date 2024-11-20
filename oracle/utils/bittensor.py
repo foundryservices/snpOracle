@@ -3,6 +3,8 @@ from pathlib import Path
 import bittensor as bt
 from substrateinterface import SubstrateInterface
 
+from oracle.dendrite import OracleDendrite
+
 def setup_bittensor_objects(self):
     # if chain enpoint isn't set, use the network arg
     if self.config.subtensor.chain_endpoint is None:
@@ -16,7 +18,7 @@ def setup_bittensor_objects(self):
     self.subtensor = bt.subtensor(config=self.config, network=self.config.subtensor.network)
     self.metagraph = self.subtensor.metagraph(self.config.netuid)
     self.wallet = bt.wallet(name=self.config.wallet.name, hotkey=self.config.wallet.hotkey)
-    self.dendrite = bt.dendrite(wallet=self.wallet)
+    self.dendrite = OracleDendrite(wallet=self.wallet)
     self.axon = bt.axon(wallet=self.wallet, config=self.config, port=self.config.axon.port)
     # Connect the validator to the network.
     if self.wallet.hotkey.ss58_address not in self.metagraph.hotkeys:
