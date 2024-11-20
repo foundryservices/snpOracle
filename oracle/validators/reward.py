@@ -31,7 +31,7 @@ def calc_rewards(
             bt.logging.info(f"prediction added for uid: {uid_map[uid]}")
             self.MinerHistory[uid_map[uid]].add_prediction(response.timestamp, response.prediction)
         prediction_dict = current_miner.format_predictions(response.timestamp, minutes=self.prediction_interval*N_TIMEPOINTS)
-        if not prediction_dict:
+        if not prediction_dict or len(prediction_dict) <= 1:
             raw_deltas[uid, :, :], raw_correct_dir[uid, :, :] = np.inf, False
         else:
             raw_deltas[uid, :, :], raw_correct_dir[uid, :, :] = calc_raw(prediction_dict, price_dict, response.timestamp, N_TIMEPOINTS=N_TIMEPOINTS)
