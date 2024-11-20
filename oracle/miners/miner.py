@@ -22,7 +22,7 @@ class Miner:
     def __init__(self, config=None):
         args = parse_arguments()
         config = Config(args)
-        self.forward_module = importlib.import_module(f"precog.miners.{config.forward_function}", package="forward")
+        self.forward_module = importlib.import_module(f"oracle.miners.{config.forward_function}", package="forward")
         self.config = config
         self.config.neuron.type = "Miner"
         setup_bittensor_objects(self)
