@@ -29,6 +29,7 @@ class Validator:
             asyncio.run(self.reset_instance())
         except Exception as e:
             bt.logging.error(f"Unhandled exception: {e}")
+            self.weight_setter.__exit__()
         finally:
             bt.logging.info("Exiting Validator")
 

@@ -87,6 +87,7 @@ class weight_setter:
                             self.MinerHistory[uid] = MinerHistory(uid)
                             self.moving_average_scores[uid] = 0
                     self.last_sync = self.subtensor.get_current_block()
+                    self.save_state()
         except Exception as e:
             bt.logging.error(f"Resync metagraph error: {e}")
             raise e
