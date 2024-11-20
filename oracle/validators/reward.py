@@ -36,7 +36,7 @@ def calc_rewards(
             raw_deltas[uid, :, :], raw_correct_dir[uid, :, :] = calc_raw(prediction_dict, price_dict, response.timestamp, N_TIMEPOINTS=N_TIMEPOINTS)
     for t in range(N_TIMEPOINTS):
         ranks[:, :, t] = rank_miners_by_epoch(raw_deltas[:, :, t], raw_correct_dir[:, :, t])
-    incentive_ranks = np.nanmean(np.nanmean(ranks, axis=2), axis=1).argsort().argsort()
+    incentive_ranks = rank(-np.nanmean(np.nanmean(ranks, axis=2), axis=1))
     bt.logging.info(f"Incentive Ranks: {incentive_ranks}")
     rewards = decayed_weights[incentive_ranks]
     rewards[incentive_ranks == max(incentive_ranks)] = 0 # anyone tied for last place gets no reward
