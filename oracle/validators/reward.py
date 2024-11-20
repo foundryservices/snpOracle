@@ -27,7 +27,6 @@ def calc_rewards(
     uid_map = {i: uid for i, uid in enumerate(self.available_uids)}
     for uid, response in enumerate(responses):
         current_miner = self.MinerHistory[uid_map[uid]]
-        bt.logging.info(f"UID: {uid_map[uid]} | Response: {response}")
         if response.prediction is not None and len(response.prediction) == N_TIMEPOINTS:
             self.MinerHistory[uid_map[uid]].add_prediction(response.timestamp, response.prediction)
         prediction_dict = current_miner.format_predictions(response.timestamp, minutes=self.prediction_interval*N_TIMEPOINTS)
@@ -35,13 +34,10 @@ def calc_rewards(
             raw_deltas[uid, :, :], raw_correct_dir[uid, :, :] = np.inf, False
         else:
             raw_deltas[uid, :, :], raw_correct_dir[uid, :, :] = calc_raw(prediction_dict, price_dict, response.timestamp, N_TIMEPOINTS=N_TIMEPOINTS)
-    bt.logging.info(f"example raw deltas: {raw_deltas[42,:,:]}")
-    bt.logging.info(f"example raw correct dir: {raw_correct_dir[42,:,:]}")
     bt.logging.info(f"{self.MinerHistory[168].predictions}")
     for t in range(N_TIMEPOINTS):
         ranks[:, :, t] = rank_miners_by_epoch(raw_deltas[:, :, t], raw_correct_dir[:, :, t])
     incentive_ranks = rank(np.nanmean(np.nanmean(ranks, axis=2), axis=1))
-    bt.logging.info(f"Incentive ranks: {incentive_ranks}")
     rewards = decayed_weights[incentive_ranks]
     rewards[incentive_ranks == max(incentive_ranks)] = 0 # anyone tied for last place gets no reward
     return rewards
