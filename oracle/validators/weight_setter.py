@@ -133,23 +133,23 @@ class weight_setter:
                     uint_weights,
                 ) = bt.utils.weight_utils.convert_weights_and_uids_for_emit(uids=uids, weights=weights)
                 # Update the incentive mechanism on the Bittensor blockchain.
-                async with self.lock:
-                    result, msg = self.subtensor.set_weights(
-                        netuid=self.config.netuid,
-                        wallet=self.wallet,
-                        uids=uint_uids,
-                        weights=uint_weights,
-                        wait_for_inclusion=True,
-                        wait_for_finalization=False,
-                        version_key=__spec_version__,
+                result, msg = self.subtensor.set_weights(
+                    netuid=self.config.netuid,
+                    wallet=self.wallet,
+                    uids=uint_uids,
+                    weights=uint_weights,
+                    wait_for_inclusion=True,
+                    wait_for_finalization=True,
+                    version_key=__spec_version__,
+                )
+                if result:
+                    bt.logging.success("✅ Set Weights on chain successfully!")
+                else:
+                    bt.logging.debug(
+                        "Failed to set weights this iteration with message:",
+                        msg,
                     )
-                    if result:
-                        bt.logging.success("✅ Set Weights on chain successfully!")
-                    else:
-                        bt.logging.debug(
-                            "Failed to set weights this iteration with message:",
-                            msg,
-                        )
+            async with self.lock:
                 self.current_block = node_query(self, "System", "Number", [])
                 self.blocks_since_last_update = (
                     self.current_block - node_query(self, "SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
