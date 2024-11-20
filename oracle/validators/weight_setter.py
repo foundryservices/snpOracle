@@ -182,7 +182,7 @@ class weight_setter:
                             self.moving_average_scores[i] = (1 - self.config.alpha) * self.moving_average_scores[
                                 i
                             ] + self.config.alpha * value
-                        self.scores = list(self.moving_average_scores.values())
+                        self.scores = array(list(self.moving_average_scores.values()))
                         bt.logging.info(f"Scores: {self.scores}")
                     if self.config.wandb_on:
                         log_wandb(responses, rewards, self.available_uids)
