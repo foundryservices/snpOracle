@@ -219,7 +219,7 @@ def rank(vector):
 
 async def loop_handler(self, func, sleep_time=120):
         try:
-            if func is resync_metagraph:
+            if func is set_weights:
                 async with self.condition:
                     await func()
                     self.condition.notify_all()
