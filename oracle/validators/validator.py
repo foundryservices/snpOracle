@@ -24,7 +24,6 @@ class Validator:
         self.weight_setter = weight_setter(config=self.config, loop=loop)
         try:
             loop.run_forever()
-            self.weight_setter.condition.notify_all()
         except BrokenPipeError:
             bt.logging.error("Recieved a Broken Pipe substrate error")
             asyncio.run(self.reset_instance())
@@ -32,7 +31,7 @@ class Validator:
             bt.logging.error(f"Unhandled exception: {e}")
         finally:
             bt.logging.info("Exiting Validator")
-            self.weight_setter.__exit__()
+            self.weight_setter.__exit__(None, None, None)
 
     async def reset_instance(self):
         self.__init__()
