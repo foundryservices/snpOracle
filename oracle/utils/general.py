@@ -219,7 +219,7 @@ def rank(vector):
 
 async def loop_handler(self, func, sleep_time=120):
         try:
-            if func is set_weights:
+            if func is self.set_weights:
                 async with self.condition:
                     await func()
                     self.condition.notify_all()
