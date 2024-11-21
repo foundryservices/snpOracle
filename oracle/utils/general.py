@@ -219,11 +219,8 @@ def rank(vector):
 
 async def loop_handler(self, func, sleep_time=120):
         try:
-            if func is self.set_weights:
-                async with self.condition:
-                    await func()
-                    self.condition.notify_all()
-                    bt.logging.info("ran initial condition.notify_all")
+            async with self.condition:
+                self.condition.notify_all()
             while not self.stop_event.is_set():
                 async with self.condition:
                     await self.condition.wait()
