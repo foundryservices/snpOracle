@@ -238,4 +238,3 @@ async def loop_handler(self, func, sleep_time=120):
         finally:
             async with self.lock:
                 self.stop_event.set()
-                self.__exit__(None, None, None)
