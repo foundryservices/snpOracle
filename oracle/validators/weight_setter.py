@@ -50,6 +50,7 @@ class weight_setter:
         if self.config.wandb_on:
             setup_wandb(self)
         self.stop_event = asyncio.Event()
+        self.condition = asyncio.Condition()
         bt.logging.info("Setup complete, starting loop")
         self.loop.create_task(
             loop_handler(self, self.main_function, sleep_time=self.config.print_cadence)
@@ -72,23 +73,22 @@ class weight_setter:
     async def resync_metagraph(self):
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
         try:
-            async with self.lock:
-                self.blocks_since_sync = self.current_block - self.last_sync
-                if self.blocks_since_sync >= self.resync_metagraph_rate:
-                    bt.logging.info("Syncing Metagraph...")
-                    self.metagraph.sync(subtensor=self.subtensor)
-                    bt.logging.info("Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages")
-                    # Zero out all hotkeys that have been replaced.
-                    self.available_uids = asyncio.run(get_available_uids(self))
-                    for uid, hotkey in enumerate(self.metagraph.hotkeys):
-                        if (uid not in self.MinerHistory and uid in self.available_uids) or self.hotkeys[uid] != hotkey:
-                            bt.logging.info(f"Replacing hotkey on {uid} with {self.metagraph.hotkeys[uid]}")
-                            self.hotkeys[uid] = hotkey
-                            self.scores[uid] = 0  # hotkey has been replaced
-                            self.MinerHistory[uid] = MinerHistory(uid)
-                            self.moving_average_scores[uid] = 0
-                    self.last_sync = self.subtensor.get_current_block()
-                    self.save_state()
+            self.blocks_since_sync = self.current_block - self.last_sync
+            if self.blocks_since_sync >= self.resync_metagraph_rate:
+                bt.logging.info("Syncing Metagraph...")
+                self.metagraph.sync(subtensor=self.subtensor)
+                bt.logging.info("Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages")
+                # Zero out all hotkeys that have been replaced.
+                self.available_uids = asyncio.run(get_available_uids(self))
+                for uid, hotkey in enumerate(self.metagraph.hotkeys):
+                    if (uid not in self.MinerHistory and uid in self.available_uids) or self.hotkeys[uid] != hotkey:
+                        bt.logging.info(f"Replacing hotkey on {uid} with {self.metagraph.hotkeys[uid]}")
+                        self.hotkeys[uid] = hotkey
+                        self.scores[uid] = 0  # hotkey has been replaced
+                        self.MinerHistory[uid] = MinerHistory(uid)
+                        self.moving_average_scores[uid] = 0
+                self.last_sync = self.subtensor.get_current_block()
+                self.save_state()
         except Exception as e:
             bt.logging.error(f"Resync metagraph error: {e}")
             raise e
@@ -118,9 +118,8 @@ class weight_setter:
     async def set_weights(self):
         try:
             if self.blocks_since_last_update >= self.set_weights_rate:
-                async with self.lock:
-                    uids = array(self.available_uids)
-                    weights = [self.moving_average_scores[uid] for uid in self.available_uids]
+                uids = array(self.available_uids)
+                weights = [self.moving_average_scores[uid] for uid in self.available_uids]
                 if isnan(weights).any():
                     bt.logging.error("Weights contain all NaN values. Setting weights to 0.")
                     weights = [0] * len(weights)
@@ -135,6 +134,7 @@ class weight_setter:
                     uint_weights,
                 ) = bt.utils.weight_utils.convert_weights_and_uids_for_emit(uids=uids, weights=weights)
                 # Update the incentive mechanism on the Bittensor blockchain.
+                self.resync_event.wait()
                 result, msg = self.subtensor.set_weights(
                     netuid=self.config.netuid,
                     wallet=self.wallet,
@@ -150,11 +150,10 @@ class weight_setter:
                         "Failed to set weights this iteration with message:",
                         msg,
                     )
-            async with self.lock:
-                self.current_block = node_query(self, "System", "Number", [])
-                self.blocks_since_last_update = (
-                    self.current_block - node_query(self, "SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
-                )
+            self.current_block = node_query(self, "System", "Number", [])
+            self.blocks_since_last_update = (
+                self.current_block - node_query(self, "SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
+            )
         except Exception as e:
             bt.logging.error(f"set_weights loop error: {e}")
             raise e

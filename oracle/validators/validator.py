@@ -24,6 +24,7 @@ class Validator:
         self.weight_setter = weight_setter(config=self.config, loop=loop)
         try:
             loop.run_forever()
+            self.weight_setter.condition.notify_all()
         except BrokenPipeError:
             bt.logging.error("Recieved a Broken Pipe substrate error")
             asyncio.run(self.reset_instance())
