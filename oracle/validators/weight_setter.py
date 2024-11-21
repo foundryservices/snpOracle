@@ -27,7 +27,7 @@ class weight_setter:
         self.N_TIMEPOINTS = self.config.N_TIMEPOINTS  # number of timepoints to predict
         self.last_sync = 0
         self.set_weights_rate = 100  # in blocks
-        self.resync_metagraph_rate = 20  # in blocks
+        self.resync_metagraph_rate = 40  # in blocks
         bt.logging.info(
             f"Running validator for subnet: {self.config.netuid} on network: {self.config.subtensor.network}"
         )
@@ -140,8 +140,7 @@ class weight_setter:
                     wallet=self.wallet,
                     uids=uint_uids,
                     weights=uint_weights,
-                    wait_for_inclusion=True,
-                    wait_for_finalization=True,
+                    wait_for_inclusion=False,
                     version_key=__spec_version__,
                 )
                 if result:
