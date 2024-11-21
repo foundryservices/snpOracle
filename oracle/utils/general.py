@@ -223,6 +223,7 @@ async def loop_handler(self, func, sleep_time=120):
                 async with self.condition:
                     await func()
                     self.condition.notify_all()
+                    bt.logging.info("ran initial condition.notify_all")
             while not self.stop_event.is_set():
                 async with self.condition:
                     await self.condition.wait()
