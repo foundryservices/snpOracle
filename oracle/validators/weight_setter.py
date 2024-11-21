@@ -134,7 +134,6 @@ class weight_setter:
                     uint_weights,
                 ) = bt.utils.weight_utils.convert_weights_and_uids_for_emit(uids=uids, weights=weights)
                 # Update the incentive mechanism on the Bittensor blockchain.
-                self.resync_event.wait()
                 result, msg = self.subtensor.set_weights(
                     netuid=self.config.netuid,
                     wallet=self.wallet,
