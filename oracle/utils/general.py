@@ -221,7 +221,7 @@ async def loop_handler(self, func, sleep_time=120):
         try:
             while not self.stop_event.is_set():
                 async with self.condition:
-                    self.condition.wait()
+                    await self.condition.wait()
                     await func()
                     self.condition.notify_all()
                 await asyncio.sleep(sleep_time)
