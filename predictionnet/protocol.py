@@ -55,15 +55,15 @@ class Challenge(bt.Synapse):
 
     repo_id: str = pydantic.Field(
         ...,
-        title="Storage repository of the model",
-        description="",
+        title="Repo ID",
+        description="Storage repository of the model",
         default=None,
     )
 
     model_id: str = pydantic.Field(
         ...,
-        title="Which model to use",
-        description="",
+        title="Model ID",
+        description="Which model to use",
         default=None,
     )
 
