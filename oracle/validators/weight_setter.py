@@ -78,10 +78,11 @@ class weight_setter:
     async def resync_metagraph(self):
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
         try:
-            self.resync_event = asyncio.Event()
+
             self.blocks_since_sync = self.current_block - self.last_sync
             if self.blocks_since_sync >= self.resync_metagraph_rate:
-                self.set_weights_event.wait()
+                self.resync_event = asyncio.Event()
+                await self.set_weights_event.wait()
                 bt.logging.info("Syncing Metagraph...")
                 self.metagraph.sync(subtensor=self.subtensor)
                 bt.logging.info("Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages")
@@ -126,6 +127,7 @@ class weight_setter:
         try:
             if self.blocks_since_last_update >= self.set_weights_rate:
                 self.set_weights_event = asyncio.Event()
+                await self.resync_event.wait()
                 uids = array(self.available_uids)
                 weights = [self.moving_average_scores[uid] for uid in self.available_uids]
                 if isnan(weights).any():
