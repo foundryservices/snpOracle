@@ -53,6 +53,20 @@ class Challenge(bt.Synapse):
     - dummy_output: An optional integer value which, when filled, represents the response from the miner.
     """
 
+    repo_id: str = pydantic.Field(
+        ...,
+        title="Storage repository of the model",
+        description="",
+        default=None,
+    )
+
+    model_id: str = pydantic.Field(
+        ...,
+        title="Which model to use",
+        description="",
+        default=None,
+    )
+
     # Required request input, filled by sending dendrite caller.
     timestamp: str = pydantic.Field(
         ...,
