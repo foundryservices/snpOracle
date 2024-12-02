@@ -11,8 +11,13 @@ class Miner_HF_interface:
     def upload_model(self, repo_id, model_path, hotkey):
         if not all([repo_id, model_path, hotkey]):
             raise ValueError("All parameters (repo_id, model_path, hotkey) must be specified")
-        
+
         try:
+            try:
+                model_info(repo_id)
+            except:
+                self.api.create_repo(repo_id=repo_id, private=False)
+                
             timestamp = str(int(time.time()))
             self.api.upload_file(
                 path_or_fileobj=model_path,
@@ -28,5 +33,16 @@ class Miner_HF_interface:
             metadata_update(repo_id, metadata)
             return True, {"hotkey": hotkey, "timestamp": timestamp}
             
+        except Exception as e:
+            return False, str(e)
+
+    def get_model_metadata(self, repo_id):
+        try:
+            model = model_info(repo_id)
+            metadata = model.cardData
+            return {
+                "hotkey": metadata.get("hotkey"),
+                "timestamp": metadata.get("timestamp")
+            }
         except Exception as e:
             return False, str(e)
