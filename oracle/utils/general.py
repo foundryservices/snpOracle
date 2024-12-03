@@ -223,7 +223,7 @@ def rank(vector):
 async def loop_handler(self, func, sleep_time=120):
     try:
         while not self.stop_event.is_set():
-            with self.lock:
+            async with self.lock:
                 await func()
             await asyncio.sleep(sleep_time)
     except asyncio.CancelledError:
