@@ -118,47 +118,42 @@ class weight_setter:
         return responses
 
     async def set_weights(self):
-        try:
-            if self.blocks_since_last_update >= self.set_weights_rate:
-                uids = array(self.available_uids)
-                weights = [self.moving_average_scores[uid] for uid in self.available_uids]
-                if isnan(weights).any():
-                    bt.logging.error("Weights contain all NaN values. Setting weights to 0.")
-                    weights = [0] * len(weights)
-                for i, j in zip(weights, self.available_uids):
-                    bt.logging.debug(f"UID: {j}  |  Weight: {i}")
-                if sum(weights) == 0:
-                    weights = [1] * len(weights)
-                weights = array(weights) / max(weights)
-                # Convert to uint16 weights and uids.
-                (
-                    uint_uids,
-                    uint_weights,
-                ) = bt.utils.weight_utils.convert_weights_and_uids_for_emit(uids=uids, weights=weights)
-                # Update the incentive mechanism on the Bittensor blockchain.
-                result, msg = self.subtensor.set_weights(
-                    netuid=self.config.netuid,
-                    wallet=self.wallet,
-                    uids=uint_uids,
-                    weights=uint_weights,
-                    wait_for_inclusion=False,
-                    version_key=__spec_version__,
-                )
-                if result:
-                    bt.logging.success("✅ Set Weights on chain successfully!")
-                else:
-                    bt.logging.debug(
-                        "Failed to set weights this iteration with message:",
-                        msg,
-                    )
-            self.current_block = node_query(self, "System", "Number", [])
-            self.blocks_since_last_update = (
-                self.current_block
-                - node_query(self, "SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
+        if self.blocks_since_last_update >= self.set_weights_rate:
+            uids = array(self.available_uids)
+            weights = [self.moving_average_scores[uid] for uid in self.available_uids]
+            if isnan(weights).any():
+                bt.logging.error("Weights contain all NaN values. Setting weights to 0.")
+                weights = [0] * len(weights)
+            # for i, j in zip(weights, self.available_uids):
+            #     bt.logging.debug(f"UID: {j}  |  Weight: {i}")
+            if sum(weights) == 0:
+                weights = [1] * len(weights)
+            weights = array(weights) / max(weights)
+            # Convert to uint16 weights and uids.
+            (
+                uint_uids,
+                uint_weights,
+            ) = bt.utils.weight_utils.convert_weights_and_uids_for_emit(uids=uids, weights=weights)
+            # Update the incentive mechanism on the Bittensor blockchain.
+            result, msg = self.subtensor.set_weights(
+                netuid=self.config.netuid,
+                wallet=self.wallet,
+                uids=uint_uids,
+                weights=uint_weights,
+                wait_for_inclusion=False,
+                version_key=__spec_version__,
             )
-        except Exception as e:
-            bt.logging.error(f"set_weights loop error: {e}")
-            raise e
+            if result:
+                bt.logging.success("✅ Set Weights on chain successfully!")
+            else:
+                bt.logging.debug(
+                    "Failed to set weights this iteration with message:",
+                    msg,
+                )
+        self.current_block = node_query(self, "System", "Number", [])
+        self.blocks_since_last_update = (
+            self.current_block - node_query(self, "SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
+        )
 
     async def main_function(self):
         if market_is_open():

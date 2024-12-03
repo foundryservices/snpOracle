@@ -227,11 +227,12 @@ async def loop_handler(self, func, sleep_time=120):
                 await func()
             await asyncio.sleep(sleep_time)
     except asyncio.CancelledError:
-        print(f"{func.__name__} cancelled")
+        bt.logging.error(f"{func.__name__} cancelled")
         raise
     except KeyboardInterrupt:
         raise
-    except Exception:
+    except Exception as e:
+        bt.logging.error(f"{func.__name__} raised error: {e}")
         raise
     finally:
         async with self.lock:
