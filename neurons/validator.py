@@ -32,6 +32,7 @@ from predictionnet import __version__
 
 # import base validator class which takes care of most of the boilerplate
 from predictionnet.base.validator import BaseValidatorNeuron
+from predictionnet.utils.huggingface import HF_interface
 from predictionnet.utils.uids import check_uid_availability
 
 # Bittensor Validator Template:
@@ -56,6 +57,7 @@ class Validator(BaseValidatorNeuron):
         self.N_TIMEPOINTS = 6  # number of timepoints to predict
         self.INTERVAL = self.prediction_interval * self.N_TIMEPOINTS  # 30 Minutes
         self.past_predictions = {}
+        self.hf_interface = HF_interface()
         for uid in range(len(self.metagraph.S)):
             uid_is_available = check_uid_availability(self.metagraph, uid, self.config.neuron.vpermit_tao_limit)
             if uid_is_available:
@@ -136,6 +138,13 @@ class Validator(BaseValidatorNeuron):
         """
         # TODO(developer): Rewrite this function based on your protocol definition.
         return await forward(self)
+
+    def confirm_models(self, responses, miner_uids):
+        models_confirmed = []
+        self.hf_interface.update_collection(responses)
+        for response in responses:
+            models_confirmed.append(self.hf_interface.hotkeys_match(response))
+        return models_confirmed
 
     def print_info(self):
         metagraph = self.metagraph
