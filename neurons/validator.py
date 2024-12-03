@@ -19,6 +19,7 @@ import os
 import pathlib
 import time
 from datetime import datetime
+from typing import List
 
 # Bittensor
 import bittensor as bt
@@ -139,7 +140,7 @@ class Validator(BaseValidatorNeuron):
         # TODO(developer): Rewrite this function based on your protocol definition.
         return await forward(self)
 
-    def confirm_models(self, responses, miner_uids):
+    def confirm_models(self, responses) -> List[bool]:
         models_confirmed = []
         self.hf_interface.update_collection(responses)
         for response in responses:
