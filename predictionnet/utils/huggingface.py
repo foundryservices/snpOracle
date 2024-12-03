@@ -1,9 +1,11 @@
+import os
+
 from huggingface_hub import HfApi, model_info
 
 
 class HF_interface:
     def __init__(self):
-        self.api = HfApi()
+        self.api = HfApi(token=os.getenv("MINER_HF_ACCESS_TOKEN"))
         self.collection_slug = "foundryservices/oracle-674df1e1ba06279e786a0e37"
         self.collection = self.get_models()
 
@@ -18,8 +20,8 @@ class HF_interface:
             # Fetch model information
             model_info(full_model_id)
             return True
-        except Exception:
-            return False
+        except Exception as e:
+            return False, str(e)
 
     def add_model_to_collection(self, repo_id, model_id):
         self.api.add_collection_item(
@@ -36,3 +38,28 @@ class HF_interface:
                 self.add_model_to_collection(
                     collection_slug=self.collection_slug, repo_id=model.repo_id, model_id=model.model_id
                 )
+
+    def hotkeys_match(self, synapse, model_id, repo_id) -> bool:
+        synapse_hotkey = synapse.TerminalInfo.hotkey
+        model_metadata = get_model_metadata(repo_id, model_id)
+        if model_metadata:
+            model_hotkey = model_metadata.get("hotkey")
+            if synapse_hotkey == model_hotkey:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+
+def get_model_metadata(repo_id, model_id):
+    try:
+        model = model_info(f"{repo_id}/{model_id}")
+        metadata = model.cardData
+        if metadata is None:
+            hotkey = None
+        else:
+            hotkey = metadata.get("hotkey")
+        return {"hotkey": hotkey, "timestamp": model.created_at}
+    except Exception as e:
+        return False, str(e)
