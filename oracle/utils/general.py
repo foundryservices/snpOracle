@@ -5,12 +5,13 @@ from typing import Optional
 
 import bittensor as bt
 import git
-from numpy import full, nan, array, repeat, ndarray, copy, arange, empty_like, isnan, nanmax, argsort, concatenate, cumsum
-from pandas import DataFrame
 import requests
+from numpy import argsort, array, concatenate, copy, cumsum, empty_like, full, nan, nanmax, ndarray, repeat
+from pandas import DataFrame
 
 from oracle.utils.classes import NestedNamespace
-from oracle.utils.timestamp import get_mature_timestamps, get_now, round_minute_down, iso8601_to_datetime
+from oracle.utils.timestamp import get_mature_timestamps, get_now, iso8601_to_datetime, round_minute_down
+
 
 def parse_arguments(parser: Optional[argparse.ArgumentParser] = None):
     """Used to overwrite defaults when params are passed into the script.
@@ -98,9 +99,9 @@ def convert_predictions_to_matrix(prediction_dict, timestamp: None):
     predictions = full((len(timestamps_to_pull), len(timestamps_to_pull)), nan)
     for i, timestamp in enumerate(timestamps_to_pull):
         try:
-            predictions[i,:] = prediction_dict[timestamp]
+            predictions[i, :] = prediction_dict[timestamp]
         except KeyError:
-            predictions[i,:] = nan
+            predictions[i, :] = nan
     return predictions, timestamps_to_pull
 
 
@@ -109,7 +110,7 @@ def convert_prices_to_matrix(price_dict, reference_timestamp: None, N_TIMEPOINTS
         now = round_minute_down(get_now())
     else:
         now = iso8601_to_datetime(reference_timestamp)
-    timestamps_to_pull = get_mature_timestamps(now, interval=-5, N_TIMEPOINTS=N_TIMEPOINTS+1)
+    timestamps_to_pull = get_mature_timestamps(now, interval=-5, N_TIMEPOINTS=N_TIMEPOINTS + 1)
     prices = full(len(timestamps_to_pull), nan)
     for i, timestamp in enumerate(timestamps_to_pull):
         try:
@@ -156,12 +157,12 @@ def time_shift(array: ndarray) -> ndarray:
             shifted_array[i, :] = array[i, :]
     return shifted_array
 
+
 def pd_to_dict(data: DataFrame) -> dict:
     price_dict = {}
     for i in range(len(data)):
-        price_dict[data.index[i]] = data.iloc[i]['Close'].values.item()
+        price_dict[data.index[i]] = data.iloc[i]["Close"].values.item()
     return price_dict
-
 
 
 def rank_miners_by_epoch(deltas: ndarray, correct_dirs: ndarray) -> ndarray:
@@ -183,7 +184,7 @@ def rank_miners_by_epoch(deltas: ndarray, correct_dirs: ndarray) -> ndarray:
     incorrect_ranks = rank_columns(incorrect_deltas) + nanmax(correct_ranks, axis=0)
     all_ranks = correct_ranks
     all_ranks[~correct_dirs] = incorrect_ranks[~correct_dirs]
-    return all_ranks - 1 # zero indexing
+    return all_ranks - 1  # zero indexing
 
 
 def rank_columns(array: ndarray) -> ndarray:
@@ -202,6 +203,7 @@ def rank_columns(array: ndarray) -> ndarray:
         ranked_array[:, col] = rank(array[:, col])
     return ranked_array
 
+
 def rank(vector):
     if vector is None or len(vector) <= 1:
         return array([0])
@@ -217,17 +219,20 @@ def rank(vector):
         rank_vector[sorted_indices] = ranks
         return rank_vector
 
+
 async def loop_handler(self, func, sleep_time=120):
-        try:
-            while not self.stop_event.is_set():
+    try:
+        while not self.stop_event.is_set():
+            with self.lock:
                 await func()
-                await asyncio.sleep(sleep_time)
-        except asyncio.exceptions.CancelledError:
-            raise
-        except KeyboardInterrupt:
-            raise
-        except Exception:
-            raise
-        finally:
-            async with self.lock:
-                self.stop_event.set()
+            await asyncio.sleep(sleep_time)
+    except asyncio.CancelledError:
+        print(f"{func.__name__} cancelled")
+        raise
+    except KeyboardInterrupt:
+        raise
+    except Exception:
+        raise
+    finally:
+        async with self.lock:
+            self.stop_event.set()

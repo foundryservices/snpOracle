@@ -57,8 +57,6 @@ class weight_setter:
         if self.config.wandb_on:
             setup_wandb(self)
         self.stop_event = asyncio.Event()
-        self.resync_event = asyncio.Event()
-        self.set_weights_event = asyncio.Event()
         bt.logging.info("Setup complete, starting loop")
         self.loop.create_task(loop_handler(self, self.main_function, sleep_time=self.config.print_cadence))
         self.loop.create_task(loop_handler(self, self.resync_metagraph, sleep_time=self.resync_metagraph_rate))
@@ -78,11 +76,8 @@ class weight_setter:
     async def resync_metagraph(self):
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
         try:
-
             self.blocks_since_sync = self.current_block - self.last_sync
             if self.blocks_since_sync >= self.resync_metagraph_rate:
-                self.resync_event = asyncio.Event()
-                await self.set_weights_event.wait()
                 bt.logging.info("Syncing Metagraph...")
                 self.metagraph.sync(subtensor=self.subtensor)
                 bt.logging.info("Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages")
@@ -97,7 +92,6 @@ class weight_setter:
                         self.scores = array(list(self.moving_average_scores.values()))
                 self.last_sync = self.subtensor.get_current_block()
                 self.save_state()
-                self.resync_event.set()
         except Exception as e:
             bt.logging.error(f"Resync metagraph error: {e}")
             raise e
@@ -126,8 +120,6 @@ class weight_setter:
     async def set_weights(self):
         try:
             if self.blocks_since_last_update >= self.set_weights_rate:
-                self.set_weights_event = asyncio.Event()
-                await self.resync_event.wait()
                 uids = array(self.available_uids)
                 weights = [self.moving_average_scores[uid] for uid in self.available_uids]
                 if isnan(weights).any():
@@ -164,7 +156,6 @@ class weight_setter:
                 self.current_block
                 - node_query(self, "SubtensorModule", "LastUpdate", [self.config.netuid])[self.my_uid]
             )
-            self.set_weights_event.set()
         except Exception as e:
             bt.logging.error(f"set_weights loop error: {e}")
             raise e
