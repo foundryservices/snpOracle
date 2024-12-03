@@ -50,7 +50,7 @@ class HF_interface:
 
     def hotkeys_match(self, synapse) -> bool:
         synapse_hotkey = synapse.TerminalInfo.hotkey
-        model_metadata = get_model_metadata(synapse.repo_id, synapse.model_id)
+        model_metadata = self.get_model_metadata(synapse.repo_id, synapse.model_id)
         if model_metadata:
             model_hotkey = model_metadata.get("hotkey")
             if synapse_hotkey == model_hotkey:
@@ -60,15 +60,19 @@ class HF_interface:
         else:
             return False
 
+    def get_model_timestamp(self, repo_id, model_id):
+        commits = self.api.list_repo_commits(repo_id=f"{repo_id}/{model_id}", repo_type="model")
+        initial_commit = commits[-1]
+        return initial_commit.created_at
 
-def get_model_metadata(repo_id, model_id):
-    try:
-        model = model_info(f"{repo_id}/{model_id}")
-        metadata = model.cardData
-        if metadata is None:
-            hotkey = None
-        else:
-            hotkey = metadata.get("hotkey")
-        return {"hotkey": hotkey, "timestamp": model.created_at}
-    except Exception as e:
-        return False, str(e)
+    def get_model_metadata(self, repo_id, model_id):
+        try:
+            model = model_info(f"{repo_id}/{model_id}")
+            metadata = model.cardData
+            if metadata is None:
+                hotkey = None
+            else:
+                hotkey = metadata.get("hotkey")
+            return {"hotkey": hotkey, "timestamp": self.get_model_timestamp(repo_id, model_id)}
+        except Exception as e:
+            return False, str(e)
