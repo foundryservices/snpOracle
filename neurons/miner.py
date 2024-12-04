@@ -62,7 +62,7 @@ class Miner(BaseMinerNeuron):
 
 
         # Initialize HF interface and upload model
-        hf_interface = Miner_HF_interface(config)
+        hf_interface = Miner_HF_interface(self.config)
         success, metadata = hf_interface.upload_model(
             hotkey=self.wallet.hotkey.ss58_address,
             model_path=self.config.model,
