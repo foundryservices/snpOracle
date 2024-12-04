@@ -1,6 +1,7 @@
 import os
 from typing import List
 
+import bittensor as bt
 from huggingface_hub import HfApi, model_info
 
 from predictionnet.protocol import Challenge
@@ -43,11 +44,13 @@ class HF_interface:
         self.collection = self.get_models()
 
     def hotkeys_match(self, synapse) -> bool:
-        synapse_hotkey = synapse.TerminalInfo.hotkey
+        axon_hotkey = synapse.axon.hotkey
+        dendrite_hotkey = synapse.dendrite.hotkey
+        bt.logging.info(f"axon: {axon_hotkey} | dendrite: {dendrite_hotkey}")
         model_metadata = self.get_model_metadata(synapse.repo_id, synapse.model_id)
         if model_metadata:
             model_hotkey = model_metadata.get("hotkey")
-            if synapse_hotkey == model_hotkey:
+            if axon_hotkey == model_hotkey:
                 return True
             else:
                 return False
