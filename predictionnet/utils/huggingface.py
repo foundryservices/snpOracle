@@ -43,7 +43,7 @@ class HF_interface:
                 self.add_model_to_collection(repo_id=response.repo_id, model_id=response.model_id)
         self.collection = self.get_models()
 
-    def hotkeys_match(self, synapse) -> bool:
+    def hotkeys_match(self, synapse, hotkey) -> bool:
         axon_hotkey = synapse.axon.hotkey
         dendrite_hotkey = synapse.dendrite.hotkey
         bt.logging.info(f"axon: {axon_hotkey} | dendrite: {dendrite_hotkey}")
@@ -71,5 +71,5 @@ class HF_interface:
             else:
                 hotkey = metadata.get("hotkey")
             return {"hotkey": hotkey, "timestamp": self.get_model_timestamp(repo_id, model_id)}
-        except Exception as e:
-            return False, str(e)
+        except Exception:
+            return False
