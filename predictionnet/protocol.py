@@ -54,17 +54,15 @@ class Challenge(bt.Synapse):
     """
 
     repo_id: str = pydantic.Field(
-        ...,
+        default=None,
         title="Repo ID",
         description="Storage repository of the model",
-        default=None,
     )
 
     model_id: str = pydantic.Field(
-        ...,
+        default=None,
         title="Model ID",
         description="Which model to use",
-        default=None,
     )
 
     # Required request input, filled by sending dendrite caller.
