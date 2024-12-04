@@ -66,18 +66,21 @@ pm2 --version
 
 ### Install-Repo
 
-Begin by creating and sourcing a python virtual environment:
-```
-python3 -m venv .sn28
-source .sn28/bin/activate
-```
+
 Clone the Foundry S&P 500 Oracle repo:
 ```
 git clone https://github.com/foundryservices/snpOracle.git
+cd snpOracle
+```
+Setup Virtual Environment:
+```
+python3 -m venv .venv
+source .venv/bin/activate
 ```
 Install Requirements:
 ```
-pip3 install -e snpOracle
+pip install poetry
+poetry install
 ```
 
 ### Running a Miner
@@ -90,21 +93,25 @@ Update the .env file with your Huggingface access token. A huggingface access to
 
 To run your miner:
 ```
-pm2 start miner.config.js
+make miner
 ```
-The miner.config.js has few flags added. Any standard flags can be passed, for example, wallet name and hotkey name will default to "default"; if you have a different configuration, edit your "args" in miner.config.js. Below shows a miner.config.js with extra configuration flags.
--  The hf_repo_id flag will be used to define which huggingface model repository the weights file needs to be downloaded from. You need not necessarily load your model weights from huggingface. If you would like to load weights from a local folder like `mining_models/`, then store the weights in the `mining_models/` folder and make sure to define the --hf_repo_id arg to `LOCAL` like `--hf_repo_id LOCAL`.
+The Makefile contains the miner parameters and should be edited to reflect your configuration. For example, set your wallet name and hotkey at the minimum.
+
+-  The hf_repo_id flag will be used to define which huggingface model repository the weights file needs to be downloaded from. In order to earn incentive on this subnet, You MUST host your model on huggingface, as validators will check that the model and hotkey on huggingface match.
 - The model flag is used to reference a new model you save to the mining_models directory or to your huggingface hf_repo_id. The example below uses the default which is the new base lstm on <a href='https://huggingface.co/foundryservices/bittensor-sn28-base-lstm/tree/main'>Foundry's Huggingface repository</a>.
+
+Example miner function in Makefile:
 ```
-module.exports = {
-  apps: [
-    {
-      name: 'miner',
-      script: 'python3',
-      args: './neurons/miner.py --netuid 28 --logging.debug --logging.trace --subtensor.network local --wallet.name walletName --wallet.hotkey hotkeyName --axon.port 8091 --hf_repo_id foundryservices/bittensor-sn28-base-lstm --model mining_models/base_lstm_new.h5'
-    },
-  ],
-};
+miner:
+	python start_miner.py \
+		--neuron.name miner \
+		--wallet.name default \
+		--wallet.hotkey default \
+		--subtensor.chain_endpoint $(network) \
+		--axon.port 30336 \
+		--netuid 28 \
+		--logging.level info \
+		--forward_function forward
 ```
 ### Running a Validator
 ecosystem.config.js files have been created to make deployment of miners and validators easier for the node operator. These files are the default configuration files for PM2, and allow the user to define the environment & application in a cleaner way. IMPORTANT: Make sure your have activated your virtual environment before running your validator/miner.
