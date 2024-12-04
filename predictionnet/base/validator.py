@@ -50,7 +50,7 @@ class BaseValidatorNeuron(BaseNeuron):
         # Set up initial scoring weights for validation
         bt.logging.info("Building validation weights.")
         self.scores = full(len(self.metagraph.S), 0.0)
-        self.moving_avg_scores = full(len(self.metagraph.S), 0.0)
+        self.moving_average_scores = {uid: 0 for uid in self.metagraph.uids}
         self.alpha = self.config.neuron.moving_average_alpha
         # Load state because self.sync() will overwrite it
         self.load_state()
@@ -291,7 +291,6 @@ class BaseValidatorNeuron(BaseNeuron):
 
     def update_scores(self, rewards: ndarray, uids: List[int]):
         """Performs exponential moving average on the scores based on the rewards received from the miners."""
-
         # Check if rewards contains NaN values.
         if isnan(rewards).any():
             bt.logging.warning(f"NaN values detected in rewards: {rewards}")
@@ -301,7 +300,7 @@ class BaseValidatorNeuron(BaseNeuron):
         # shape: [ metagraph.n ]
         for i, value in zip(uids, rewards):
             self.moving_avg_scores[i] = (1 - self.alpha) * self.scores[i] + self.alpha * value
-        self.scores = array(self.moving_avg_scores)
+        self.scores = array(list(self.moving_average_scores.values()))
         bt.logging.info(f"New Average Scores: {self.scores}")
 
     def save_state(self):
