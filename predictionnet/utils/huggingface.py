@@ -13,23 +13,18 @@ class HF_interface:
             raise ValueError(
                 "Huggingface access token not found in environment variables, set it as 'HF_ACCESS_TOKEN'."
             )
+        collection_slug = os.getenv("HF_COLLECTION_SLUG")
+        if collection_slug is None:
+            raise ValueError(
+                "Huggingface collection slug not found in environment variables, set it as 'HF_COLLECTION_SLUG'."
+            )
         self.api = HfApi(token=token)
-        self.collection_slug = "foundryservices/oracle-674df1e1ba06279e786a0e37"
+        self.collection_slug = collection_slug
         self.collection = self.get_models()
 
     def get_models(self):
         collection = self.api.get_collection(collection_slug=self.collection_slug)
         return collection
-
-    def check_model_exists(self, repo_id, model_id) -> bool:
-        try:
-            # Combine repo_id and model_id
-            full_model_id = f"{repo_id}/{model_id}"
-            # Fetch model information
-            model_info(full_model_id)
-            return True
-        except Exception as e:
-            return False, str(e)
 
     def add_model_to_collection(self, repo_id, model_id) -> None:
         self.api.add_collection_item(
