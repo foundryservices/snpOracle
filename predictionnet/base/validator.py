@@ -50,7 +50,7 @@ class BaseValidatorNeuron(BaseNeuron):
         # Set up initial scoring weights for validation
         bt.logging.info("Building validation weights.")
         self.scores = full(len(self.metagraph.S), 0.0)
-        self.moving_avg_scores = [0.0] * len(self.metagraph.S)
+        self.moving_avg_scores = full(len(self.metagraph.S), 0.0)
         self.alpha = self.config.neuron.moving_average_alpha
         # Load state because self.sync() will overwrite it
         self.load_state()
@@ -299,7 +299,6 @@ class BaseValidatorNeuron(BaseNeuron):
             rewards = nan_to_num(rewards, 0)
         # Compute forward pass rewards, assumes uids are mutually exclusive.
         # shape: [ metagraph.n ]
-        self.moving_avg_scores = full(len(self.metagraph.S), 0.0)
         for i, value in zip(uids, rewards):
             self.moving_avg_scores[i] = (1 - self.alpha) * self.scores[i] + self.alpha * value
         self.scores = array(self.moving_avg_scores)
