@@ -42,12 +42,11 @@ class HF_interface:
                 self.add_model_to_collection(repo_id=response.repo_id, model_id=response.model_id)
         self.collection = self.get_models()
 
-    def hotkeys_match(self, synapse) -> bool:
-        synapse_hotkey = synapse.TerminalInfo.hotkey
+    def hotkeys_match(self, synapse, hotkey) -> bool:
         model_metadata = self.get_model_metadata(synapse.repo_id, synapse.model_id)
         if model_metadata:
             model_hotkey = model_metadata.get("hotkey")
-            if synapse_hotkey == model_hotkey:
+            if hotkey == model_hotkey:
                 return True
             else:
                 return False
@@ -68,5 +67,5 @@ class HF_interface:
             else:
                 hotkey = metadata.get("hotkey")
             return {"hotkey": hotkey, "timestamp": self.get_model_timestamp(repo_id, model_id)}
-        except Exception as e:
-            return False, str(e)
+        except Exception:
+            return False

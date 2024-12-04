@@ -140,11 +140,12 @@ class Validator(BaseValidatorNeuron):
         # TODO(developer): Rewrite this function based on your protocol definition.
         return await forward(self)
 
-    def confirm_models(self, responses) -> List[bool]:
+    def confirm_models(self, responses, miner_uids) -> List[bool]:
         models_confirmed = []
         self.hf_interface.update_collection(responses)
-        for response in responses:
-            models_confirmed.append(self.hf_interface.hotkeys_match(response))
+        for response, uid in zip(responses, miner_uids):
+
+            models_confirmed.append(self.hf_interface.hotkeys_match(response, self.metagraph.hotkeys[uid]))
         return models_confirmed
 
     def print_info(self):
