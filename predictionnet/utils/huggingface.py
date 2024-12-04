@@ -37,10 +37,9 @@ class HF_interface:
     def update_collection(self, responses: List[Challenge]) -> None:
         id_list = [x.item_id for x in self.collection.items]
         for response in responses:
-            if f"{response.repo_id}/{response.model_id}" not in id_list:
-                self.add_model_to_collection(
-                    collection_slug=self.collection_slug, repo_id=response.repo_id, model_id=response.model_id
-                )
+            either_none = response.repo_id is None or response.model_id is None
+            if f"{response.repo_id}/{response.model_id}" not in id_list and not either_none:
+                self.add_model_to_collection(repo_id=response.repo_id, model_id=response.model_id)
         self.collection = self.get_models()
 
     def hotkeys_match(self, synapse) -> bool:
