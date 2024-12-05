@@ -73,8 +73,6 @@ async def forward(self):
     # This can be combined with line 49
     synapse = predictionnet.protocol.Challenge(
         timestamp=timestamp,
-        repo_id="",
-        model_id=""
     )
 
     responses = self.dendrite.query(
