@@ -176,6 +176,15 @@ class Miner(BaseMinerNeuron):
         The 'forward' function is a placeholder and should be overridden with logic that is appropriate for
         the miner's intended operation. This method demonstrates a basic transformation of input data.
         """
+        bt.logging.debug(f"Config hf_repo_id: {self.config.hf_repo_id}")
+        bt.logging.debug(f"Config model: {self.config.model}")
+        
+        synapse.repo_id = self.config.hf_repo_id
+        synapse.model_id = f"{self.wallet.hotkey.ss58_address}{os.path.splitext(self.config.model)[1]}"
+        
+        bt.logging.debug(f"Set synapse.repo_id: {synapse.repo_id}")
+        bt.logging.debug(f"Set synapse.model_id: {synapse.model_id}")
+        
         bt.logging.info(
             f"👈 Received prediction request from: {synapse.dendrite.hotkey} for timestamp: {synapse.timestamp}"
         )
