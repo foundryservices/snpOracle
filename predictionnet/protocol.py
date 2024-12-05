@@ -54,13 +54,13 @@ class Challenge(bt.Synapse):
     """
 
     repo_id: str = pydantic.Field(
-        default=None,
+        default="",
         title="Repo ID",
         description="Storage repository of the model",
     )
 
     model_id: str = pydantic.Field(
-        default=None,
+        default="",
         title="Model ID",
         description="Which model to use",
     )
