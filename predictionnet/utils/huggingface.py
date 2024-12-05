@@ -29,7 +29,7 @@ class HF_interface:
     def add_model_to_collection(self, repo_id, model_id) -> None:
         self.api.add_collection_item(
             collection_slug=self.collection_slug,
-            item_id=f"{repo_id}/{model_id}",
+            item_id=repo_id,
             item_type="model",
             exists_ok=True,
         )
