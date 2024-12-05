@@ -176,22 +176,15 @@ class Miner(BaseMinerNeuron):
         The 'forward' function is a placeholder and should be overridden with logic that is appropriate for
         the miner's intended operation. This method demonstrates a basic transformation of input data.
         """
-        bt.logging.debug(f"Config hf_repo_id: {self.config.hf_repo_id}")
-        bt.logging.debug(f"Config model: {self.config.model}")
-        
-        synapse.repo_id = self.config.hf_repo_id
-        synapse.model_id = f"{self.wallet.hotkey.ss58_address}{os.path.splitext(self.config.model)[1]}"
-        
-        bt.logging.debug(f"Set synapse.repo_id: {synapse.repo_id}")
-        bt.logging.debug(f"Set synapse.model_id: {synapse.model_id}")
-        
         bt.logging.info(
             f"👈 Received prediction request from: {synapse.dendrite.hotkey} for timestamp: {synapse.timestamp}"
         )
 
+        model_filename = f"{self.wallet.hotkey.ss58_address}{os.path.splitext(self.config.model)[1]}"
+
         timestamp = synapse.timestamp
         synapse.repo_id = self.config.hf_repo_id
-        synapse.model_id = f"{self.wallet.hotkey.ss58_address}{os.path.splitext(self.config.model)[1]}"
+        synapse.model_id = model_filename
         
         if self.config.hf_repo_id == "LOCAL":
             model_path = f"./{self.config.model}"
@@ -204,7 +197,7 @@ class Miner(BaseMinerNeuron):
             token = os.getenv("MINER_HF_ACCESS_TOKEN")
             model_path = hf_hub_download(
                 repo_id=self.config.hf_repo_id,
-                filename=self.config.model,
+                filename=model_filename,
                 use_auth_token=token,
             )
             bt.logging.info(f"Model downloaded from huggingface at {model_path}")
