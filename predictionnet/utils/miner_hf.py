@@ -24,27 +24,23 @@ class Miner_HF_interface:
             raise ValueError("All parameters (repo_id, model_path, hotkey) must be specified either in config or method call")
 
         try:
-            model_name = os.path.basename(model_path)
+            # Extract file extension from the model path, handling nested directories
+            _, extension = os.path.splitext(model_path)
+            if not extension:
+                raise ValueError(f"Could not determine file extension from model path: {model_path}")
+                
+            # Create new filename using hotkey and original extension
+            model_name = f"{hotkey}{extension}"
+            print(f"Generated model name: {model_name} from path: {model_path}")
             
             try:
                 print(f"Checking if repo exists: {repo_id}")
                 model = model_info(repo_id)
-                
-                # Check if model file already exists
-                print("Checking if model already exists...")
-                files = self.api.list_repo_files(repo_id=repo_id, repo_type="model")
-                if model_name in files:
-                    print(f"Model {model_name} already exists, skipping upload")
-                    metadata = {
-                        "hotkey": hotkey,
-                    }
-                    return True, metadata
-                    
             except:
                 print("Repo doesn't exist, creating new one")
                 self.api.create_repo(repo_id=repo_id, private=False)
             
-            print(f"Uploading file: {model_name}")
+            print(f"Uploading file as: {model_name}")
             self.api.upload_file(
                 path_or_fileobj=model_path,
                 path_in_repo=model_name,
@@ -52,12 +48,14 @@ class Miner_HF_interface:
                 repo_type="model"
             )
             
-            metadata = {
-                "hotkey": hotkey,
-            }
-            print(f"Updating metadata: {metadata}")
-            metadata_update(repo_id, metadata)
-            return True, metadata
+            # Get timestamp of the upload
+            commits = self.api.list_repo_commits(repo_id=repo_id, repo_type="model")
+            if commits:
+                return True, {
+                    "hotkey": hotkey,
+                    "timestamp": commits[0].created_at.timestamp()
+                }
+            return True, {}
             
         except Exception as e:
             print(f"Error in upload_model: {str(e)}")
@@ -68,23 +66,25 @@ class Miner_HF_interface:
         print(f"Getting metadata for repo: {repo_id}")
         
         try:
-            print("Getting model info...")
-            model = model_info(repo_id)
-            metadata = model.cardData
-            print(f"Model metadata: {metadata}")
+            print("Getting repo files...")
+            files = self.api.list_repo_files(repo_id=repo_id, repo_type="model")
+            if not files:
+                raise ValueError("No files found in repository")
+            
+            # Get the first file and extract hotkey from filename
+            model_file = files[0]
+            hotkey = os.path.splitext(model_file)[0]
             
             print("Getting commits...")
             commits = self.api.list_repo_commits(repo_id=repo_id, repo_type="model")
             if not commits:
                 raise ValueError("No commits found in repository")
             
-            print(f"Found {len(commits)} commits")
             latest_commit = commits[0]
-            print(f"Latest commit: {latest_commit}")
             print(f"Latest commit date: {latest_commit.created_at}")
             
             result = {
-                "hotkey": metadata.get("hotkey"),
+                "hotkey": hotkey,
                 "timestamp": latest_commit.created_at.timestamp(),
             }
             return result
