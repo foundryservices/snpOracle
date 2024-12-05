@@ -182,7 +182,7 @@ class Miner(BaseMinerNeuron):
 
         timestamp = synapse.timestamp
         synapse.repo_id = self.config.hf_repo_id
-        synapse.model_id = self.config.model
+        synapse.model_id = f"{self.wallet.hotkey.ss58_address}{os.path.splitext(self.config.model)[1]}"
         
         if self.config.hf_repo_id == "LOCAL":
             model_path = f"./{self.config.model}"
