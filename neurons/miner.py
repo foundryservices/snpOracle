@@ -60,17 +60,16 @@ class Miner(BaseMinerNeuron):
         if self.config.neuron.device == "cpu":
             os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # This will force TensorFlow to use CPU only
 
-
         # Initialize HF interface and upload model
         hf_interface = Miner_HF_interface(self.config)
         success, metadata = hf_interface.upload_model(
-            hotkey=self.wallet.hotkey.ss58_address,
-            model_path=self.config.model,
-            repo_id=self.config.hf_repo_id
+            hotkey=self.wallet.hotkey.ss58_address, model_path=self.config.model, repo_id=self.config.hf_repo_id
         )
 
         if success:
-            bt.logging.success(f"Model {self.config.model} uploaded successfully to {self.config.hf_repo_id}: {metadata}")
+            bt.logging.success(
+                f"Model {self.config.model} uploaded successfully to {self.config.hf_repo_id}: {metadata}"
+            )
         else:
             bt.logging.error(f"Model {self.config.model} upload failed to {self.config.hf_repo_id}: {metadata}")
 
@@ -185,7 +184,7 @@ class Miner(BaseMinerNeuron):
         timestamp = synapse.timestamp
         synapse.repo_id = self.config.hf_repo_id
         synapse.model_id = model_filename
-        
+
         if self.config.hf_repo_id == "LOCAL":
             model_path = f"./{self.config.model}"
             bt.logging.info(

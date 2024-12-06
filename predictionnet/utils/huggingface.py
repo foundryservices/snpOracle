@@ -45,7 +45,7 @@ class HF_interface:
     def hotkeys_match(self, synapse, hotkey) -> bool:
         if synapse.model_id is None:
             return False
-        model_hotkey = synapse.model_id.split('.')[0]
+        model_hotkey = synapse.model_id.split(".")[0]
         return hotkey == model_hotkey
 
     def get_model_timestamp(self, repo_id, model_id):
@@ -64,4 +64,3 @@ class HF_interface:
             return {"hotkey": hotkey, "timestamp": self.get_model_timestamp(repo_id, model_id)}
         except Exception:
             return False
-

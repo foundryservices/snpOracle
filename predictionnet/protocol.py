@@ -60,7 +60,7 @@ class Challenge(bt.Synapse):
     )
 
     model_id: Optional[str] = pydantic.Field(
-        default=None, 
+        default=None,
         title="Model ID",
         description="Which model to use",
     )
