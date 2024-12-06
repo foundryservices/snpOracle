@@ -162,3 +162,7 @@ cython_debug/
 
 testing/
 timestamp.txt
+
+# localnet config
+miner.config.local.js
+validator.config.local.js
