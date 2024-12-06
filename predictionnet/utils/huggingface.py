@@ -43,6 +43,8 @@ class HF_interface:
         self.collection = self.get_models()
 
     def hotkeys_match(self, synapse, hotkey) -> bool:
+        if synapse.model_id is None:
+            return False
         model_hotkey = synapse.model_id.split('.')[0]
         return hotkey == model_hotkey
 
