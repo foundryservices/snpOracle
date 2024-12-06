@@ -42,9 +42,9 @@ class HF_interface:
                 self.add_model_to_collection(repo_id=response.repo_id, model_id=response.model_id)
         self.collection = self.get_models()
 
-   def hotkeys_match(self, synapse, hotkey) -> bool:
-       model_hotkey = synapse.model_id.split('.')[0]
-       return hotkey == model_hotkey
+    def hotkeys_match(self, synapse, hotkey) -> bool:
+        model_hotkey = synapse.model_id.split('.')[0]
+        return hotkey == model_hotkey
 
     def get_model_timestamp(self, repo_id, model_id):
         commits = self.api.list_repo_commits(repo_id=f"{repo_id}/{model_id}", repo_type="model")
