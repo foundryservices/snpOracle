@@ -64,3 +64,4 @@ class HF_interface:
             return {"hotkey": hotkey, "timestamp": self.get_model_timestamp(repo_id, model_id)}
         except Exception:
             return False
+
