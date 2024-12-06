@@ -144,7 +144,6 @@ class Validator(BaseValidatorNeuron):
         models_confirmed = []
         self.hf_interface.update_collection(responses)
         for response, uid in zip(responses, miner_uids):
-
             models_confirmed.append(self.hf_interface.hotkeys_match(response, self.metagraph.hotkeys[uid]))
         return models_confirmed
 
