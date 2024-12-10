@@ -1,7 +1,7 @@
 import os
 from typing import List
 
-from huggingface_hub import HfApi, model_info
+from huggingface_hub import HfApi
 
 from predictionnet.protocol import Challenge
 
@@ -52,15 +52,3 @@ class HfInterface:
         commits = self.api.list_repo_commits(repo_id=f"{repo_id}/{model_id}", repo_type="model")
         initial_commit = commits[-1]
         return initial_commit.created_at
-
-    def get_model_metadata(self, repo_id, model_id):
-        try:
-            model = model_info(f"{repo_id}/{model_id}")
-            metadata = model.cardData
-            if metadata is None:
-                hotkey = None
-            else:
-                hotkey = metadata.get("hotkey")
-            return {"hotkey": hotkey, "timestamp": self.get_model_timestamp(repo_id, model_id)}
-        except Exception:
-            return False
