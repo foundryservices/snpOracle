@@ -55,6 +55,11 @@ def check_config(cls, config: "bt.Config"):
             format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}",
         )
 
+    if not config.model:
+        raise ValueError("--model argument is required")
+    if not config.hf_repo_id:
+        raise ValueError("--hf_repo_id argument is required")
+
 
 def add_args(cls, parser):
     """
@@ -171,17 +176,11 @@ def add_args(cls, parser):
         )
 
         parser.add_argument(
-            "--model",
-            type=str,
-            help="The file name of the model that the miner loads weights from/",
-            default="mining_models/base_lstm_new.h5",
+            "--model", type=str, help="The file name of the model that the miner loads weights from", required=True
         )
 
         parser.add_argument(
-            "--hf_repo_id",
-            type=str,
-            help="The Huggingface repo id where the weights file exists - set as empty string if you want to use weights in local folders.",
-            default="foundryservices/bittensor-sn28-base-lstm",
+            "--hf_repo_id", type=str, help="The Huggingface repo id where the weights file exists", required=True
         )
 
         parser.add_argument(
