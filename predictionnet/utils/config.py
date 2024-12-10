@@ -55,11 +55,6 @@ def check_config(cls, config: "bt.Config"):
             format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}",
         )
 
-    if not config.model:
-        raise ValueError("--model argument is required")
-    if not config.hf_repo_id:
-        raise ValueError("--hf_repo_id argument is required")
-
 
 def add_args(cls, parser):
     """
@@ -69,6 +64,7 @@ def add_args(cls, parser):
     parser.add_argument("--netuid", type=int, help="Subnet netuid", default=1)
 
     neuron_type = "validator" if "miner" not in cls.__name__.lower() else "miner"
+    bt.logging.debug(f"Determined neuron_type: {neuron_type}")
 
     # MINER AND VALIDATOR CONFIG
     parser.add_argument(
@@ -114,6 +110,7 @@ def add_args(cls, parser):
 
     # VALIDATOR ONLY CONFIG
     if neuron_type == "validator":
+        bt.logging.debug("Adding validator-specific arguments")
         parser.add_argument(
             "--neuron.num_concurrent_forwards",
             type=int,
@@ -161,6 +158,7 @@ def add_args(cls, parser):
 
     # MINER ONLY CONFIG
     else:
+        bt.logging.debug("Adding miner-specific arguments")
         parser.add_argument(
             "--blacklist.force_validator_permit",
             action="store_true",
