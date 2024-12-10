@@ -60,10 +60,10 @@ class Miner(BaseMinerNeuron):
         if self.config.neuron.device == "cpu":
             os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # This will force TensorFlow to use CPU only
 
-        if not config.model:
+        if not self.config.model:
             bt.logging.error("--model argument is required")
             exit(1)
-        if not config.hf_repo_id:
+        if not self.config.hf_repo_id:
             bt.logging.error("--hf_repo_id argument is required")
             exit(1)
 
