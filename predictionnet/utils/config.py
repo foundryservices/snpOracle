@@ -173,13 +173,9 @@ def add_args(cls, parser):
             default=False,
         )
 
-        parser.add_argument(
-            "--model", type=str, help="The file name of the model that the miner loads weights from", required=True
-        )
+        parser.add_argument("--model", type=str, help="The file name of the model that the miner loads weights from")
 
-        parser.add_argument(
-            "--hf_repo_id", type=str, help="The Huggingface repo id where the weights file exists", required=True
-        )
+        parser.add_argument("--hf_repo_id", type=str, help="The Huggingface repo id where the weights file exists")
 
         parser.add_argument(
             "--validator.min_stake",
