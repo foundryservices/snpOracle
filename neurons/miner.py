@@ -38,7 +38,7 @@ from base_miner.predict import predict
 from predictionnet.base.miner import BaseMinerNeuron
 
 # import huggingface upload class
-from predictionnet.utils.miner_hf import Miner_HF_interface
+from predictionnet.utils.miner_hf import MinerHfInterface
 
 load_dotenv()
 
@@ -61,7 +61,7 @@ class Miner(BaseMinerNeuron):
             os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # This will force TensorFlow to use CPU only
 
         # Initialize HF interface and upload model
-        hf_interface = Miner_HF_interface(self.config)
+        hf_interface = MinerHfInterface(self.config)
         success, metadata = hf_interface.upload_model(
             hotkey=self.wallet.hotkey.ss58_address, model_path=self.config.model, repo_id=self.config.hf_repo_id
         )

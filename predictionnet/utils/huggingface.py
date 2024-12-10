@@ -6,7 +6,7 @@ from huggingface_hub import HfApi, model_info
 from predictionnet.protocol import Challenge
 
 
-class HF_interface:
+class HfInterface:
     def __init__(self):
         token = os.getenv("HF_ACCESS_TOKEN")
         if token is None:

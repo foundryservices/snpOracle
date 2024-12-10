@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from huggingface_hub import HfApi
 
 
-class Miner_HF_interface:
+class MinerHfInterface:
     def __init__(self, config: "bt.Config"):
         load_dotenv()
         self.api = HfApi(token=os.getenv("MINER_HF_ACCESS_TOKEN"))
