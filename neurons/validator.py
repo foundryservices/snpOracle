@@ -33,7 +33,7 @@ from predictionnet import __version__
 
 # import base validator class which takes care of most of the boilerplate
 from predictionnet.base.validator import BaseValidatorNeuron
-from predictionnet.utils.huggingface import HF_interface
+from predictionnet.utils.huggingface import HfInterface
 from predictionnet.utils.uids import check_uid_availability
 
 # Bittensor Validator Template:
@@ -58,7 +58,7 @@ class Validator(BaseValidatorNeuron):
         self.N_TIMEPOINTS = 6  # number of timepoints to predict
         self.INTERVAL = self.prediction_interval * self.N_TIMEPOINTS  # 30 Minutes
         self.past_predictions = {}
-        self.hf_interface = HF_interface()
+        self.hf_interface = HfInterface()
         for uid in range(len(self.metagraph.S)):
             uid_is_available = check_uid_availability(self.metagraph, uid, self.config.neuron.vpermit_tao_limit)
             if uid_is_available:
