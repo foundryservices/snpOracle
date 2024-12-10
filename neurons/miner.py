@@ -190,7 +190,7 @@ class Miner(BaseMinerNeuron):
 
         timestamp = synapse.timestamp
         synapse.repo_id = self.config.hf_repo_id
-        synapse.model_id = model_filename
+        synapse.model = model_filename
 
         if self.config.hf_repo_id == "LOCAL":
             model_path = f"./{self.config.model}"
