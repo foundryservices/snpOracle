@@ -38,6 +38,8 @@ class BaseMinerNeuron(BaseNeuron):
     def __init__(self, config=None):
         super().__init__(config=config)
 
+        print(config)
+
         if not config.model:
             bt.logging.error("--model argument is required")
             exit(1)
