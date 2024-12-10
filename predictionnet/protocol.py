@@ -59,7 +59,7 @@ class Challenge(bt.Synapse):
         description="Storage repository of the model",
     )
 
-    model_id: Optional[str] = pydantic.Field(
+    model: Optional[str] = pydantic.Field(
         default=None,
         title="Model ID",
         description="Which model to use",
