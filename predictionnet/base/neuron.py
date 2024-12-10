@@ -66,13 +66,6 @@ class BaseNeuron(ABC):
         # Set up logging with the provided configuration and directory.
         bt.logging(config=self.config, logging_dir=self.config.full_path)
 
-        if not hasattr(self.config, "model") or not self.config.model:
-            bt.logging.error("--model argument is required")
-            exit(1)
-        if not hasattr(self.config, "hf_repo_id") or not self.config.hf_repo_id:
-            bt.logging.error("--hf_repo_id argument is required")
-            exit(1)
-
         # If a gpu is required, set the device to cuda:N (e.g. cuda:0)
         self.device = self.config.neuron.device
         if self.config.logging.debug:
