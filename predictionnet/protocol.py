@@ -102,13 +102,11 @@ class Challenge(bt.Synapse):
         """
         return self.prediction
 
-    def get_decryption_key(self) -> Optional[str]:
+    def get_decryption_key(self) -> Optional[bytes]:
         """
         Safely retrieve the decryption key when needed.
 
         Returns:
-            Optional[str]: The decryption key value if set, None otherwise.
+            Optional[bytes]: The raw Fernet key bytes if set, None otherwise.
         """
-        if self.decryption_key is not None:
-            return self.decryption_key.get_secret_value()
-        return None
+        return self.decryption_key
