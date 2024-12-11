@@ -53,7 +53,7 @@ class BaseValidatorNeuron(BaseNeuron):
         self.moving_avg_scores = {uid: 0 for uid in self.metagraph.uids}
         self.alpha = self.config.neuron.moving_average_alpha
         # Load state because self.sync() will overwrite it
-        self.load_state()
+        # self.load_state()
         # Init sync with the network. Updates the metagraph.
         self.resync_metagraph()  # this ensures that the state file is up to date with the metagraph
         self.sync()
