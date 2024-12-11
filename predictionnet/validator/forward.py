@@ -110,6 +110,6 @@ async def forward(self):
     # Update the scores based on the rewards. You may want to define your own update_scores function for custom behavior.
     models_confirmed = self.confirm_models(responses, miner_uids)
     bt.logging.info(f"Models Confirmed: {models_confirmed}")
-    rewards = [0 if not b else v for v, b in zip(rewards, models_confirmed)]
+    rewards = [0 if not model_confirmed else reward for reward, model_confirmed in zip(rewards, models_confirmed)]
     # Check base validator file
     self.update_scores(rewards, miner_uids)
