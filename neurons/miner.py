@@ -37,6 +37,9 @@ from base_miner.predict import predict
 # import base miner class which takes care of most of the boilerplate
 from predictionnet.base.miner import BaseMinerNeuron
 
+# import huggingface upload class
+from predictionnet.utils.miner_hf import MinerHfInterface
+
 load_dotenv()
 
 
@@ -56,6 +59,26 @@ class Miner(BaseMinerNeuron):
         self.model_loc = self.config.model
         if self.config.neuron.device == "cpu":
             os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # This will force TensorFlow to use CPU only
+
+        if not self.config.model:
+            bt.logging.error("--model argument is required")
+            exit(1)
+        if not self.config.hf_repo_id:
+            bt.logging.error("--hf_repo_id argument is required")
+            exit(1)
+
+        # Initialize HF interface and upload model
+        hf_interface = MinerHfInterface(self.config)
+        success, metadata = hf_interface.upload_model(
+            hotkey=self.wallet.hotkey.ss58_address, model_path=self.config.model, repo_id=self.config.hf_repo_id
+        )
+
+        if success:
+            bt.logging.success(
+                f"Model {self.config.model} uploaded successfully to {self.config.hf_repo_id}: {metadata}"
+            )
+        else:
+            bt.logging.error(f"Model {self.config.model} upload failed to {self.config.hf_repo_id}: {metadata}")
 
     async def blacklist(self, synapse: predictionnet.protocol.Challenge) -> typing.Tuple[bool, str]:
         """
@@ -163,20 +186,24 @@ class Miner(BaseMinerNeuron):
             f"👈 Received prediction request from: {synapse.dendrite.hotkey} for timestamp: {synapse.timestamp}"
         )
 
+        model_filename = f"{self.wallet.hotkey.ss58_address}{os.path.splitext(self.config.model)[1]}"
+
         timestamp = synapse.timestamp
-        # Download the file
+        synapse.repo_id = self.config.hf_repo_id
+        synapse.model = model_filename
+
         if self.config.hf_repo_id == "LOCAL":
             model_path = f"./{self.config.model}"
             bt.logging.info(
                 f"Model weights file from a local folder will be loaded - Local weights file path: {self.config.model}"
             )
         else:
-            if not os.getenv("HF_ACCESS_TOKEN"):
+            if not os.getenv("MINER_HF_ACCESS_TOKEN"):
                 print("Cannot find a Huggingface Access Token - model download halted.")
-            token = os.getenv("HF_ACCESS_TOKEN")
+            token = os.getenv("MINER_HF_ACCESS_TOKEN")
             model_path = hf_hub_download(
                 repo_id=self.config.hf_repo_id,
-                filename=self.config.model,
+                filename=model_filename,
                 use_auth_token=token,
             )
             bt.logging.info(f"Model downloaded from huggingface at {model_path}")

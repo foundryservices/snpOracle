@@ -64,6 +64,7 @@ def add_args(cls, parser):
     parser.add_argument("--netuid", type=int, help="Subnet netuid", default=1)
 
     neuron_type = "validator" if "miner" not in cls.__name__.lower() else "miner"
+    bt.logging.debug(f"Determined neuron_type: {neuron_type}")
 
     # MINER AND VALIDATOR CONFIG
     parser.add_argument(
@@ -109,6 +110,7 @@ def add_args(cls, parser):
 
     # VALIDATOR ONLY CONFIG
     if neuron_type == "validator":
+        bt.logging.debug("Adding validator-specific arguments")
         parser.add_argument(
             "--neuron.num_concurrent_forwards",
             type=int,
@@ -156,6 +158,7 @@ def add_args(cls, parser):
 
     # MINER ONLY CONFIG
     else:
+        bt.logging.debug("Adding miner-specific arguments")
         parser.add_argument(
             "--blacklist.force_validator_permit",
             action="store_true",
@@ -170,19 +173,9 @@ def add_args(cls, parser):
             default=False,
         )
 
-        parser.add_argument(
-            "--model",
-            type=str,
-            help="The file name of the model that the miner loads weights from/",
-            default="mining_models/base_lstm_new.h5",
-        )
+        parser.add_argument("--model", type=str, help="The file name of the model that the miner loads weights from")
 
-        parser.add_argument(
-            "--hf_repo_id",
-            type=str,
-            help="The Huggingface repo id where the weights file exists - set as empty string if you want to use weights in local folders.",
-            default="foundryservices/bittensor-sn28-base-lstm",
-        )
+        parser.add_argument("--hf_repo_id", type=str, help="The Huggingface repo id where the weights file exists")
 
         parser.add_argument(
             "--validator.min_stake",
