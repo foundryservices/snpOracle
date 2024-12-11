@@ -1,7 +1,7 @@
 import os
 from typing import List
 
-from huggingface_hub import HfApi
+from huggingface_hub import HfApi, errors
 
 from predictionnet.protocol import Challenge
 
@@ -26,13 +26,17 @@ class HfInterface:
         collection = self.api.get_collection(collection_slug=self.collection_slug)
         return collection
 
-    def add_model_to_collection(self, repo_id, model) -> None:
-        self.api.add_collection_item(
-            collection_slug=self.collection_slug,
-            item_id=repo_id,
-            item_type="model",
-            exists_ok=True,
-        )
+    def add_model_to_collection(self, repo_id) -> bool:
+        try:
+            self.api.add_collection_item(
+                collection_slug=self.collection_slug,
+                item_id=repo_id,
+                item_type="model",
+                exists_ok=True,
+            )
+            return True
+        except errors.HfHubHTTPError:
+            return False
 
     def update_collection(self, responses: List[Challenge]) -> None:
         id_list = [x.item_id for x in self.collection.items]
