@@ -1,5 +1,5 @@
 bittensor==7.4.0
-huggingface_hub==0.22.2
+huggingface_hub==0.26.5
 joblib
 loguru
 numpy
