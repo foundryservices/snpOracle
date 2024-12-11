@@ -98,7 +98,7 @@ class DatasetManager:
         Decrypt data from a public HuggingFace repository file using the provided key.
 
         Args:
-            data_path: Full repository path (repo_id/filename) to the encrypted data file
+            data_path: Full repository path (org/repo_type/hotkey/data/filename format)
             decryption_key: Raw Fernet key in bytes format
 
         Returns:
@@ -108,13 +108,15 @@ class DatasetManager:
         try:
             bt.logging.info(f"Attempting to decrypt data from path: {data_path}")
 
-            # Split the data_path into repo_id and filename
-            repo_id, filename = data_path.split("/", 1)
-            bt.logging.info(f"Split path - repo_id: {repo_id}, filename: {filename}")
+            # Split path into components based on known structure
+            parts = data_path.split("/")
+            repo_id = f"{parts[0]}/{parts[1]}"  # org/repo_type (e.g., pcarlson-foundry-digital/mining_models)
+            subfolder = f"{parts[2]}/data"  # hotkey/data
+            filename = parts[-1]  # actual filename
 
-            # Download the file from HuggingFace (no token needed for public datasets)
-            bt.logging.info(f"Downloading file from HuggingFace - repo_id: {repo_id}, filename: {filename}")
-            local_path = hf_hub_download(repo_id=repo_id, filename=filename)
+            bt.logging.info(f"Downloading - repo_id: {repo_id}, subfolder: {subfolder}, filename: {filename}")
+
+            local_path = hf_hub_download(repo_id=repo_id, filename=filename, subfolder=subfolder)
             bt.logging.info(f"File downloaded to local path: {local_path}")
 
             # Decrypt the downloaded file
