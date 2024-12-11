@@ -106,21 +106,34 @@ class DatasetManager:
             where result is either the decrypted data or an error message
         """
         try:
+            bt.logging.info(f"Attempting to decrypt data from path: {data_path}")
+
             # Split the data_path into repo_id and filename
             repo_id, filename = data_path.split("/", 1)
+            bt.logging.info(f"Split path - repo_id: {repo_id}, filename: {filename}")
 
             # Download the file from HuggingFace (no token needed for public datasets)
+            bt.logging.info(f"Downloading file from HuggingFace - repo_id: {repo_id}, filename: {filename}")
             local_path = hf_hub_download(repo_id=repo_id, filename=filename)
+            bt.logging.info(f"File downloaded to local path: {local_path}")
 
             # Decrypt the downloaded file
+            bt.logging.info("Initializing Fernet with provided key")
             fernet = Fernet(decryption_key)
+
             with open(local_path, "rb") as file:
+                bt.logging.info("Reading encrypted data from file")
                 encrypted_data = file.read()
 
+            bt.logging.info("Attempting to decrypt data")
             decrypted_data = fernet.decrypt(encrypted_data)
+            bt.logging.info("Successfully decrypted data")
+
             return True, json.loads(decrypted_data.decode())
 
         except Exception as e:
+            bt.logging.error(f"Error in decrypt_data: {str(e)}")
+            bt.logging.error(f"Error type: {type(e).__name__}")
             return False, {"error": str(e)}
 
     def store_data(
