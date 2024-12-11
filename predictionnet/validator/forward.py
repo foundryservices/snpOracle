@@ -27,12 +27,13 @@ async def get_available_miner_uids(self):
 
 async def process_miner_response(self, uid, response, timestamp):
     """Process and decrypt data from a single miner response."""
-    bt.logging.info(f"Processing response from UID {uid}")
-
     processed_data = None
-    if response.data and response.decryption_key:
+    if response.data and response.decryption_key and response.repo_id:
+        # Construct full data path using repo_id
+        full_data_path = f"{response.repo_id}/{response.data}"
+
         success, data = self.dataset_manager.decrypt_data(
-            data_path=response.data, decryption_key=response.decryption_key
+            data_path=full_data_path, decryption_key=response.decryption_key
         )
 
         if success:
@@ -40,8 +41,6 @@ async def process_miner_response(self, uid, response, timestamp):
             bt.logging.success(f"Successfully decrypted data from UID {uid}")
         else:
             bt.logging.error(f"Failed to decrypt data from UID {uid}: {data['error']}")
-    else:
-        bt.logging.warning(f"Missing data or decryption key from UID {uid}")
 
     predictions_data = {
         "prediction": response.prediction if response.prediction else None,
