@@ -24,7 +24,7 @@ from typing import Dict, Optional, Tuple
 
 import bittensor as bt
 from cryptography.fernet import Fernet
-from huggingface_hub import HfApi, create_repo, repository
+from huggingface_hub import HfApi, create_repo, hf_hub_download, repository
 
 
 class DatasetManager:
@@ -95,10 +95,10 @@ class DatasetManager:
 
     def decrypt_data(self, data_path: str, decryption_key: bytes) -> Tuple[bool, Dict]:
         """
-        Decrypt data from a file using the provided key.
+        Decrypt data from a public HuggingFace repository file using the provided key.
 
         Args:
-            data_path: Path to the encrypted data file
+            data_path: Full repository path (repo_id/filename) to the encrypted data file
             decryption_key: Raw Fernet key in bytes format
 
         Returns:
@@ -106,9 +106,15 @@ class DatasetManager:
             where result is either the decrypted data or an error message
         """
         try:
-            fernet = Fernet(decryption_key)
+            # Split the data_path into repo_id and filename
+            repo_id, filename = data_path.split("/", 1)
 
-            with open(data_path, "rb") as file:
+            # Download the file from HuggingFace (no token needed for public datasets)
+            local_path = hf_hub_download(repo_id=repo_id, filename=filename)
+
+            # Decrypt the downloaded file
+            fernet = Fernet(decryption_key)
+            with open(local_path, "rb") as file:
                 encrypted_data = file.read()
 
             decrypted_data = fernet.decrypt(encrypted_data)
