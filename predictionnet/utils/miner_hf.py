@@ -1,26 +1,16 @@
 import csv
 import os
 from datetime import datetime
+from io import StringIO
 
 import bittensor as bt
+from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 from huggingface_hub import HfApi
 
 
 class MinerHfInterface:
-    """Interface for managing model uploads and metadata on HuggingFace Hub.
-
-    Handles authentication, model uploads, and metadata retrieval for miner models
-    using the HuggingFace Hub API.
-
-    Args:
-        config (bt.Config): Configuration object containing model and repository information.
-                          Must include 'model' and 'hf_repo_id' attributes.
-
-    Attributes:
-        api (HfApi): Authenticated HuggingFace API client
-        config (bt.Config): Stored configuration object
-    """
+    """Interface for managing model uploads and metadata on HuggingFace Hub."""
 
     def __init__(self, config: "bt.Config"):
         """Initialize the HuggingFace interface with configuration and authentication."""
@@ -31,22 +21,7 @@ class MinerHfInterface:
         bt.logging.debug(f"Initializing with config: model={config.model}, repo_id={config.hf_repo_id}")
 
     def upload_model(self, repo_id=None, model_path=None, hotkey=None):
-        """Upload a model file to HuggingFace Hub.
-
-        Args:
-            repo_id (str, optional): Target repository ID. Defaults to config value.
-            model_path (str, optional): Path to model file. Defaults to config value.
-            hotkey (str, optional): Hotkey for model identification.
-
-        Returns:
-            tuple: (success, result)
-                - success (bool): Whether upload was successful
-                - result (dict): Contains 'hotkey' and 'timestamp' if successful,
-                               'error' if failed
-
-        Raises:
-            ValueError: If model path extension cannot be determined or required parameters are missing
-        """
+        """Upload a model file to HuggingFace Hub."""
         bt.logging.debug(f"Trying to upload model: repo_id={repo_id}, model_path={model_path}, hotkey={hotkey}")
 
         try:
@@ -59,7 +34,6 @@ class MinerHfInterface:
             model_full_path = f"{hotkey_path}/{model_name}"
 
             bt.logging.debug(f"Generated model path: {model_full_path}")
-
             bt.logging.debug(f"Checking if repo exists: {repo_id}")
 
             if not self.api.repo_exists(repo_id=repo_id, repo_type="model"):
@@ -70,7 +44,10 @@ class MinerHfInterface:
 
             bt.logging.debug(f"Uploading file as: {model_full_path}")
             self.api.upload_file(
-                path_or_fileobj=model_path, path_in_repo=model_full_path, repo_id=repo_id, repo_type="model"
+                path_or_fileobj=model_path,
+                path_in_repo=model_full_path,
+                repo_id=repo_id,
+                repo_type="model",
             )
 
             commits = self.api.list_repo_commits(repo_id=repo_id, repo_type="model")
@@ -86,13 +63,14 @@ class MinerHfInterface:
             bt.logging.debug(f"Error in upload_model: {str(e)}")
             return False, {"error": str(e)}
 
-    def upload_data(self, repo_id=None, data=None, hotkey=None):
-        """Upload training/validation data to HuggingFace Hub.
+    def upload_data(self, repo_id=None, data=None, hotkey=None, encryption_key=None):
+        """Upload encrypted training/validation data to HuggingFace Hub.
 
         Args:
             repo_id (str, optional): Target repository ID. Defaults to config value.
             data (list): List of dictionaries containing the data rows
             hotkey (str, optional): Hotkey for data identification
+            encryption_key (str): Base64-encoded key for encrypting the data
 
         Returns:
             tuple: (success, result)
@@ -109,39 +87,59 @@ class MinerHfInterface:
         if not data or not isinstance(data, list) or not all(isinstance(row, dict) for row in data):
             raise ValueError("Data must be provided as a list of dictionaries")
 
+        if not encryption_key:
+            raise ValueError("Encryption key must be provided")
+
         try:
+            fernet = Fernet(encryption_key.encode() if isinstance(encryption_key, str) else encryption_key)
+
             # Create unique filename using timestamp
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            data_filename = f"data_{timestamp}.csv"
+            data_filename = f"data_{timestamp}.enc"
             hotkey_path = f"{hotkey}/data"
             data_full_path = f"{hotkey_path}/{data_filename}"
 
-            bt.logging.debug(f"Preparing to upload data: {data_full_path}")
+            bt.logging.debug(f"Preparing to upload encrypted data: {data_full_path}")
 
-            # Create temporary CSV file
-            temp_data_path = f"/tmp/{data_filename}"
+            # Convert data to CSV format in memory
+            csv_buffer = StringIO()
             if data:
                 fieldnames = data[0].keys()
-                with open(temp_data_path, "w", newline="") as f:
-                    writer = csv.DictWriter(f, fieldnames=fieldnames)
-                    writer.writeheader()
-                    writer.writerows(data)
+                writer = csv.DictWriter(csv_buffer, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(data)
+
+            # Encrypt the CSV data
+            csv_data = csv_buffer.getvalue().encode()
+            encrypted_data = fernet.encrypt(csv_data)
+
+            # Create temporary encrypted file
+            temp_data_path = f"/tmp/{data_filename}"
+            with open(temp_data_path, "wb") as f:
+                f.write(encrypted_data)
 
             # Ensure repository exists
             if not self.api.repo_exists(repo_id=repo_id, repo_type="model"):
                 self.api.create_repo(repo_id=repo_id, private=False)
                 bt.logging.debug("Created new repo")
 
-            # Upload file
-            bt.logging.debug(f"Uploading data file: {data_full_path}")
+            # Upload encrypted file
+            bt.logging.debug(f"Uploading encrypted data file: {data_full_path}")
             self.api.upload_file(
-                path_or_fileobj=temp_data_path, path_in_repo=data_full_path, repo_id=repo_id, repo_type="model"
+                path_or_fileobj=temp_data_path,
+                path_in_repo=data_full_path,
+                repo_id=repo_id,
+                repo_type="model",
             )
 
             # Clean up temporary file
             os.remove(temp_data_path)
 
-            return True, {"hotkey": hotkey, "timestamp": timestamp, "data_path": data_full_path}
+            return True, {
+                "hotkey": hotkey,
+                "timestamp": timestamp,
+                "data_path": data_full_path,
+            }
 
         except Exception as e:
             bt.logging.debug(f"Error in upload_data: {str(e)}")

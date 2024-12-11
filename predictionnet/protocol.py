@@ -21,6 +21,7 @@ from typing import List, Optional
 
 import bittensor as bt
 import pydantic
+from pydantic import SecretStr
 
 # TODO(developer): Rewrite with your protocol definition.
 
@@ -44,13 +45,16 @@ import pydantic
 
 class Challenge(bt.Synapse):
     """
-    A simple dummy protocol representation which uses bt.Synapse as its base.
-    This protocol helps in handling dummy request and response communication between
-    the miner and the validator.
+    Protocol for handling encrypted prediction challenges between miners and validators.
+    Includes secure handling of decryption keys and manages model/data references.
 
     Attributes:
-    - dummy_input: An integer value representing the input request sent by the validator.
-    - dummy_output: An optional integer value which, when filled, represents the response from the miner.
+        repo_id: Repository identifier where the model is stored
+        model: Identifier for the specific model to use
+        decryption_key: Securely stored key for decrypting data/models
+        data: Identifier for the data to be used
+        timestamp: Time at which the validation is taking place
+        prediction: List of predicted values for next 6 5m candles
     """
 
     repo_id: Optional[str] = pydantic.Field(
@@ -65,34 +69,47 @@ class Challenge(bt.Synapse):
         description="Which model to use",
     )
 
-    # Required request input, filled by sending dendrite caller.
+    decryption_key: Optional[SecretStr] = pydantic.Field(
+        default=None,
+        title="Decryption Key",
+        description="Secure key for decrypting sensitive data/models",
+    )
+
+    data: Optional[str] = pydantic.Field(
+        default=None,
+        title="Data ID",
+        description="Which data to use",
+    )
+
     timestamp: str = pydantic.Field(
         ...,
         title="Timestamp",
         description="The time stamp at which the validation is taking place for",
         allow_mutation=False,
     )
-    # Optional request output, filled by recieving axon.
+
     prediction: Optional[List[float]] = pydantic.Field(
         default=None,
         title="Predictions",
         description="Next 6 5m candles' predictions for closing price of S&P 500",
     )
 
-    def deserialize(self) -> int:
+    def deserialize(self) -> List[float]:
         """
-        Deserialize the dummy output. This method retrieves the response from
-        the miner in the form of dummy_output, deserializes it and returns it
-        as the output of the dendrite.query() call.
+        Deserialize the prediction output from the miner.
 
         Returns:
-        - int: The deserialized response, which in this case is the value of dummy_output.
-
-        Example:
-        Assuming a Dummy instance has a dummy_output value of 5:
-        >>> dummy_instance = Dummy(dummy_input=4)
-        >>> dummy_instance.dummy_output = 5
-        >>> dummy_instance.deserialize()
-        5
+            List[float]: The deserialized predictions for the next 6 5m candles.
         """
         return self.prediction
+
+    def get_decryption_key(self) -> Optional[str]:
+        """
+        Safely retrieve the decryption key when needed.
+
+        Returns:
+            Optional[str]: The decryption key value if set, None otherwise.
+        """
+        if self.decryption_key is not None:
+            return self.decryption_key.get_secret_value()
+        return None

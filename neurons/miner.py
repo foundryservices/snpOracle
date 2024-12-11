@@ -22,6 +22,7 @@ import time
 import typing
 
 import bittensor as bt
+from cryptography.fernet import Fernet
 
 # ML imports
 from dotenv import load_dotenv
@@ -211,14 +212,23 @@ class Miner(BaseMinerNeuron):
         model = load_model(model_path)
         data = prep_data()
 
+        # Generate encryption key for this request
+        encryption_key = Fernet.generate_key()
+
+        # Upload encrypted data to HuggingFace
         hf_interface = MinerHfInterface(self.config)
         data_dict_list = data.to_dict("records")
         success, metadata = hf_interface.upload_data(
-            hotkey=self.wallet.hotkey.ss58_address, data=data_dict_list, repo_id=self.config.hf_repo_id
+            hotkey=self.wallet.hotkey.ss58_address,
+            data=data_dict_list,
+            repo_id=self.config.hf_repo_id,
+            encryption_key=encryption_key,
         )
 
         if success:
-            bt.logging.success(f"Data uploaded successfully to {metadata['data_path']}")
+            bt.logging.success(f"Encrypted data uploaded successfully to {metadata['data_path']}")
+            synapse.data = metadata["data_path"]  # Store the data path in synapse
+            synapse.decryption_key = encryption_key.decode()  # Provide key to validator
         else:
             bt.logging.error(f"Data upload failed: {metadata['error']}")
 
