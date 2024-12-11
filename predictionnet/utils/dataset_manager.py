@@ -93,26 +93,20 @@ class DatasetManager:
 
         return repo_id
 
-    def decrypt_data(self, data_path: str, decryption_key: str) -> Tuple[bool, Dict]:
+    def decrypt_data(self, data_path: str, decryption_key: bytes) -> Tuple[bool, Dict]:
         """
         Decrypt data from a file using the provided key.
 
         Args:
             data_path: Path to the encrypted data file
-            decryption_key: Key to decrypt the data (can be str or SecretStr)
+            decryption_key: Raw Fernet key in bytes format
 
         Returns:
             Tuple of (success, result)
             where result is either the decrypted data or an error message
         """
         try:
-            # Handle both SecretStr and regular string types
-            if hasattr(decryption_key, "get_secret_value"):
-                key = decryption_key.get_secret_value().encode()
-            else:
-                key = decryption_key.encode()
-
-            fernet = Fernet(key)
+            fernet = Fernet(decryption_key)
 
             with open(data_path, "rb") as file:
                 encrypted_data = file.read()

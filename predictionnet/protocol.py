@@ -21,7 +21,6 @@ from typing import List, Optional
 
 import bittensor as bt
 import pydantic
-from pydantic import SecretStr
 
 # TODO(developer): Rewrite with your protocol definition.
 
@@ -69,7 +68,7 @@ class Challenge(bt.Synapse):
         description="Which model to use",
     )
 
-    decryption_key: Optional[SecretStr] = pydantic.Field(
+    decryption_key: Optional[bytes] = pydantic.Field(
         default=None,
         title="Decryption Key",
         description="Secure key for decrypting sensitive data/models",
