@@ -99,14 +99,20 @@ class DatasetManager:
 
         Args:
             data_path: Path to the encrypted data file
-            decryption_key: Key to decrypt the data
+            decryption_key: Key to decrypt the data (can be str or SecretStr)
 
         Returns:
             Tuple of (success, result)
             where result is either the decrypted data or an error message
         """
         try:
-            fernet = Fernet(decryption_key.encode())
+            # Handle both SecretStr and regular string types
+            if hasattr(decryption_key, "get_secret_value"):
+                key = decryption_key.get_secret_value().encode()
+            else:
+                key = decryption_key.encode()
+
+            fernet = Fernet(key)
 
             with open(data_path, "rb") as file:
                 encrypted_data = file.read()
