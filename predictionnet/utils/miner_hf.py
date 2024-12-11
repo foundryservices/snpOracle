@@ -1,4 +1,6 @@
+import csv
 import os
+from datetime import datetime
 
 import bittensor as bt
 from dotenv import load_dotenv
@@ -52,8 +54,11 @@ class MinerHfInterface:
             if not extension:
                 raise ValueError(f"Could not determine file extension from model path: {model_path}")
 
-            model_name = f"{hotkey}{extension}"
-            bt.logging.debug(f"Generated model name: {model_name} from path: {model_path}")
+            model_name = f"model{extension}"
+            hotkey_path = f"{hotkey}/models"
+            model_full_path = f"{hotkey_path}/{model_name}"
+
+            bt.logging.debug(f"Generated model path: {model_full_path}")
 
             bt.logging.debug(f"Checking if repo exists: {repo_id}")
 
@@ -63,16 +68,81 @@ class MinerHfInterface:
             else:
                 bt.logging.debug("Using existing repo")
 
-            bt.logging.debug(f"Uploading file as: {model_name}")
+            bt.logging.debug(f"Uploading file as: {model_full_path}")
             self.api.upload_file(
-                path_or_fileobj=model_path, path_in_repo=model_name, repo_id=repo_id, repo_type="model"
+                path_or_fileobj=model_path, path_in_repo=model_full_path, repo_id=repo_id, repo_type="model"
             )
 
             commits = self.api.list_repo_commits(repo_id=repo_id, repo_type="model")
             if commits:
-                return True, {"hotkey": hotkey, "timestamp": commits[0].created_at.timestamp()}
-            return True, {}
+                return True, {
+                    "hotkey": hotkey,
+                    "timestamp": commits[0].created_at.timestamp(),
+                    "model_path": model_full_path,
+                }
+            return True, {"model_path": model_full_path}
 
         except Exception as e:
             bt.logging.debug(f"Error in upload_model: {str(e)}")
+            return False, {"error": str(e)}
+
+    def upload_data(self, repo_id=None, data=None, hotkey=None):
+        """Upload training/validation data to HuggingFace Hub.
+
+        Args:
+            repo_id (str, optional): Target repository ID. Defaults to config value.
+            data (list): List of dictionaries containing the data rows
+            hotkey (str, optional): Hotkey for data identification
+
+        Returns:
+            tuple: (success, result)
+                - success (bool): Whether upload was successful
+                - result (dict): Contains 'hotkey', 'timestamp', and 'data_path' if successful,
+                               'error' if failed
+
+        Raises:
+            ValueError: If required parameters are missing or data format is invalid
+        """
+        if not repo_id:
+            repo_id = self.config.hf_repo_id
+
+        if not data or not isinstance(data, list) or not all(isinstance(row, dict) for row in data):
+            raise ValueError("Data must be provided as a list of dictionaries")
+
+        try:
+            # Create unique filename using timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            data_filename = f"data_{timestamp}.csv"
+            hotkey_path = f"{hotkey}/data"
+            data_full_path = f"{hotkey_path}/{data_filename}"
+
+            bt.logging.debug(f"Preparing to upload data: {data_full_path}")
+
+            # Create temporary CSV file
+            temp_data_path = f"/tmp/{data_filename}"
+            if data:
+                fieldnames = data[0].keys()
+                with open(temp_data_path, "w", newline="") as f:
+                    writer = csv.DictWriter(f, fieldnames=fieldnames)
+                    writer.writeheader()
+                    writer.writerows(data)
+
+            # Ensure repository exists
+            if not self.api.repo_exists(repo_id=repo_id, repo_type="model"):
+                self.api.create_repo(repo_id=repo_id, private=False)
+                bt.logging.debug("Created new repo")
+
+            # Upload file
+            bt.logging.debug(f"Uploading data file: {data_full_path}")
+            self.api.upload_file(
+                path_or_fileobj=temp_data_path, path_in_repo=data_full_path, repo_id=repo_id, repo_type="model"
+            )
+
+            # Clean up temporary file
+            os.remove(temp_data_path)
+
+            return True, {"hotkey": hotkey, "timestamp": timestamp, "data_path": data_full_path}
+
+        except Exception as e:
+            bt.logging.debug(f"Error in upload_data: {str(e)}")
             return False, {"error": str(e)}

@@ -210,6 +210,18 @@ class Miner(BaseMinerNeuron):
 
         model = load_model(model_path)
         data = prep_data()
+
+        hf_interface = MinerHfInterface(self.config)
+        data_dict_list = data.to_dict("records")
+        success, metadata = hf_interface.upload_data(
+            hotkey=self.wallet.hotkey.ss58_address, data=data_dict_list, repo_id=self.config.hf_repo_id
+        )
+
+        if success:
+            bt.logging.success(f"Data uploaded successfully to {metadata['data_path']}")
+        else:
+            bt.logging.error(f"Data upload failed: {metadata['error']}")
+
         scaler, _, _ = scale_data(data)
         # mse = create_and_save_base_model_lstm(scaler, X, y)
 
