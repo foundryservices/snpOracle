@@ -228,6 +228,7 @@ class Miner(BaseMinerNeuron):
             bt.logging.success(f"Encrypted data uploaded successfully to {metadata['data_path']}")
             synapse.data = metadata["data_path"]  # Store the data path in synapse
             synapse.decryption_key = encryption_key  # Provide key to validator
+            bt.logging.info(f"Decryption_key: {synapse.decryption_key}")
         else:
             bt.logging.error(f"Data upload failed: {metadata['error']}")
 
