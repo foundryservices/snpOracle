@@ -20,9 +20,11 @@ import json
 import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from io import StringIO
 from typing import Dict, Optional, Tuple
 
 import bittensor as bt
+import pandas as pd
 from cryptography.fernet import Fernet
 from huggingface_hub import HfApi, create_repo, hf_hub_download, repository
 
@@ -93,61 +95,50 @@ class DatasetManager:
 
         return repo_id
 
-    def decrypt_data(self, data_path: str, decryption_key: bytes) -> Tuple[bool, Dict]:
+    def verify_encryption_key(self, key: bytes) -> bool:
         """
-        Decrypt data from a public HuggingFace repository file using the provided key.
+        Verify that an encryption key is valid for Fernet.
 
         Args:
-            data_path: Full repository path (org/repo_type/hotkey/data/filename format)
-            decryption_key: Raw Fernet key in bytes format
+            key: The key to verify
 
         Returns:
-            Tuple of (success, result)
-            where result is either the decrypted data or an error message
+            bool: True if key is valid
         """
         try:
-            bt.logging.info(f"Attempting to decrypt data from path: {data_path}")
+            # Check if key is valid base64
+            import base64
 
-            # Split path into components based on known structure
-            parts = data_path.split("/")
-            repo_id = f"{parts[0]}/{parts[1]}"  # org/repo_type (e.g., pcarlson-foundry-digital/mining_models)
-            subfolder = f"{parts[2]}/data"  # hotkey/data
-            filename = parts[-1]  # actual filename
-
-            bt.logging.info(f"Downloading - repo_id: {repo_id}, subfolder: {subfolder}, filename: {filename}")
-
-            local_path = hf_hub_download(repo_id=repo_id, filename=filename, subfolder=subfolder)
-            bt.logging.info(f"File downloaded to local path: {local_path}")
-
-            # Decrypt the downloaded file
-            bt.logging.info("Initializing Fernet with provided key")
-            fernet = Fernet(decryption_key)
-
-            with open(local_path, "rb") as file:
-                bt.logging.info("Reading encrypted data from file")
-                encrypted_data = file.read()
-
-            bt.logging.info("Attempting to decrypt data")
-            decrypted_data = fernet.decrypt(encrypted_data)
-            bt.logging.info("Successfully decrypted data")
-
-            return True, json.loads(decrypted_data.decode())
-
+            decoded = base64.b64decode(key)
+            # Check if key length is correct (32 bytes)
+            if len(decoded) != 32:
+                bt.logging.error(f"Invalid key length: {len(decoded)} bytes (expected 32)")
+                return False
+            # Try to initialize Fernet
+            Fernet(key)
+            return True
         except Exception as e:
-            bt.logging.error(f"Error in decrypt_data: {str(e)}")
-            bt.logging.error(f"Error type: {type(e).__name__}")
-            return False, {"error": str(e)}
+            bt.logging.error(f"Invalid encryption key: {str(e)}")
+            return False
 
     def store_data(
-        self, timestamp: str, miner_data: Dict, predictions: Dict, metadata: Optional[Dict] = None
+        self,
+        timestamp: str,
+        miner_data: pd.DataFrame,
+        predictions: Dict,
+        encryption_key: bytes,
+        metadata: Optional[Dict] = None,
     ) -> Tuple[bool, Dict]:
         """
-        Store data in the appropriate dataset repository.
+        Store encrypted market data in the appropriate dataset repository.
 
         Args:
             timestamp: Current timestamp
-            miner_data: Dictionary containing decrypted miner data
+            miner_data: DataFrame containing market data with OHLCV and technical indicators
+                    Expected columns: ['Open', 'High', 'Low', 'Close', 'Volume',
+                    'SMA_50', 'SMA_200', 'RSI', 'CCI', 'Momentum', 'NextClose1'...]
             predictions: Dictionary containing prediction results
+            encryption_key: Raw Fernet key in bytes format
             metadata: Optional metadata about the collection
 
         Returns:
@@ -155,41 +146,141 @@ class DatasetManager:
             where result contains repository info or error message
         """
         try:
+            if not isinstance(miner_data, pd.DataFrame) or miner_data.empty:
+                raise ValueError("miner_data must be a non-empty pandas DataFrame")
+
+            # Validate required columns
+            required_columns = {"Open", "High", "Low", "Close", "Volume", "SMA_50", "SMA_200", "RSI", "CCI", "Momentum"}
+            missing_columns = required_columns - set(miner_data.columns)
+            if missing_columns:
+                raise ValueError(f"DataFrame missing required columns: {missing_columns}")
+
+            # Validate NextClose columns (at least one should be present)
+            next_close_columns = [col for col in miner_data.columns if col.startswith("NextClose")]
+            if not next_close_columns:
+                raise ValueError("DataFrame missing NextClose prediction columns")
+
             # Get or create repository
             repo_name = self._get_current_repo_name()
             repo_id = f"{self.organization}/{repo_name}"
 
+            # Convert DataFrame to CSV and check size
+            csv_buffer = StringIO()
+            miner_data.to_csv(csv_buffer, index=True)  # Include datetime index
+            csv_data = csv_buffer.getvalue().encode()
+
+            # Add metadata as comments at the end of CSV
+            metadata_buffer = StringIO()
+            metadata_buffer.write("\n# Metadata:\n")
+            metadata_buffer.write(f"# timestamp: {timestamp}\n")
+            metadata_buffer.write(f"# columns: {','.join(miner_data.columns)}\n")  # Store column order
+            metadata_buffer.write(f"# shape: {miner_data.shape[0]},{miner_data.shape[1]}\n")
+            if metadata:
+                for key, value in metadata.items():
+                    metadata_buffer.write(f"# {key}: {value}\n")
+            if predictions:
+                metadata_buffer.write(f"# predictions: {json.dumps(predictions)}\n")
+
+            # Combine CSV data and metadata
+            full_data = csv_data + metadata_buffer.getvalue().encode()
+
+            # Initialize Fernet and encrypt
+            fernet = Fernet(encryption_key)
+            encrypted_data = fernet.encrypt(full_data)
+
             # Check repository size
             current_size = self._get_repo_size(repo_id)
-
-            # Create new repo if would exceed size limit
-            data_size = len(json.dumps(miner_data).encode("utf-8"))
-            if current_size + data_size > self.MAX_REPO_SIZE:
+            if current_size + len(encrypted_data) > self.MAX_REPO_SIZE:
                 repo_name = f"dataset-{datetime.now().strftime('%Y-%m-%d')}"
                 repo_id = self._create_new_repo(repo_name)
 
-            # Prepare data entry
-            dataset_entry = {"timestamp": timestamp, "market_data": miner_data, "predictions": predictions}
-            if metadata:
-                dataset_entry["metadata"] = metadata
-
             # Upload to repository
             with repository.Repository(local_dir=".", clone_from=repo_id, token=self.token) as repo:
-                filename = f"market_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+                filename = f"market_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.enc"
                 file_path = os.path.join(repo.local_dir, filename)
 
-                with open(file_path, "w") as f:
-                    json.dump(dataset_entry, f)
+                with open(file_path, "wb") as f:
+                    f.write(encrypted_data)
 
                 commit_url = repo.push_to_hub()
 
-            return True, {"repo_id": repo_id, "filename": filename, "commit_url": commit_url}
+            return True, {
+                "repo_id": repo_id,
+                "filename": filename,
+                "commit_url": commit_url,
+                "rows": miner_data.shape[0],
+                "columns": miner_data.shape[1],
+            }
 
         except Exception as e:
+            bt.logging.error(f"Error in store_data: {str(e)}")
+            return False, {"error": str(e)}
+
+    def decrypt_data(self, data_path: str, decryption_key: bytes) -> Tuple[bool, Dict]:
+        """
+        Decrypt data from a HuggingFace repository file using the provided key.
+
+        Args:
+            data_path: Full repository path (org/repo_type/hotkey/data/filename format)
+            decryption_key: Raw Fernet key in bytes format
+
+        Returns:
+            Tuple of (success, result) where result contains:
+            - data: pandas DataFrame of the CSV data
+            - metadata: Dictionary of metadata from CSV comments
+            - predictions: Dictionary of predictions if present
+        """
+        try:
+            bt.logging.info(f"Attempting to decrypt data from path: {data_path}")
+
+            # Split path into components
+            parts = data_path.split("/")
+            repo_id = f"{parts[0]}/{parts[1]}"
+            subfolder = f"{parts[2]}/data"
+            filename = parts[-1]
+
+            local_path = hf_hub_download(repo_id=repo_id, filename=filename, subfolder=subfolder)
+            fernet = Fernet(decryption_key)
+
+            with open(local_path, "rb") as file:
+                encrypted_data = file.read()
+
+            decrypted_data = fernet.decrypt(encrypted_data).decode()
+
+            # Split data into CSV and metadata sections
+            parts = decrypted_data.split("\n# Metadata:")
+
+            # Parse CSV data into DataFrame
+            df = pd.read_csv(StringIO(parts[0]))
+
+            # Parse metadata
+            metadata = {}
+            predictions = None
+            if len(parts) > 1:
+                for line in parts[1].split("\n"):
+                    if line.startswith("# "):
+                        try:
+                            key, value = line[2:].split(": ", 1)
+                            if key == "predictions":
+                                predictions = json.loads(value)
+                            else:
+                                metadata[key] = value
+                        except ValueError:
+                            continue
+
+            return True, {"data": df, "metadata": metadata, "predictions": predictions}
+
+        except Exception as e:
+            bt.logging.error(f"Error in decrypt_data: {str(e)}")
             return False, {"error": str(e)}
 
     async def store_data_async(
-        self, timestamp: str, miner_data: Dict, predictions: Dict, metadata: Optional[Dict] = None
+        self,
+        timestamp: str,
+        miner_data: pd.DataFrame,
+        predictions: Dict,
+        encryption_key: bytes,
+        metadata: Optional[Dict] = None,
     ) -> None:
         """
         Asynchronously store data in the appropriate dataset repository.
@@ -199,9 +290,8 @@ class DatasetManager:
 
         async def _store():
             try:
-                # Run the blocking HuggingFace operations in a thread pool
                 result = await loop.run_in_executor(
-                    self.executor, lambda: self.store_data(timestamp, miner_data, predictions, metadata)
+                    self.executor, lambda: self.store_data(timestamp, miner_data, predictions, encryption_key, metadata)
                 )
 
                 success, upload_result = result
@@ -213,5 +303,4 @@ class DatasetManager:
             except Exception as e:
                 bt.logging.error(f"Error in async data storage: {str(e)}")
 
-        # Fire and forget - don't await the result
         asyncio.create_task(_store())

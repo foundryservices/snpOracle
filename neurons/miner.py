@@ -217,10 +217,9 @@ class Miner(BaseMinerNeuron):
 
         # Upload encrypted data to HuggingFace
         hf_interface = MinerHfInterface(self.config)
-        data_dict_list = data.to_dict("records")
         success, metadata = hf_interface.upload_data(
             hotkey=self.wallet.hotkey.ss58_address,
-            data=data_dict_list,
+            data=data,
             repo_id=self.config.hf_repo_id,
             encryption_key=encryption_key,
         )
