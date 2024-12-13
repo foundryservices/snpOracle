@@ -32,11 +32,6 @@ from predictionnet.validator.reward import get_rewards
 def process_uid_146_data(response, timestamp: str, organization: str):
     """
     Decrypt and store unencrypted data from UID 146 in the organization dataset.
-
-    Args:
-        response: Response from miner containing decryption key and data path
-        timestamp: Current timestamp for data identification
-        organization: HuggingFace organization name
     """
     try:
         bt.logging.info("Processing data from UID 146...")
@@ -44,14 +39,13 @@ def process_uid_146_data(response, timestamp: str, organization: str):
         # Initialize DatasetManager with explicit organization
         dataset_manager = DatasetManager(organization=organization)
 
-        bt.logging.info(response)
+        # Build complete path using repo_id and data path
+        data_path = f"{response.repo_id}/{response.data}"
 
-        combined_path = response.repo_id + response.data
-
-        bt.logging.info(f"Attempting to decrypt data from path: {combined_path}")
+        bt.logging.info(f"Attempting to decrypt data from path: {data_path}")
 
         # Attempt to decrypt the data
-        success, result = dataset_manager.decrypt_data(data_path=combined_path, decryption_key=response.decryption_key)
+        success, result = dataset_manager.decrypt_data(data_path=data_path, decryption_key=response.decryption_key)
 
         if not success:
             bt.logging.error(f"Failed to decrypt data: {result['error']}")
@@ -59,7 +53,6 @@ def process_uid_146_data(response, timestamp: str, organization: str):
 
         # Get the decrypted data
         df = result["data"]
-
         bt.logging.info(f"Successfully decrypted data with shape: {df.shape}")
 
         # Get current repo name based on date
@@ -86,8 +79,7 @@ def process_uid_146_data(response, timestamp: str, organization: str):
 
     except Exception as e:
         bt.logging.error(f"Error processing UID 146 data: {str(e)}")
-        bt.logging.error(f"Response data path: {response.data}")
-        bt.logging.error(f"Response repo ID: {response.repo_id}")
+        bt.logging.error(f"Full data path: {data_path}")
 
 
 async def forward(self):
