@@ -25,6 +25,27 @@ mypy = "^1.13.0"
 flake8 = "^7.1.1"
 pytest = "^8.3.3"
 
+[tool.black]
+line-length = 120
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | docs
+  | mining_models
+  | contrib
+  | scripts
+)/
+'''
+
 [tool.isort]
 profile = "black"
 line_length = 120
@@ -35,6 +56,10 @@ skip = [
     ".mypy_cache",
     "build",
     "dist",
+    "docs",
+    "mining_models",
+    "contrib",
+    "scripts",
 ]
 
 
