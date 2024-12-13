@@ -64,23 +64,7 @@ class MinerHfInterface:
             return False, {"error": str(e)}
 
     def upload_data(self, repo_id=None, data: pd.DataFrame = None, hotkey=None, encryption_key=None):
-        """Upload encrypted training/validation data to HuggingFace Hub.
-
-        Args:
-            repo_id (str, optional): Target repository ID. Defaults to config value.
-            data (pd.DataFrame): DataFrame containing the data
-            hotkey (str, optional): Hotkey for data identification
-            encryption_key (str): Base64-encoded key for encrypting the data
-
-        Returns:
-            tuple: (success, result)
-                - success (bool): Whether upload was successful
-                - result (dict): Contains 'hotkey', 'timestamp', and 'data_path' if successful,
-                            'error' if failed
-
-        Raises:
-            ValueError: If required parameters are missing or data format is invalid
-        """
+        """Upload encrypted training/validation data to HuggingFace Hub."""
         if not repo_id:
             repo_id = self.config.hf_repo_id
 
@@ -91,6 +75,8 @@ class MinerHfInterface:
             raise ValueError("Encryption key must be provided")
 
         try:
+            import tempfile
+
             fernet = Fernet(encryption_key.encode() if isinstance(encryption_key, str) else encryption_key)
 
             # Create unique filename using timestamp
@@ -109,27 +95,31 @@ class MinerHfInterface:
             csv_data = csv_buffer.getvalue().encode()
             encrypted_data = fernet.encrypt(csv_data)
 
-            # Create temporary encrypted file
-            temp_data_path = f"/tmp/{data_filename}"
-            with open(temp_data_path, "wb") as f:
-                f.write(encrypted_data)
+            # Create temporary directory and file
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp_data_path = os.path.join(temp_dir, data_filename)
+                try:
+                    # Write encrypted data to temporary file
+                    with open(temp_data_path, "wb") as f:
+                        f.write(encrypted_data)
 
-            # Ensure repository exists
-            if not self.api.repo_exists(repo_id=repo_id, repo_type="model"):
-                self.api.create_repo(repo_id=repo_id, private=False)
-                bt.logging.debug("Created new repo")
+                    # Ensure repository exists
+                    if not self.api.repo_exists(repo_id=repo_id, repo_type="model"):
+                        self.api.create_repo(repo_id=repo_id, private=False)
+                        bt.logging.debug("Created new repo")
 
-            # Upload encrypted file
-            bt.logging.debug(f"Uploading encrypted data file: {data_full_path}")
-            self.api.upload_file(
-                path_or_fileobj=temp_data_path,
-                path_in_repo=data_full_path,
-                repo_id=repo_id,
-                repo_type="model",
-            )
+                    # Upload encrypted file
+                    bt.logging.debug(f"Uploading encrypted data file: {data_full_path}")
+                    self.api.upload_file(
+                        path_or_fileobj=temp_data_path,
+                        path_in_repo=data_full_path,
+                        repo_id=repo_id,
+                        repo_type="model",
+                    )
 
-            # Clean up temporary file
-            os.remove(temp_data_path)
+                except Exception as e:
+                    bt.logging.error(f"Error during file operations: {str(e)}")
+                    raise
 
             return True, {
                 "hotkey": hotkey,
@@ -138,5 +128,5 @@ class MinerHfInterface:
             }
 
         except Exception as e:
-            bt.logging.debug(f"Error in upload_data: {str(e)}")
+            bt.logging.error(f"Error in upload_data: {str(e)}")
             return False, {"error": str(e)}
