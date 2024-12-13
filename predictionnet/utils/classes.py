@@ -23,25 +23,17 @@ class MinerHistory:
     def clear_old_predictions(self):
         # deletes predictions older than 24 hours
         start_time = round_minute_down(get_now()) - timedelta(hours=24)
-        filtered_pred_dict = {
-            key: value for key, value in self.predictions.items() if start_time <= key
-        }
+        filtered_pred_dict = {key: value for key, value in self.predictions.items() if start_time <= key}
         self.predictions = filtered_pred_dict
 
-    def format_predictions(
-        self, reference_timestamp=None, hours: int = 2, minutes: int = 0
-    ):
+    def format_predictions(self, reference_timestamp=None, hours: int = 2, minutes: int = 0):
         if reference_timestamp is None:
             reference_timestamp = round_minute_down(get_now())
         if isinstance(reference_timestamp, str):
             reference_timestamp = iso8601_to_datetime(reference_timestamp)
-        start_time = round_minute_down(reference_timestamp) - timedelta(
-            hours=hours, minutes=minutes
-        )
+        start_time = round_minute_down(reference_timestamp) - timedelta(hours=hours, minutes=minutes)
         filtered_pred_dict = {
-            key: value
-            for key, value in self.predictions.items()
-            if start_time <= key < reference_timestamp
+            key: value for key, value in self.predictions.items() if start_time <= key < reference_timestamp
         }
         return filtered_pred_dict
 

@@ -99,9 +99,7 @@ class BaseValidatorNeuron(BaseNeuron):
             pass
 
     async def concurrent_forward(self):
-        coroutines = [
-            self.forward() for _ in range(self.config.neuron.num_concurrent_forwards)
-        ]
+        coroutines = [self.forward() for _ in range(self.config.neuron.num_concurrent_forwards)]
         await asyncio.gather(*coroutines)
 
     def run(self):
@@ -267,18 +265,12 @@ class BaseValidatorNeuron(BaseNeuron):
             if self.blocks_since_sync >= self.resync_metagraph_rate:
                 bt.logging.info("Syncing Metagraph...")
                 self.metagraph.sync(subtensor=self.subtensor)
-                bt.logging.info(
-                    "Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages"
-                )
+                bt.logging.info("Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages")
                 # Zero out all hotkeys that have been replaced.
                 self.available_uids = asyncio.run(get_available_uids(self))
                 for uid, hotkey in enumerate(self.metagraph.hotkeys):
-                    if (
-                        uid not in self.MinerHistory and uid in self.available_uids
-                    ) or self.hotkeys[uid] != hotkey:
-                        bt.logging.info(
-                            f"Replacing hotkey on {uid} with {self.metagraph.hotkeys[uid]}"
-                        )
+                    if (uid not in self.MinerHistory and uid in self.available_uids) or self.hotkeys[uid] != hotkey:
+                        bt.logging.info(f"Replacing hotkey on {uid} with {self.metagraph.hotkeys[uid]}")
                         self.hotkeys[uid] = hotkey
                         self.MinerHistory[uid] = MinerHistory(uid)
                         self.moving_average_scores[uid] = 0
@@ -299,9 +291,7 @@ class BaseValidatorNeuron(BaseNeuron):
         # Compute forward pass rewards, assumes uids are mutually exclusive.
         # shape: [ metagraph.n ]
         for i, value in zip(uids, rewards):
-            self.moving_avg_scores[i] = (1 - self.alpha) * self.scores[
-                i
-            ] + self.alpha * value
+            self.moving_avg_scores[i] = (1 - self.alpha) * self.scores[i] + self.alpha * value
         self.scores = array(list(self.moving_avg_scores.values()))
         bt.logging.info(f"New Average Scores: {self.scores}")
 

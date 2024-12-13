@@ -32,12 +32,8 @@ def calc_rewards(
     uid_map = {i: uid for i, uid in enumerate(self.available_uids)}
     for uid, response in enumerate(responses):
         current_miner = self.MinerHistory[uid_map[uid]]
-        if (response.prediction is not None) and len(
-            response.prediction
-        ) == N_TIMEPOINTS:
-            self.MinerHistory[uid_map[uid]].add_prediction(
-                response.timestamp, response.prediction
-            )
+        if (response.prediction is not None) and len(response.prediction) == N_TIMEPOINTS:
+            self.MinerHistory[uid_map[uid]].add_prediction(response.timestamp, response.prediction)
         prediction_dict = current_miner.format_predictions(
             response.timestamp, minutes=self.prediction_interval * N_TIMEPOINTS
         )
@@ -51,20 +47,14 @@ def calc_rewards(
                 N_TIMEPOINTS=N_TIMEPOINTS,
             )
     for t in range(N_TIMEPOINTS):
-        ranks[:, :, t] = rank_miners_by_epoch(
-            raw_deltas[:, :, t], raw_correct_dir[:, :, t]
-        )
+        ranks[:, :, t] = rank_miners_by_epoch(raw_deltas[:, :, t], raw_correct_dir[:, :, t])
     incentive_ranks = rank(-np.nanmean(np.nanmean(ranks, axis=2), axis=1))
     rewards = decayed_weights[incentive_ranks]
-    rewards[incentive_ranks == max(incentive_ranks)] = (
-        0  # anyone tied for last place gets no reward
-    )
+    rewards[incentive_ranks == max(incentive_ranks)] = 0  # anyone tied for last place gets no reward
     return rewards
 
 
-def calc_raw(
-    prediction_dict: dict, price_dict: dict, timestamp: str, N_TIMEPOINTS: int = 6
-) -> np.ndarray:
+def calc_raw(prediction_dict: dict, price_dict: dict, timestamp: str, N_TIMEPOINTS: int = 6) -> np.ndarray:
     """
     Calculate delta and whether the direction of prediction was correct for one miner over the past N_TIMEPOINTS epochs
 
@@ -85,9 +75,7 @@ def calc_raw(
          - the final column is the current timepoint with various prediction distances (5min, 10min,...)
     """
     prediction_array, _ = convert_predictions_to_matrix(prediction_dict, timestamp)
-    close_price, close_price_array = convert_prices_to_matrix(
-        price_dict, timestamp, N_TIMEPOINTS=N_TIMEPOINTS
-    )
+    close_price, close_price_array = convert_prices_to_matrix(price_dict, timestamp, N_TIMEPOINTS=N_TIMEPOINTS)
     prior_close_prices = close_price[0:-1].reshape(N_TIMEPOINTS, 1)
     pred_dir = prior_close_prices - prediction_array
     close_dir = prior_close_prices - close_price_array

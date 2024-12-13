@@ -113,9 +113,7 @@ def round_minute_down(timestamp: datetime, base: int = 5) -> datetime:
     return timestamp.replace(minute=correct_minute, second=0, microsecond=0)
 
 
-def is_query_time(
-    prediction_interval: int, timestamp: str, tolerance: int = 120
-) -> bool:
+def is_query_time(prediction_interval: int, timestamp: str, tolerance: int = 120) -> bool:
     """
     Tolerance - in seconds, how long to allow after epoch start
     prediction_interval - in minutes, how often to predict
@@ -219,10 +217,6 @@ def market_is_open() -> bool:
     return True
 
 
-def get_mature_timestamps(
-    timestamp, interval: int = 5, N_TIMEPOINTS: int = 6
-) -> List[datetime]:
-    mature_timestamps = [
-        timestamp + timedelta(minutes=interval * (i + 1)) for i in range(N_TIMEPOINTS)
-    ]
+def get_mature_timestamps(timestamp, interval: int = 5, N_TIMEPOINTS: int = 6) -> List[datetime]:
+    mature_timestamps = [timestamp + timedelta(minutes=interval * (i + 1)) for i in range(N_TIMEPOINTS)]
     return mature_timestamps

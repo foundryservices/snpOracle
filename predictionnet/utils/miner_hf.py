@@ -26,9 +26,7 @@ class MinerHfInterface:
         self.api = HfApi(token=os.getenv("MINER_HF_ACCESS_TOKEN"))
         self.config = config
 
-        bt.logging.debug(
-            f"Initializing with config: model={config.model}, repo_id={config.hf_repo_id}"
-        )
+        bt.logging.debug(f"Initializing with config: model={config.model}, repo_id={config.hf_repo_id}")
 
     def upload_model(self, repo_id=None, model_path=None, hotkey=None):
         """Upload a model file to HuggingFace Hub.
@@ -47,21 +45,15 @@ class MinerHfInterface:
         Raises:
             ValueError: If model path extension cannot be determined or required parameters are missing
         """
-        bt.logging.debug(
-            f"Trying to upload model: repo_id={repo_id}, model_path={model_path}, hotkey={hotkey}"
-        )
+        bt.logging.debug(f"Trying to upload model: repo_id={repo_id}, model_path={model_path}, hotkey={hotkey}")
 
         try:
             _, extension = os.path.splitext(model_path)
             if not extension:
-                raise ValueError(
-                    f"Could not determine file extension from model path: {model_path}"
-                )
+                raise ValueError(f"Could not determine file extension from model path: {model_path}")
 
             model_name = f"{hotkey}{extension}"
-            bt.logging.debug(
-                f"Generated model name: {model_name} from path: {model_path}"
-            )
+            bt.logging.debug(f"Generated model name: {model_name} from path: {model_path}")
 
             bt.logging.debug(f"Checking if repo exists: {repo_id}")
 

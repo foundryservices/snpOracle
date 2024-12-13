@@ -101,10 +101,7 @@ class Validator(BaseValidatorNeuron):
         # TODO(developer): Rewrite this function based on your protocol definition.
         if market_is_open():
             query_lag = elapsed_seconds(get_now() - self.timestamp)
-            if (
-                is_query_time(self.prediction_interval, self.timestamp)
-                or query_lag >= 60 * self.prediction_interval
-            ):
+            if is_query_time(self.prediction_interval, self.timestamp) or query_lag >= 60 * self.prediction_interval:
                 await forward(self)
             else:
                 print_info(self, "Market Open")
@@ -116,9 +113,7 @@ class Validator(BaseValidatorNeuron):
         models_confirmed = []
         self.hf_interface.update_collection(responses)
         for response, uid in zip(responses, self.available_uids):
-            models_confirmed.append(
-                self.hf_interface.hotkeys_match(response, self.metagraph.hotkeys[uid])
-            )
+            models_confirmed.append(self.hf_interface.hotkeys_match(response, self.metagraph.hotkeys[uid]))
         return models_confirmed
 
     def save_state(self):

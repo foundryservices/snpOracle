@@ -36,16 +36,10 @@ def parse_arguments(parser: Optional[argparse.ArgumentParser] = None):
         choices=["finney", "test", "local"],
         default="finney",
     )
-    parser.add_argument(
-        "--wallet.name", type=str, default="default", help="Coldkey name"
-    )
-    parser.add_argument(
-        "--wallet.hotkey", type=str, default="default", help="Hotkey name"
-    )
+    parser.add_argument("--wallet.name", type=str, default="default", help="Coldkey name")
+    parser.add_argument("--wallet.hotkey", type=str, default="default", help="Hotkey name")
     parser.add_argument("--netuid", type=int, default=1, help="Subnet netuid")
-    parser.add_argument(
-        "--neuron.name", type=str, default="validator", help="What to call this process"
-    )
+    parser.add_argument("--neuron.name", type=str, default="validator", help="What to call this process")
     parser.add_argument(
         "--neuron.type",
         type=str,
@@ -54,12 +48,8 @@ def parse_arguments(parser: Optional[argparse.ArgumentParser] = None):
         help="What type of neuron this is",
     )
     parser.add_argument("--axon.port", type=int, default=8000)
-    parser.add_argument(
-        "--logging.level", type=str, choices=["info", "debug", "trace"], default="info"
-    )
-    parser.add_argument(
-        "--logging.logging_dir", type=str, default="~/.bittensor/validators"
-    )
+    parser.add_argument("--logging.level", type=str, choices=["info", "debug", "trace"], default="info")
+    parser.add_argument("--logging.logging_dir", type=str, default="~/.bittensor/validators")
     parser.add_argument(
         "--blacklist.force_validator_permit",
         action="store_false",
@@ -82,9 +72,7 @@ def parse_arguments(parser: Optional[argparse.ArgumentParser] = None):
         dest="reset_state",
         help="Overwrites the state file",
     )
-    parser.add_argument(
-        "--timeout", type=int, default=16, help="allowable nonce delay time (seconds)"
-    )
+    parser.add_argument("--timeout", type=int, default=16, help="allowable nonce delay time (seconds)")
     parser.add_argument(
         "--print_cadence",
         type=float,
@@ -137,16 +125,12 @@ def convert_predictions_to_matrix(prediction_dict, timestamp: None):
     return predictions, timestamps_to_pull
 
 
-def convert_prices_to_matrix(
-    price_dict, reference_timestamp: None, N_TIMEPOINTS: int = 6
-):
+def convert_prices_to_matrix(price_dict, reference_timestamp: None, N_TIMEPOINTS: int = 6):
     if reference_timestamp is None:
         now = round_minute_down(get_now())
     else:
         now = iso8601_to_datetime(reference_timestamp)
-    timestamps_to_pull = get_mature_timestamps(
-        now, interval=-5, N_TIMEPOINTS=N_TIMEPOINTS + 1
-    )
+    timestamps_to_pull = get_mature_timestamps(now, interval=-5, N_TIMEPOINTS=N_TIMEPOINTS + 1)
     prices = full(len(timestamps_to_pull), nan)
     for i, timestamp in enumerate(timestamps_to_pull):
         try:

@@ -9,21 +9,15 @@ from numpy import array, ndarray
 def setup_bittensor_objects(self):
     # if chain enpoint isn't set, use the network arg
     if self.config.subtensor.chain_endpoint is None:
-        self.config.subtensor.chain_endpoint = (
-            bt.subtensor.determine_chain_endpoint_and_network(
-                self.config.subtensor.network
-            )[1]
-        )
+        self.config.subtensor.chain_endpoint = bt.subtensor.determine_chain_endpoint_and_network(
+            self.config.subtensor.network
+        )[1]
     # Initialize subtensor.
-    self.subtensor = bt.subtensor(
-        config=self.config, network=self.config.subtensor.chain_endpoint
-    )
+    self.subtensor = bt.subtensor(config=self.config, network=self.config.subtensor.chain_endpoint)
     self.metagraph = self.subtensor.metagraph(self.config.netuid)
     self.wallet = bt.wallet(config=self.config)
     self.dendrite = bt.dendrite(wallet=self.wallet)
-    self.axon = bt.axon(
-        wallet=self.wallet, config=self.config, port=self.config.axon.port
-    )
+    self.axon = bt.axon(wallet=self.wallet, config=self.config, port=self.config.axon.port)
     # Connect the validator to the network.
     if self.wallet.hotkey.ss58_address not in self.metagraph.hotkeys:
         bt.logging.error(
@@ -52,9 +46,7 @@ def setup_bittensor_objects(self):
 
 def print_info(self) -> None:
     if self.config.neuron.type == "Validator":
-        weight_timing = (
-            self.hyperparameters.weights_rate_limit - self.blocks_since_last_update
-        )
+        weight_timing = self.hyperparameters.weights_rate_limit - self.blocks_since_last_update
         if weight_timing <= 0:
             weight_timing = "a few"  # hashtag aesthetic af
         log = (
@@ -82,9 +74,7 @@ def print_info(self) -> None:
     bt.logging.info(log)
 
 
-def check_uid_availability(
-    metagraph: "bt.metagraph.Metagraph", uid: int, vpermit_tao_limit: int
-) -> bool:
+def check_uid_availability(metagraph: "bt.metagraph.Metagraph", uid: int, vpermit_tao_limit: int) -> bool:
     """Check if uid is available. The UID should be available if it is serving and has less than vpermit_tao_limit stake
     Args:
         metagraph (:obj: bt.metagraph.Metagraph): Metagraph object
@@ -118,9 +108,7 @@ def get_random_uids(self, k: int, exclude: List[int] = None) -> ndarray:
     avail_uids = []
 
     for uid in range(self.metagraph.n.item()):
-        uid_is_available = check_uid_availability(
-            self.metagraph, uid, self.config.neuron.vpermit_tao_limit
-        )
+        uid_is_available = check_uid_availability(self.metagraph, uid, self.config.neuron.vpermit_tao_limit)
         uid_is_not_excluded = exclude is None or uid not in exclude
 
         if uid_is_available:

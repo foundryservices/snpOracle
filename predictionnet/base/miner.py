@@ -108,10 +108,7 @@ class BaseMinerNeuron(BaseNeuron):
         # This loop maintains the miner's operations until intentionally stopped.
         try:
             while not self.should_exit:
-                while (
-                    self.block - self.metagraph.last_update[self.uid]
-                    < self.config.neuron.epoch_length
-                ):
+                while self.block - self.metagraph.last_update[self.uid] < self.config.neuron.epoch_length:
                     # Wait before checking again.
                     time.sleep(1)
 
@@ -207,10 +204,7 @@ class BaseMinerNeuron(BaseNeuron):
             # Requests must have nonces to be safe from replays
             if synapse.dendrite.nonce is None:
                 raise Exception("Missing Nonce")
-            if (
-                synapse.dendrite.version is not None
-                and synapse.dendrite.version >= V_7_2_0
-            ):
+            if synapse.dendrite.version is not None and synapse.dendrite.version >= V_7_2_0:
                 bt.logging.debug("Using custom synapse verification logic")
                 # If we don't have a nonce stored, ensure that the nonce falls within
                 # a reasonable delta.
@@ -223,28 +217,18 @@ class BaseMinerNeuron(BaseNeuron):
                 bt.logging.debug(f"synapse.dendrite.nonce: {synapse.dendrite.nonce}")
                 bt.logging.debug(f"latest_allowed_nonce: {latest_allowed_nonce}")
                 bt.logging.debug(f"cur time: {cur_time}")
-                bt.logging.debug(
-                    f"delta: {self._to_seconds(cur_time - synapse.dendrite.nonce)}"
-                )
+                bt.logging.debug(f"delta: {self._to_seconds(cur_time - synapse.dendrite.nonce)}")
 
-                if (
-                    self.nonces.get(endpoint_key) is None
-                    and synapse.dendrite.nonce > latest_allowed_nonce
-                ):
+                if self.nonces.get(endpoint_key) is None and synapse.dendrite.nonce > latest_allowed_nonce:
                     raise Exception(
                         f"Nonce is too old. Allowed delta in seconds: {self._to_seconds(allowed_delta)}, got delta: {self._to_seconds(cur_time - synapse.dendrite.nonce)}"
                     )
-                if (
-                    self.nonces.get(endpoint_key) is not None
-                    and synapse.dendrite.nonce <= self.nonces[endpoint_key]
-                ):
+                if self.nonces.get(endpoint_key) is not None and synapse.dendrite.nonce <= self.nonces[endpoint_key]:
                     raise Exception(
                         f"Nonce is too small, already have a newer nonce in the nonce store, got: {synapse.dendrite.nonce}, already have: {self.nonces[endpoint_key]}"
                     )
             else:
-                bt.logging.warning(
-                    f"Using synapse verification logic for version < 7.2.0: {synapse.dendrite.version}"
-                )
+                bt.logging.warning(f"Using synapse verification logic for version < 7.2.0: {synapse.dendrite.version}")
                 if (
                     endpoint_key in self.nonces.keys()
                     and self.nonces[endpoint_key] is not None

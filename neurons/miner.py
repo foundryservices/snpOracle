@@ -58,9 +58,7 @@ class Miner(BaseMinerNeuron):
         # TODO(developer): Anything specific to your use case you can do here
         self.model_loc = self.config.model
         if self.config.neuron.device == "cpu":
-            os.environ["CUDA_VISIBLE_DEVICES"] = (
-                "-1"  # This will force TensorFlow to use CPU only
-            )
+            os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # This will force TensorFlow to use CPU only
 
         if not self.config.model:
             bt.logging.error("--model argument is required")
@@ -82,13 +80,9 @@ class Miner(BaseMinerNeuron):
                 f"Model {self.config.model} uploaded successfully to {self.config.hf_repo_id}: {metadata}"
             )
         else:
-            bt.logging.error(
-                f"Model {self.config.model} upload failed to {self.config.hf_repo_id}: {metadata}"
-            )
+            bt.logging.error(f"Model {self.config.model} upload failed to {self.config.hf_repo_id}: {metadata}")
 
-    async def blacklist(
-        self, synapse: predictionnet.protocol.Challenge
-    ) -> typing.Tuple[bool, str]:
+    async def blacklist(self, synapse: predictionnet.protocol.Challenge) -> typing.Tuple[bool, str]:
         """
         Determines whether an incoming request should be blacklisted and thus ignored. Your implementation should
         define the logic for blacklisting requests based on your needs and desired security parameters.
@@ -126,14 +120,9 @@ class Miner(BaseMinerNeuron):
         uid = self.metagraph.hotkeys.index(synapse.dendrite.hotkey)
         stake = self.metagraph.S[uid].item()
 
-        if (
-            not self.config.blacklist.allow_non_registered
-            and synapse.dendrite.hotkey not in self.metagraph.hotkeys
-        ):
+        if not self.config.blacklist.allow_non_registered and synapse.dendrite.hotkey not in self.metagraph.hotkeys:
             # Ignore requests from un-registered entities.
-            bt.logging.trace(
-                f"Blacklisting un-registered hotkey {synapse.dendrite.hotkey}"
-            )
+            bt.logging.trace(f"Blacklisting un-registered hotkey {synapse.dendrite.hotkey}")
             return True, "Unrecognized hotkey"
 
         uid = self.metagraph.hotkeys.index(synapse.dendrite.hotkey)
@@ -149,14 +138,10 @@ class Miner(BaseMinerNeuron):
         if self.config.blacklist.force_validator_permit:
             # If the config is set to force validator permit, then we should only allow requests from validators.
             if not self.metagraph.validator_permit[uid]:
-                bt.logging.warning(
-                    f"Blacklisting a request from non-validator hotkey {synapse.dendrite.hotkey}"
-                )
+                bt.logging.warning(f"Blacklisting a request from non-validator hotkey {synapse.dendrite.hotkey}")
                 return True, "Non-validator hotkey"
 
-        bt.logging.trace(
-            f"Not Blacklisting recognized hotkey {synapse.dendrite.hotkey}"
-        )
+        bt.logging.trace(f"Not Blacklisting recognized hotkey {synapse.dendrite.hotkey}")
         return False, "Hotkey recognized!"
 
     async def priority(self, synapse: predictionnet.protocol.Challenge) -> float:
@@ -180,20 +165,12 @@ class Miner(BaseMinerNeuron):
         - A higher stake results in a higher priority value.
         """
         # TODO(developer): Define how miners should prioritize requests.
-        caller_uid = self.metagraph.hotkeys.index(
-            synapse.dendrite.hotkey
-        )  # Get the caller index.
-        prirority = float(
-            self.metagraph.S[caller_uid]
-        )  # Return the stake as the priority.
-        bt.logging.trace(
-            f"Prioritizing {synapse.dendrite.hotkey} with value: ", prirority
-        )
+        caller_uid = self.metagraph.hotkeys.index(synapse.dendrite.hotkey)  # Get the caller index.
+        prirority = float(self.metagraph.S[caller_uid])  # Return the stake as the priority.
+        bt.logging.trace(f"Prioritizing {synapse.dendrite.hotkey} with value: ", prirority)
         return prirority
 
-    async def forward(
-        self, synapse: predictionnet.protocol.Challenge
-    ) -> predictionnet.protocol.Challenge:
+    async def forward(self, synapse: predictionnet.protocol.Challenge) -> predictionnet.protocol.Challenge:
         """
         Processes the incoming 'Challenge' synapse by performing a predefined operation on the input data.
         This method should be replaced with actual logic relevant to the miner's purpose.
@@ -211,9 +188,7 @@ class Miner(BaseMinerNeuron):
             f"👈 Received prediction request from: {synapse.dendrite.hotkey} for timestamp: {synapse.timestamp}"
         )
 
-        model_filename = (
-            f"{self.wallet.hotkey.ss58_address}{os.path.splitext(self.config.model)[1]}"
-        )
+        model_filename = f"{self.wallet.hotkey.ss58_address}{os.path.splitext(self.config.model)[1]}"
 
         timestamp = synapse.timestamp
         synapse.repo_id = self.config.hf_repo_id
