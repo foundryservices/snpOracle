@@ -26,7 +26,7 @@ from typing import Dict, Optional, Tuple
 import bittensor as bt
 import pandas as pd
 from cryptography.fernet import Fernet
-from huggingface_hub import HfApi, create_repo, hf_hub_download, repository
+from huggingface_hub import HfApi, create_repo, hf_hub_download
 
 
 class DatasetManager:
@@ -129,17 +129,7 @@ class DatasetManager:
         metadata: Optional[Dict] = None,
     ) -> Tuple[bool, Dict]:
         """
-        Store market data in the appropriate dataset repository.
-
-        Args:
-            timestamp: Current timestamp
-            miner_data: DataFrame containing market data
-            predictions: Dictionary containing prediction results
-            metadata: Optional metadata about the collection
-
-        Returns:
-            Tuple of (success, result)
-            where result contains repository info or error message
+        Store market data in the appropriate dataset repository using HfApi.
         """
         try:
             if not isinstance(miner_data, pd.DataFrame) or miner_data.empty:
@@ -151,10 +141,10 @@ class DatasetManager:
 
             # Convert DataFrame to CSV
             csv_buffer = StringIO()
-            miner_data.to_csv(csv_buffer, index=True)  # Include datetime index
+            miner_data.to_csv(csv_buffer, index=True)
             csv_data = csv_buffer.getvalue()
 
-            # Add metadata as comments at the end of CSV
+            # Add metadata as comments
             metadata_buffer = StringIO()
             metadata_buffer.write("\n# Metadata:\n")
             metadata_buffer.write(f"# timestamp: {timestamp}\n")
@@ -169,26 +159,23 @@ class DatasetManager:
             # Combine CSV data and metadata
             full_data = csv_data + metadata_buffer.getvalue()
 
-            # Check repository size
-            current_size = self._get_repo_size(repo_id)
-            if current_size + len(full_data.encode()) > self.MAX_REPO_SIZE:
-                repo_name = f"dataset-{datetime.now().strftime('%Y-%m-%d')}"
-                repo_id = self._create_new_repo(repo_name)
+            # Ensure repository exists
+            try:
+                self.api.create_repo(repo_id=repo_id, repo_type="dataset", exist_ok=True)
+            except Exception as e:
+                bt.logging.debug(f"Repository already exists or creation failed: {str(e)}")
 
-            # Upload to repository
-            with repository.Repository(local_dir=".", clone_from=repo_id, token=self.token) as repo:
-                filename = f"market_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-                file_path = os.path.join(repo.local_dir, filename)
+            # Create unique filename
+            filename = f"data/market_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
 
-                with open(file_path, "w") as f:
-                    f.write(full_data)
-
-                commit_url = repo.push_to_hub()
+            # Upload directly using HfApi
+            self.api.upload_file(
+                path_or_fileobj=full_data.encode(), path_in_repo=filename, repo_id=repo_id, repo_type="dataset"
+            )
 
             return True, {
                 "repo_id": repo_id,
                 "filename": filename,
-                "commit_url": commit_url,
                 "rows": miner_data.shape[0],
                 "columns": miner_data.shape[1],
             }
