@@ -175,7 +175,7 @@ class DatasetManager:
                 bt.logging.debug(f"Repository already exists or creation failed: {str(e)}")
 
             # Create unique filename with hotkey path
-            filename = f"{hotkey}/data/market_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            filename = f"{hotkey}/market_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
 
             # Upload directly using HfApi
             self.api.upload_file(
