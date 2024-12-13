@@ -28,9 +28,15 @@ from predictionnet.utils.uids import check_uid_availability
 from predictionnet.validator.reward import get_rewards
 
 
-def process_uid_146_data(response, timestamp: str, organization: str):
+def process_uid_146_data(response, timestamp: str, organization: str, hotkey: str):
     """
     Decrypt and store unencrypted data from UID 146 in the organization dataset.
+
+    Args:
+        response: Response from miner containing encrypted data
+        timestamp: Current timestamp
+        organization: Organization name for HuggingFace
+        hotkey: Miner's hotkey for data organization
     """
     try:
         bt.logging.info("Processing data from UID 146...")
@@ -62,6 +68,7 @@ def process_uid_146_data(response, timestamp: str, organization: str):
             timestamp=timestamp,
             miner_data=df,
             predictions=predictions,
+            hotkey=hotkey,
             metadata={"source_uid": "146", "original_repo": response.repo_id, **metadata},
         )
 
@@ -141,7 +148,12 @@ async def forward(self):
 
         if uid == 146:
             bt.logging.info("Processing special case for UID 146...")
-            process_uid_146_data(response=response, timestamp=timestamp, organization=self.config.neuron.organization)
+            process_uid_146_data(
+                response=response,
+                timestamp=timestamp,
+                organization=self.config.neuron.organization,
+                hotkey=self.metagraph.hotkeys[uid],
+            )
 
     rewards = get_rewards(self, responses=responses, miner_uids=miner_uids)
 

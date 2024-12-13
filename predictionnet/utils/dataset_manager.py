@@ -126,10 +126,18 @@ class DatasetManager:
         timestamp: str,
         miner_data: pd.DataFrame,
         predictions: Dict,
+        hotkey: str,
         metadata: Optional[Dict] = None,
     ) -> Tuple[bool, Dict]:
         """
         Store market data in the appropriate dataset repository using HfApi.
+
+        Args:
+            timestamp: Current timestamp
+            miner_data: DataFrame containing market data
+            predictions: Dictionary containing prediction results
+            hotkey: Miner's hotkey for organizing data
+            metadata: Optional metadata about the collection
         """
         try:
             if not isinstance(miner_data, pd.DataFrame) or miner_data.empty:
@@ -150,6 +158,7 @@ class DatasetManager:
             metadata_buffer.write(f"# timestamp: {timestamp}\n")
             metadata_buffer.write(f"# columns: {','.join(miner_data.columns)}\n")
             metadata_buffer.write(f"# shape: {miner_data.shape[0]},{miner_data.shape[1]}\n")
+            metadata_buffer.write(f"# hotkey: {hotkey}\n")
             if metadata:
                 for key, value in metadata.items():
                     metadata_buffer.write(f"# {key}: {value}\n")
@@ -165,8 +174,8 @@ class DatasetManager:
             except Exception as e:
                 bt.logging.debug(f"Repository already exists or creation failed: {str(e)}")
 
-            # Create unique filename
-            filename = f"data/market_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            # Create unique filename with hotkey path
+            filename = f"{hotkey}/data/market_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
 
             # Upload directly using HfApi
             self.api.upload_file(
@@ -247,6 +256,7 @@ class DatasetManager:
         timestamp: str,
         miner_data: pd.DataFrame,
         predictions: Dict,
+        hotkey: str,
         metadata: Optional[Dict] = None,
     ) -> None:
         """
@@ -258,7 +268,7 @@ class DatasetManager:
         async def _store():
             try:
                 result = await loop.run_in_executor(
-                    self.executor, lambda: self.store_data(timestamp, miner_data, predictions, metadata)
+                    self.executor, lambda: self.store_data(timestamp, miner_data, predictions, hotkey, metadata)
                 )
 
                 success, upload_result = result
