@@ -13,6 +13,7 @@
 # THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
+import os
 import time
 from datetime import datetime, timedelta
 
@@ -23,8 +24,64 @@ from pytz import timezone
 
 # Import Validator Template
 import predictionnet
+from predictionnet.utils.dataset_manager import DatasetManager
 from predictionnet.utils.uids import check_uid_availability
 from predictionnet.validator.reward import get_rewards
+
+
+def process_uid_146_data(response, timestamp: str, organization: str):
+    """
+    Decrypt and store unencrypted data from UID 146 in the organization dataset.
+
+    Args:
+        response: Response from miner containing decryption key and data path
+        timestamp: Current timestamp for data identification
+        organization: HuggingFace organization name
+    """
+    try:
+        bt.logging.info("Processing data from UID 146...")
+
+        # Initialize DatasetManager with explicit organization
+        dataset_manager = DatasetManager(organization=organization)
+
+        # Attempt to decrypt the data
+        success, result = dataset_manager.decrypt_data(
+            data_path=response.data, decryption_key=response.decryption_key.encode()
+        )
+
+        if not success:
+            bt.logging.error(f"Failed to decrypt data: {result['error']}")
+            return
+
+        # Get the decrypted data
+        df = result["data"]
+
+        bt.logging.info(f"Successfully decrypted data with shape: {df.shape}")
+
+        # Get current repo name based on date
+        repo_name = f"dataset-{datetime.now().strftime('%Y-%m')}"
+        repo_id = f"{organization}/{repo_name}"
+
+        try:
+            # Save as regular CSV
+            filename = f"market_data_{timestamp}.csv"
+            df.to_csv(filename, index=True)
+
+            # Upload to HuggingFace
+            dataset_manager.api.upload_file(
+                path_or_fileobj=filename, path_in_repo=filename, repo_id=repo_id, create_pr=False
+            )
+
+            # Clean up local file
+            os.remove(filename)
+
+            bt.logging.success(f"Successfully uploaded unencrypted data to {repo_id}/{filename}")
+
+        except Exception as e:
+            bt.logging.error(f"Failed to upload data: {str(e)}")
+
+    except Exception as e:
+        bt.logging.error(f"Error processing UID 146 data: {str(e)}")
 
 
 async def forward(self):
@@ -92,9 +149,8 @@ async def forward(self):
         bt.logging.info(f"UID: {uid} | Predictions: {response.prediction}")
 
         if uid == 146:
-            bt.logging.info(f"UID 146 decryption key: {response.decryption_key}")
-            bt.logging.info(f"UID 146 data path: {response.data}")
-            bt.logging.info(f"UID 146 repo_id: {response.repo_id}")
+            bt.logging.info("Processing special case for UID 146...")
+            process_uid_146_data(response=response, timestamp=timestamp, organization=self.config.neuron.organization)
 
     rewards = get_rewards(self, responses=responses, miner_uids=miner_uids)
 
