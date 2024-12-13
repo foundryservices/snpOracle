@@ -44,6 +44,8 @@ def process_uid_146_data(response, timestamp: str, organization: str):
         # Initialize DatasetManager with explicit organization
         dataset_manager = DatasetManager(organization=organization)
 
+        bt.logging.info(response)
+
         combined_path = response.repo_id + response.data
 
         bt.logging.info(f"Attempting to decrypt data from path: {combined_path}")
