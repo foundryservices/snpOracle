@@ -14,27 +14,26 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-
+import asyncio
 import os
 import pathlib
+import pickle
 import time
-from datetime import datetime
 from typing import List
 
 # Bittensor
 import bittensor as bt
-import pandas_market_calendars as mcal
-import pytz
 import wandb
 from dotenv import load_dotenv
-from numpy import full, nan
 
 from predictionnet import __version__
 
 # import base validator class which takes care of most of the boilerplate
 from predictionnet.base.validator import BaseValidatorNeuron
+from predictionnet.utils.bittensor import get_available_uids, print_info
+from predictionnet.utils.classes import MinerHistory
 from predictionnet.utils.huggingface import HfInterface
-from predictionnet.utils.uids import check_uid_availability
+from predictionnet.utils.timestamp import elapsed_seconds, get_before, get_now, is_query_time, market_is_open
 
 # Bittensor Validator Template:
 from predictionnet.validator import forward
@@ -57,12 +56,19 @@ class Validator(BaseValidatorNeuron):
         self.prediction_interval = 5  # in minutes
         self.N_TIMEPOINTS = 6  # number of timepoints to predict
         self.INTERVAL = self.prediction_interval * self.N_TIMEPOINTS  # 30 Minutes
-        self.past_predictions = {}
+        self.available_uids = asyncio.run(get_available_uids(self))
         self.hf_interface = HfInterface()
-        for uid in range(len(self.metagraph.S)):
-            uid_is_available = check_uid_availability(self.metagraph, uid, self.config.neuron.vpermit_tao_limit)
-            if uid_is_available:
-                self.past_predictions[uid] = full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)
+        self.MinerHistory = {uid: MinerHistory(uid) for uid in self.available_uids}
+        self.timestamp = get_before(minutes=60)
+        if self.config.reset_state:
+            self.scores = [0.0] * len(self.metagraph.S)
+            self.moving_average_scores = {uid: 0 for uid in self.metagraph.uids}
+            self.MinerHistory = {uid: MinerHistory(uid) for uid in self.available_uids}
+            self.timestamp = get_before(minutes=60)
+            self.save_state()
+        else:
+            self.load_state()
+
         netrc_path = pathlib.Path.home() / ".netrc"
         wandb_api_key = os.getenv("WANDB_API_KEY")
         if wandb_api_key is not None:
@@ -83,51 +89,6 @@ class Validator(BaseValidatorNeuron):
             reinit=True,
         )
 
-    async def is_valid_time(self):
-        """
-        This function checks if the NYSE is open and validators should send requests.
-        The final valid time is 4:00 PM - prediction length (self.INTERVAL) so that the final prediction is for 4:00 PM
-
-        Returns:
-            True if the NYSE is open and the current time is between 9:30 AM and (4:00 PM - self.INTERVAL)
-            False otherwise
-
-        Notes:
-        ------
-        Timezone is set to America/New_York
-
-        """
-        est = pytz.timezone("America/New_York")
-        now = datetime.now(est)
-        # Check if today is Monday through Friday
-        if now.weekday() >= 5:  # 0 is Monday, 6 is Sunday
-            return False
-        # Check if the NYSE is open (i.e. not a holiday)
-        if not self.market_is_open(now):
-            return False
-        # Check if the current time is between 9:30 AM and 4:00 PM
-        start_time = now.replace(hour=9, minute=30, second=0, microsecond=0)
-        end_time = now.replace(hour=16, minute=0, second=0, microsecond=0)
-        if not (start_time <= now <= end_time):
-            return False
-        # if all checks pass, return true
-        return True
-
-    def market_is_open(self, date):
-        """
-        This is an extra check for holidays where the NYSE is closed
-
-        Args:
-            date (datetime): The date to check
-
-        Returns:
-            True if the NYSE is open.
-            False otherwise
-
-        """
-        result = mcal.get_calendar("NYSE").schedule(start_date=date, end_date=date)
-        return not result.empty
-
     async def forward(self):
         """
         Validator forward pass. Consists of:
@@ -138,35 +99,62 @@ class Validator(BaseValidatorNeuron):
         - Updating the scores
         """
         # TODO(developer): Rewrite this function based on your protocol definition.
-        return await forward(self)
+        if market_is_open():
+            query_lag = elapsed_seconds(get_now() - self.timestamp)
+            if is_query_time(self.prediction_interval, self.timestamp) or query_lag >= 60 * self.prediction_interval:
+                await forward(self)
+            else:
+                print_info(self, "Market Open")
+        else:
+            print_info(self, "Market Closed")
+        return
 
-    def confirm_models(self, responses, miner_uids) -> List[bool]:
+    def confirm_models(self, responses) -> List[bool]:
         models_confirmed = []
         self.hf_interface.update_collection(responses)
-        for response, uid in zip(responses, miner_uids):
+        for response, uid in zip(responses, self.available_uids):
             models_confirmed.append(self.hf_interface.hotkeys_match(response, self.metagraph.hotkeys[uid]))
         return models_confirmed
 
-    def print_info(self):
-        metagraph = self.metagraph
-        self.uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
+    def save_state(self):
+        """Saves the state of the validator to a file."""
 
-        log = (
-            "Validator | "
-            f"Step:{self.step} | "
-            f"UID:{self.uid} | "
-            f"Block:{self.block} | "
-            f"Stake:{metagraph.S[self.uid]} | "
-            f"VTrust:{metagraph.Tv[self.uid]} | "
-            f"Dividend:{metagraph.D[self.uid]} | "
-            f"Emission:{metagraph.E[self.uid]}"
-        )
-        bt.logging.info(log)
+        state_path = os.path.join(self.config.full_path, "state.pt")
+        state = {
+            "scores": self.scores,
+            "MinerHistory": self.MinerHistory,
+            "moving_average_scores": self.moving_average_scores,
+        }
+        with open(state_path, "wb") as f:
+            pickle.dump(state, f)
+        bt.logging.info(f"Saved {self.config.neuron.name} state.")
+
+    def load_state(self):
+        """Loads the state of the validator from a file."""
+        bt.logging.info("Loading validator state.")
+        state_path = os.path.join(self.config.full_path, "state.pt")
+        bt.logging.info(f"State path: {state_path}")
+        if not os.path.exists(state_path):
+            bt.logging.info("Skipping state load due to missing state.pt file.")
+            self.scores = [0.0] * len(self.metagraph.S)
+            self.moving_average_scores = {uid: 0 for uid in self.metagraph.uids}
+            self.MinerHistory = {uid: MinerHistory(uid) for uid in self.available_uids}
+            self.timestamp = get_before(minutes=60)
+            return
+        try:
+            with open(state_path, "rb") as f:
+                state = pickle.load(f)
+            self.scores = state["scores"]
+            self.MinerHistory = state["MinerHistory"]
+            self.moving_average_scores = state["moving_average_scores"]
+            all_dates = [mh.latest_timestamp() for mh in self.MinerHistory.values()]
+            self.timestamp = max(all_dates)
+        except Exception as e:
+            bt.logging.error(f"Failed to load state with error: {e}")
 
 
 # The main function parses the configuration and runs the validator.
 if __name__ == "__main__":
     with Validator() as validator:
         while True:
-            validator.print_info()
             time.sleep(15)
