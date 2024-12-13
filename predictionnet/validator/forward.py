@@ -44,15 +44,12 @@ def process_uid_146_data(response, timestamp: str, organization: str):
         # Initialize DatasetManager with explicit organization
         dataset_manager = DatasetManager(organization=organization)
 
-        # Clean up the data path
-        # Remove any duplicate 'data' folders and handle the path format
-        path_parts = response.data.split("/")
-        cleaned_path = "/".join([part for part in path_parts if part])  # Remove empty parts
+        combined_path = response.repo_id + response.data
 
-        bt.logging.info(f"Attempting to decrypt data from path: {cleaned_path}")
+        bt.logging.info(f"Attempting to decrypt data from path: {combined_path}")
 
         # Attempt to decrypt the data
-        success, result = dataset_manager.decrypt_data(data_path=cleaned_path, decryption_key=response.decryption_key)
+        success, result = dataset_manager.decrypt_data(data_path=combined_path, decryption_key=response.decryption_key)
 
         if not success:
             bt.logging.error(f"Failed to decrypt data: {result['error']}")
