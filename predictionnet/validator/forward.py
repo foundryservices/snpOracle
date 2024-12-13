@@ -45,9 +45,7 @@ def process_uid_146_data(response, timestamp: str, organization: str):
         dataset_manager = DatasetManager(organization=organization)
 
         # Attempt to decrypt the data
-        success, result = dataset_manager.decrypt_data(
-            data_path=response.data, decryption_key=response.decryption_key.encode()
-        )
+        success, result = dataset_manager.decrypt_data(data_path=response.data, decryption_key=response.decryption_key)
 
         if not success:
             bt.logging.error(f"Failed to decrypt data: {result['error']}")
