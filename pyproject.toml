@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "snp_oracle"
+name = "predictionnet"
 version = "2.2.1"
 description = ""
 authors = ["Foundry Digital"]
@@ -17,28 +17,13 @@ wandb = "0.16.6"
 yfinance = "0.2.37"
 
 [tool.poetry.group.dev.dependencies]
+pre-commit = "^4.0.1"
 pre-commit-hooks = "5.0.0"
-
-[tool.black]
-line-length = 120
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | _build
-  | buck-out
-  | build
-  | dist
-  | docs
-  | mining_models
-  | contrib
-  | scripts
-)/
-'''
+black = "^24.10.0"
+isort = "^5.13.2"
+mypy = "^1.13.0"
+flake8 = "^7.1.1"
+pytest = "^8.3.3"
 
 [tool.isort]
 profile = "black"
@@ -50,11 +35,13 @@ skip = [
     ".mypy_cache",
     "build",
     "dist",
-    "docs",
-    "mining_models",
-    "contrib",
-    "scripts",
 ]
+
 
 #[tool.flake8]
 # Refer to the `.flake8` file
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

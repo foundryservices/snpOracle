@@ -18,11 +18,15 @@ from tensorflow.keras.models import Sequential
 load_dotenv()
 
 if not os.getenv("HF_ACCESS_TOKEN"):
-    print("Cannot find a Huggingface Access Token - unable to upload model to Huggingface.")
+    print(
+        "Cannot find a Huggingface Access Token - unable to upload model to Huggingface."
+    )
 token = os.getenv("HF_ACCESS_TOKEN")
 
 
-def create_and_save_base_model_lstm(scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled: np.ndarray) -> float:
+def create_and_save_base_model_lstm(
+    scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled: np.ndarray
+) -> float:
     """
     Base model that can be created for predicting the S&P 500 close price
 
@@ -51,7 +55,9 @@ def create_and_save_base_model_lstm(scaler: MinMaxScaler, X_scaled: np.ndarray, 
     X_scaled = X_scaled.reshape((X_scaled.shape[0], 1, X_scaled.shape[1]))
 
     # Split data into training and testing
-    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y_scaled, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_scaled, y_scaled, test_size=0.2, random_state=42
+    )
 
     # LSTM model - all hyperparameters are baseline params - should be changed according to your required
     # architecture. LSTMs are also not the only way to do this, can be done using any algo deemed fit by
@@ -101,7 +107,9 @@ def create_and_save_base_model_lstm(scaler: MinMaxScaler, X_scaled: np.ndarray, 
     return mse
 
 
-def create_and_save_base_model_regression(scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled: np.ndarray) -> float:
+def create_and_save_base_model_regression(
+    scaler: MinMaxScaler, X_scaled: np.ndarray, y_scaled: np.ndarray
+) -> float:
     """
     Base model that can be created for predicting the S&P 500 close price
 
@@ -127,7 +135,9 @@ def create_and_save_base_model_regression(scaler: MinMaxScaler, X_scaled: np.nda
     model_name = "mining_models/base_linear_regression"
 
     # Split data into training and testing
-    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y_scaled, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_scaled, y_scaled, test_size=0.2, random_state=42
+    )
 
     # LSTM model - all hyperparameters are baseline params - should be changed according to your required
     # architecture. LSTMs are also not the only way to do this, can be done using any algo deemed fit by

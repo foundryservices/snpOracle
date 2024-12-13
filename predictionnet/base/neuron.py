@@ -23,6 +23,7 @@ import bittensor as bt
 from predictionnet import __spec_version__ as spec_version
 
 # Sync calls set weights and also resyncs the metagraph.
+from predictionnet.utils.bittensor import setup_bittensor_objects
 from predictionnet.utils.config import add_args, check_config, config
 from predictionnet.utils.misc import ttl_get_block
 
@@ -82,17 +83,7 @@ class BaseNeuron(ABC):
         # These are core Bittensor classes to interact with the network.
         bt.logging.info("Setting up bittensor objects.")
 
-        # The wallet holds the cryptographic key pairs for the miner.
-        self.wallet = bt.wallet(config=self.config)
-        bt.logging.info(f"Wallet: {self.wallet}")
-
-        # The subtensor is our connection to the Bittensor blockchain.
-        self.subtensor = bt.subtensor(config=self.config)
-        bt.logging.info(f"Subtensor: {self.subtensor}")
-
-        # The metagraph holds the state of the network, letting us know about other validators and miners.
-        self.metagraph = self.subtensor.metagraph(self.config.netuid)
-        bt.logging.info(f"Metagraph: {self.metagraph}")
+        setup_bittensor_objects(self)
 
         # Check if the miner is registered on the Bittensor network before proceeding further.
         self.check_registered()
@@ -142,7 +133,9 @@ class BaseNeuron(ABC):
         """
         Check if enough epoch blocks have elapsed since the last checkpoint to sync.
         """
-        return (self.block - self.metagraph.last_update[self.uid]) > self.config.neuron.epoch_length
+        return (
+            self.block - self.metagraph.last_update[self.uid]
+        ) > self.config.neuron.epoch_length
 
     def should_set_weights(self) -> bool:
         # Don't set weights on initialization.

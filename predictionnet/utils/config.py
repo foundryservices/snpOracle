@@ -150,6 +150,13 @@ def add_args(cls, parser):
         )
 
         parser.add_argument(
+            "--reset_state",
+            action="store_true",
+            dest="reset_state",
+            help="Overwrites the state file",
+        )
+
+        parser.add_argument(
             "--neuron.vpermit_tao_limit",
             type=int,
             help="The maximum number of TAO allowed to query a validator with a vpermit.",
@@ -173,9 +180,17 @@ def add_args(cls, parser):
             default=False,
         )
 
-        parser.add_argument("--model", type=str, help="The file name of the model that the miner loads weights from")
+        parser.add_argument(
+            "--model",
+            type=str,
+            help="The file name of the model that the miner loads weights from",
+        )
 
-        parser.add_argument("--hf_repo_id", type=str, help="The Huggingface repo id where the weights file exists")
+        parser.add_argument(
+            "--hf_repo_id",
+            type=str,
+            help="The Huggingface repo id where the weights file exists",
+        )
 
         parser.add_argument(
             "--validator.min_stake",

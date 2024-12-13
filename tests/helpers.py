@@ -49,8 +49,12 @@ class CLOSE_IN_VALUE:
     def __eq__(self, __o: Union[float, int, Balance]) -> bool:
         # True if __o \in [value - tolerance, value + tolerance]
         # or if value \in [__o - tolerance, __o + tolerance]
-        return ((self.value - self.tolerance) <= __o and __o <= (self.value + self.tolerance)) or (
-            (__o - self.tolerance) <= self.value and self.value <= (__o + self.tolerance)
+        return (
+            (self.value - self.tolerance) <= __o
+            and __o <= (self.value + self.tolerance)
+        ) or (
+            (__o - self.tolerance) <= self.value
+            and self.value <= (__o + self.tolerance)
         )
 
 
@@ -72,7 +76,9 @@ def get_mock_neuron(**kwargs) -> NeuronInfo:
                 placeholder1=0,
                 placeholder2=0,
             ),
-            "prometheus_info": PrometheusInfo(block=0, version=1, ip=0, port=0, ip_type=0),
+            "prometheus_info": PrometheusInfo(
+                block=0, version=1, ip=0, port=0, ip_type=0
+            ),
             "validator_permit": True,
             "uid": 1,
             "hotkey": "some_hotkey",
@@ -110,7 +116,9 @@ def get_mock_neuron(**kwargs) -> NeuronInfo:
 
 
 def get_mock_neuron_by_uid(uid: int, **kwargs) -> NeuronInfo:
-    return get_mock_neuron(uid=uid, hotkey=_get_mock_hotkey(uid), coldkey=_get_mock_coldkey(uid), **kwargs)
+    return get_mock_neuron(
+        uid=uid, hotkey=_get_mock_hotkey(uid), coldkey=_get_mock_coldkey(uid), **kwargs
+    )
 
 
 class MockStatus:
@@ -142,7 +150,9 @@ class MockConsole:
         return MockStatus()
 
     def print(self, *args, **kwargs):
-        console = Console(width=1000, no_color=True, markup=False)  # set width to 1000 to avoid truncation
+        console = Console(
+            width=1000, no_color=True, markup=False
+        )  # set width to 1000 to avoid truncation
         console.begin_capture()
         console.print(*args, **kwargs)
         self.captured_print = console.end_capture()
