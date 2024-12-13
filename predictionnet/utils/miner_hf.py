@@ -65,12 +65,18 @@ class MinerHfInterface:
 
             bt.logging.debug(f"Uploading file as: {model_name}")
             self.api.upload_file(
-                path_or_fileobj=model_path, path_in_repo=model_name, repo_id=repo_id, repo_type="model"
+                path_or_fileobj=model_path,
+                path_in_repo=model_name,
+                repo_id=repo_id,
+                repo_type="model",
             )
 
             commits = self.api.list_repo_commits(repo_id=repo_id, repo_type="model")
             if commits:
-                return True, {"hotkey": hotkey, "timestamp": commits[0].created_at.timestamp()}
+                return True, {
+                    "hotkey": hotkey,
+                    "timestamp": commits[0].created_at.timestamp(),
+                }
             return True, {}
 
         except Exception as e:

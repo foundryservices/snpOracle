@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "snp_oracle"
+name = "predictionnet"
 version = "2.2.1"
 description = ""
 authors = ["Foundry Digital"]
