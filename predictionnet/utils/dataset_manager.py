@@ -126,19 +126,15 @@ class DatasetManager:
         timestamp: str,
         miner_data: pd.DataFrame,
         predictions: Dict,
-        encryption_key: bytes,
         metadata: Optional[Dict] = None,
     ) -> Tuple[bool, Dict]:
         """
-        Store encrypted market data in the appropriate dataset repository.
+        Store market data in the appropriate dataset repository.
 
         Args:
             timestamp: Current timestamp
-            miner_data: DataFrame containing market data with OHLCV and technical indicators
-                    Expected columns: ['Open', 'High', 'Low', 'Close', 'Volume',
-                    'SMA_50', 'SMA_200', 'RSI', 'CCI', 'Momentum', 'NextClose1'...]
+            miner_data: DataFrame containing market data
             predictions: Dictionary containing prediction results
-            encryption_key: Raw Fernet key in bytes format
             metadata: Optional metadata about the collection
 
         Returns:
@@ -149,31 +145,20 @@ class DatasetManager:
             if not isinstance(miner_data, pd.DataFrame) or miner_data.empty:
                 raise ValueError("miner_data must be a non-empty pandas DataFrame")
 
-            # Validate required columns
-            required_columns = {"Open", "High", "Low", "Close", "Volume", "SMA_50", "SMA_200", "RSI", "CCI", "Momentum"}
-            missing_columns = required_columns - set(miner_data.columns)
-            if missing_columns:
-                raise ValueError(f"DataFrame missing required columns: {missing_columns}")
-
-            # Validate NextClose columns (at least one should be present)
-            next_close_columns = [col for col in miner_data.columns if col.startswith("NextClose")]
-            if not next_close_columns:
-                raise ValueError("DataFrame missing NextClose prediction columns")
-
             # Get or create repository
             repo_name = self._get_current_repo_name()
             repo_id = f"{self.organization}/{repo_name}"
 
-            # Convert DataFrame to CSV and check size
+            # Convert DataFrame to CSV
             csv_buffer = StringIO()
             miner_data.to_csv(csv_buffer, index=True)  # Include datetime index
-            csv_data = csv_buffer.getvalue().encode()
+            csv_data = csv_buffer.getvalue()
 
             # Add metadata as comments at the end of CSV
             metadata_buffer = StringIO()
             metadata_buffer.write("\n# Metadata:\n")
             metadata_buffer.write(f"# timestamp: {timestamp}\n")
-            metadata_buffer.write(f"# columns: {','.join(miner_data.columns)}\n")  # Store column order
+            metadata_buffer.write(f"# columns: {','.join(miner_data.columns)}\n")
             metadata_buffer.write(f"# shape: {miner_data.shape[0]},{miner_data.shape[1]}\n")
             if metadata:
                 for key, value in metadata.items():
@@ -182,25 +167,21 @@ class DatasetManager:
                 metadata_buffer.write(f"# predictions: {json.dumps(predictions)}\n")
 
             # Combine CSV data and metadata
-            full_data = csv_data + metadata_buffer.getvalue().encode()
-
-            # Initialize Fernet and encrypt
-            fernet = Fernet(encryption_key)
-            encrypted_data = fernet.encrypt(full_data)
+            full_data = csv_data + metadata_buffer.getvalue()
 
             # Check repository size
             current_size = self._get_repo_size(repo_id)
-            if current_size + len(encrypted_data) > self.MAX_REPO_SIZE:
+            if current_size + len(full_data.encode()) > self.MAX_REPO_SIZE:
                 repo_name = f"dataset-{datetime.now().strftime('%Y-%m-%d')}"
                 repo_id = self._create_new_repo(repo_name)
 
             # Upload to repository
             with repository.Repository(local_dir=".", clone_from=repo_id, token=self.token) as repo:
-                filename = f"market_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.enc"
+                filename = f"market_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
                 file_path = os.path.join(repo.local_dir, filename)
 
-                with open(file_path, "wb") as f:
-                    f.write(encrypted_data)
+                with open(file_path, "w") as f:
+                    f.write(full_data)
 
                 commit_url = repo.push_to_hub()
 
@@ -279,7 +260,6 @@ class DatasetManager:
         timestamp: str,
         miner_data: pd.DataFrame,
         predictions: Dict,
-        encryption_key: bytes,
         metadata: Optional[Dict] = None,
     ) -> None:
         """
@@ -291,7 +271,7 @@ class DatasetManager:
         async def _store():
             try:
                 result = await loop.run_in_executor(
-                    self.executor, lambda: self.store_data(timestamp, miner_data, predictions, encryption_key, metadata)
+                    self.executor, lambda: self.store_data(timestamp, miner_data, predictions, metadata)
                 )
 
                 success, upload_result = result

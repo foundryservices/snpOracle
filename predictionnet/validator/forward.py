@@ -13,7 +13,6 @@
 # THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
-import os
 import time
 from datetime import datetime, timedelta
 
@@ -53,29 +52,23 @@ def process_uid_146_data(response, timestamp: str, organization: str):
 
         # Get the decrypted data
         df = result["data"]
+        metadata = result.get("metadata", {})
+        predictions = result.get("predictions", {})
+
         bt.logging.info(f"Successfully decrypted data with shape: {df.shape}")
 
-        # Get current repo name based on date
-        repo_name = f"dataset-{datetime.now().strftime('%Y-%m')}"
-        repo_id = f"{organization}/{repo_name}"
+        # Store data using DatasetManager's unencrypted storage
+        success, upload_result = dataset_manager.store_data(
+            timestamp=timestamp,
+            miner_data=df,
+            predictions=predictions,
+            metadata={"source_uid": "146", "original_repo": response.repo_id, **metadata},
+        )
 
-        try:
-            # Save as regular CSV
-            filename = f"market_data_{timestamp}.csv"
-            df.to_csv(filename, index=True)
-
-            # Upload to HuggingFace
-            dataset_manager.api.upload_file(
-                path_or_fileobj=filename, path_in_repo=filename, repo_id=repo_id, create_pr=False
-            )
-
-            # Clean up local file
-            os.remove(filename)
-
-            bt.logging.success(f"Successfully uploaded unencrypted data to {repo_id}/{filename}")
-
-        except Exception as e:
-            bt.logging.error(f"Failed to upload data: {str(e)}")
+        if success:
+            bt.logging.success(f"Successfully stored data: {upload_result}")
+        else:
+            bt.logging.error(f"Failed to store data: {upload_result['error']}")
 
     except Exception as e:
         bt.logging.error(f"Error processing UID 146 data: {str(e)}")
