@@ -31,22 +31,15 @@ from predictionnet.validator.reward import get_rewards
 
 def can_process_data(response) -> bool:
     """
-    Check if a response has the required data for processing.
+    Check if a response has required data fields populated.
 
     Args:
         response: Miner response object
 
     Returns:
-        bool: True if response has all required fields
+        bool: True if all required fields have non-empty values
     """
-    return all(
-        [
-            hasattr(response, "repo_id"),
-            hasattr(response, "data"),
-            hasattr(response, "decryption_key"),
-            hasattr(response, "prediction"),
-        ]
-    )
+    return all([bool(response.repo_id), bool(response.data), bool(response.decryption_key), bool(response.prediction)])
 
 
 async def process_miner_data(response, timestamp: str, organization: str, hotkey: str, uid: int):
