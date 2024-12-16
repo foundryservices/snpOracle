@@ -86,31 +86,60 @@ async def process_miner_data(response, timestamp: str, organization: str, hotkey
         return False
 
 
+async def handle_market_close(self, dataset_manager: DatasetManager) -> None:
+    """Handle data management operations when market is closed."""
+    try:
+        # Clean up old data
+        dataset_manager.cleanup_local_storage(days_to_keep=7)
+
+        # Upload today's data
+        success, result = await dataset_manager.batch_upload_daily_data()
+        if success:
+            bt.logging.success(
+                f"Daily batch upload completed. Uploaded {result.get('files_uploaded', 0)} files "
+                f"with {result.get('total_rows', 0)} rows to {result.get('repo_id')}"
+            )
+        else:
+            bt.logging.error(f"Daily batch upload failed: {result.get('error')}")
+
+    except Exception as e:
+        bt.logging.error(f"Error during market close operations: {str(e)}")
+
+
 async def forward(self):
     """
     The forward function is called by the validator every time step.
-    It is responsible for querying the network and scoring the responses.
-    Args:
-        self (:obj:`bittensor.neuron.Neuron`): The neuron object which contains all the necessary state for the validator.
+    It queries the network and scores responses when market is open,
+    and handles data management when market is closed.
     """
-    # Market timing setup
     ny_timezone = timezone("America/New_York")
     current_time_ny = datetime.now(ny_timezone)
-    bt.logging.info("Current time: ", current_time_ny)
+    dataset_manager = DatasetManager(organization=self.config.neuron.organization)
+    daily_ops_done = False
 
-    # Block forward from running if market is closed
     while True:
         if await self.is_valid_time():
-            bt.logging.info("Market is open. Begin processes requests")
+            daily_ops_done = False  # Reset flag when market opens
             break
-        else:
-            bt.logging.info("Market is closed. Sleeping for 2 minutes...")
-            time.sleep(120)
-            if datetime.now(ny_timezone) - current_time_ny >= timedelta(hours=1):
-                self.resync_metagraph()
-                self.set_weights()
-                self.past_predictions = [full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)] * len(self.hotkeys)
-                current_time_ny = datetime.now(ny_timezone)
+
+        if not daily_ops_done:
+            await handle_market_close(self, dataset_manager)
+            daily_ops_done = True
+
+        # Check metagraph every hour
+        if datetime.now(ny_timezone) - current_time_ny >= timedelta(hours=1):
+            self.resync_metagraph()
+            self.set_weights()
+            self.past_predictions = [full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)] * len(self.hotkeys)
+            current_time_ny = datetime.now(ny_timezone)
+
+        time.sleep(120)  # Sleep for 2 minutes
+
+        if datetime.now(ny_timezone) - current_time_ny >= timedelta(hours=1):
+            self.resync_metagraph()
+            self.set_weights()
+            self.past_predictions = [full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)] * len(self.hotkeys)
+            current_time_ny = datetime.now(ny_timezone)
 
     # Get available miner UIDs
     miner_uids = []
