@@ -18,142 +18,78 @@
 import asyncio
 import json
 import os
+import shutil
+import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from io import StringIO
+from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 import bittensor as bt
+import git
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 from cryptography.fernet import Fernet
-from huggingface_hub import HfApi, create_repo, hf_hub_download
+from dotenv import load_dotenv
+from git import Repo
+from huggingface_hub import HfApi, hf_hub_download
+
+load_dotenv()
 
 
 class DatasetManager:
-    def __init__(self, organization: str):
+    def __init__(self, organization: str, local_storage_path: str = "./local_data"):
         """
-        Initialize the DatasetManager for handling HuggingFace dataset operations.
+        Initialize DatasetManager for handling dataset operations.
 
         Args:
-            organization (str): The HuggingFace organization name to store datasets under
+            organization (str): The HuggingFace organization name
+            local_storage_path (str): Path to store local data before batch upload
 
         Raises:
-            ValueError: If HF_ACCESS_TOKEN environment variable is not set
-
-        Notes:
-            - Sets up ThreadPoolExecutor for async operations
-            - Configures max repository size limit (300GB)
-            - Requires HF_ACCESS_TOKEN environment variable to be set
+            ValueError: If required environment variables are not set
         """
-        self.token = os.getenv("HF_ACCESS_TOKEN")
-        if not self.token:
-            raise ValueError("HF_ACCESS_TOKEN environment variable not set")
+        # Load required tokens and credentials
+        self.hf_token = os.getenv("HF_ACCESS_TOKEN")
+        self.git_username = os.getenv("GIT_USERNAME", "")
+        self.git_token = os.getenv("GIT_TOKEN")
 
-        self.api = HfApi(token=self.token)
+        if not self.git_token:
+            raise ValueError("GIT_TOKEN environment variable not set")
+
+        self.api = HfApi(token=self.hf_token)
         self.organization = organization
-        self.MAX_REPO_SIZE = 300 * 1024 * 1024 * 1024  # 300GB
         self.executor = ThreadPoolExecutor(max_workers=1)
 
-    def _get_current_repo_name(self) -> str:
-        """
-        Generate repository name based on current date in YYYY-MM format.
+        # Local storage setup
+        self.local_storage = Path(local_storage_path)
+        self.local_storage.mkdir(parents=True, exist_ok=True)
 
-        Returns:
-            str: Repository name in format 'dataset-YYYY-MM'
-        """
+        # Track current day's data
+        self.current_day = datetime.now().strftime("%Y-%m-%d")
+        self.day_storage = self.local_storage / self.current_day
+        self.day_storage.mkdir(parents=True, exist_ok=True)
+
+        # Git configuration
+        if self.git_username:
+            self.git_url_template = f"https://{self.git_username}:{self.git_token}@huggingface.co/datasets/{self.organization}/{{repo_name}}"
+        else:
+            self.git_url_template = (
+                f"https://{self.git_token}@huggingface.co/datasets/{self.organization}/{{repo_name}}"
+            )
+
+    def _get_current_repo_name(self) -> str:
+        """Generate repository name based on current date"""
         return f"dataset-{datetime.now().strftime('%Y-%m')}"
 
-    def _get_repo_size(self, repo_id: str) -> int:
-        """
-        Calculate total size of repository by summing all file sizes.
+    def _get_local_path(self, hotkey: str) -> Path:
+        """Get local storage path for a specific hotkey"""
+        path = self.day_storage / hotkey
+        path.mkdir(parents=True, exist_ok=True)
+        return path
 
-        Args:
-            repo_id (str): Full repository ID in format 'organization/name'
-
-        Returns:
-            int: Total repository size in bytes
-
-        Notes:
-            - Handles missing files or metadata gracefully
-            - Returns 0 if repository doesn't exist or on error
-            - Logs errors for individual file metadata retrieval failures
-        """
-        try:
-            files = self.api.list_repo_files(repo_id)
-            total_size = 0
-
-            for file_info in files:
-                try:
-                    file_metadata = self.api.get_file_metadata(repo_id=repo_id, filename=file_info)
-                    total_size += file_metadata.size
-                except Exception as e:
-                    bt.logging.error(f"Error getting metadata for {file_info}: {e}")
-                    continue
-
-            return total_size
-        except Exception:
-            return 0
-
-    def _create_new_repo(self, repo_name: str) -> str:
-        """
-        Create a new dataset repository in the organization.
-
-        Args:
-            repo_name (str): Name of the repository to create
-
-        Returns:
-            str: Full repository ID in format 'organization/name'
-
-        Raises:
-            Exception: If repository creation fails
-
-        Notes:
-            - Creates public dataset repository
-            - Logs success or failure of creation
-        """
-        repo_id = f"{self.organization}/{repo_name}"
-        try:
-            create_repo(repo_id=repo_id, repo_type="dataset", private=False, token=self.token)
-            bt.logging.success(f"Created new repository: {repo_id}")
-        except Exception as e:
-            bt.logging.error(f"Error creating repository {repo_id}: {e}")
-            raise
-
-        return repo_id
-
-    def verify_encryption_key(self, key: bytes) -> bool:
-        """
-        Verify that an encryption key is valid for Fernet encryption.
-
-        Args:
-            key (bytes): The encryption key to verify
-
-        Returns:
-            bool: True if key is valid Fernet key, False otherwise
-
-        Notes:
-            - Checks base64 encoding
-            - Verifies key length is exactly 32 bytes
-            - Attempts Fernet initialization
-            - Logs specific validation errors
-        """
-        try:
-            # Check if key is valid base64
-            import base64
-
-            decoded = base64.b64decode(key)
-            # Check if key length is correct (32 bytes)
-            if len(decoded) != 32:
-                bt.logging.error(f"Invalid key length: {len(decoded)} bytes (expected 32)")
-                return False
-            # Try to initialize Fernet
-            Fernet(key)
-            return True
-        except Exception as e:
-            bt.logging.error(f"Invalid encryption key: {str(e)}")
-            return False
-
-    def store_data(
+    def store_local_data(
         self,
         timestamp: str,
         miner_data: pd.DataFrame,
@@ -162,110 +98,174 @@ class DatasetManager:
         metadata: Optional[Dict] = None,
     ) -> Tuple[bool, Dict]:
         """
-        Store market data and metadata in a HuggingFace dataset repository.
+        Store data locally in Parquet format.
 
         Args:
-            timestamp (str): Current timestamp for data identification
-            miner_data (pd.DataFrame): DataFrame containing market data to store
+            timestamp (str): Current timestamp
+            miner_data (pd.DataFrame): DataFrame containing market data
             predictions (Dict): Dictionary of prediction results
-            hotkey (str): Miner's hotkey for data organization
-            metadata (Optional[Dict]): Additional metadata about the collection
+            hotkey (str): Miner's hotkey
+            metadata (Optional[Dict]): Additional metadata
 
         Returns:
-            Tuple[bool, Dict]: Pair containing:
-                - bool: Success status of storage operation
-                - Dict: Result data containing:
-                    - repo_id: Full repository ID
-                    - filename: Path to stored file
-                    - rows: Number of data rows
-                    - columns: Number of columns
-                    - error: Error message if failed
-
-        Raises:
-            ValueError: If miner_data is not a non-empty DataFrame
-
-        Notes:
-            - Creates repository if it doesn't exist
-            - Organizes data by hotkey in repository
-            - Includes metadata as CSV comments
-            - Uses standardized filename format
+            Tuple[bool, Dict]: Success status and result data
         """
         try:
             if not isinstance(miner_data, pd.DataFrame) or miner_data.empty:
                 raise ValueError("miner_data must be a non-empty pandas DataFrame")
 
-            # Get or create repository
-            repo_name = self._get_current_repo_name()
-            repo_id = f"{self.organization}/{repo_name}"
+            # Get local storage path for this hotkey
+            local_path = self._get_local_path(hotkey)
 
-            # Convert DataFrame to CSV
-            csv_buffer = StringIO()
-            miner_data.to_csv(csv_buffer, index=True)
-            csv_data = csv_buffer.getvalue()
+            # Create filename
+            filename = f"market_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.parquet"
+            file_path = local_path / filename
 
-            # Add metadata as comments
-            metadata_buffer = StringIO()
-            metadata_buffer.write("\n# Metadata:\n")
-            metadata_buffer.write(f"# timestamp: {timestamp}\n")
-            metadata_buffer.write(f"# columns: {','.join(miner_data.columns)}\n")
-            metadata_buffer.write(f"# shape: {miner_data.shape[0]},{miner_data.shape[1]}\n")
-            metadata_buffer.write(f"# hotkey: {hotkey}\n")
+            # Prepare metadata
+            full_metadata = {
+                "timestamp": timestamp,
+                "columns": ",".join(miner_data.columns),
+                "shape": f"{miner_data.shape[0]},{miner_data.shape[1]}",
+                "hotkey": hotkey,
+                "predictions": json.dumps(predictions) if predictions else "",
+            }
             if metadata:
-                for key, value in metadata.items():
-                    metadata_buffer.write(f"# {key}: {value}\n")
-            if predictions:
-                metadata_buffer.write(f"# predictions: {json.dumps(predictions)}\n")
+                full_metadata.update(metadata)
 
-            # Combine CSV data and metadata
-            full_data = csv_data + metadata_buffer.getvalue()
+            # Convert to PyArrow Table with metadata
+            table = pa.Table.from_pandas(miner_data)
+            for key, value in full_metadata.items():
+                table = table.replace_schema_metadata({**table.schema.metadata, key.encode(): str(value).encode()})
 
-            # Ensure repository exists
-            try:
-                self.api.create_repo(repo_id=repo_id, repo_type="dataset", exist_ok=True)
-            except Exception as e:
-                bt.logging.debug(f"Repository already exists or creation failed: {str(e)}")
-
-            # Create unique filename with hotkey path
-            filename = f"{hotkey}/market_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-
-            # Upload directly using HfApi
-            self.api.upload_file(
-                path_or_fileobj=full_data.encode(), path_in_repo=filename, repo_id=repo_id, repo_type="dataset"
-            )
+            # Write Parquet file with compression
+            pq.write_table(table, file_path, compression="snappy", use_dictionary=True, use_byte_stream_split=True)
 
             return True, {
-                "repo_id": repo_id,
-                "filename": filename,
+                "local_path": str(file_path),
                 "rows": miner_data.shape[0],
                 "columns": miner_data.shape[1],
             }
 
         except Exception as e:
-            bt.logging.error(f"Error in store_data: {str(e)}")
+            bt.logging.error(f"Error in store_local_data: {str(e)}")
+            return False, {"error": str(e)}
+
+    def _configure_git_repo(self, repo: Repo):
+        """Configure Git repository with user information"""
+        git_name = os.getenv("GIT_NAME", "DatasetManager")
+        git_email = os.getenv("GIT_EMAIL", "noreply@example.com")
+
+        with repo.config_writer() as git_config:
+            git_config.set_value("user", "name", git_name)
+            git_config.set_value("user", "email", git_email)
+
+    def _setup_git_repo(self, repo_name: str) -> Tuple[Repo, Path]:
+        """Set up Git repository for batch upload"""
+        temp_dir = Path(tempfile.mkdtemp())
+        repo_url = self.git_url_template.format(repo_name=repo_name)
+
+        try:
+            # Try to clone existing repo
+            repo = Repo.clone_from(repo_url, temp_dir)
+            bt.logging.success(f"Cloned existing repository: {repo_name}")
+        except git.exc.GitCommandError:
+            # Repository doesn't exist, create new
+            bt.logging.info(f"Creating new repository: {repo_name}")
+            repo = Repo.init(temp_dir)
+
+            # Configure Git
+            self._configure_git_repo(repo)
+
+            # Set up remote
+            repo.create_remote("origin", repo_url)
+
+            # Create initial commit
+            readme_path = temp_dir / "README.md"
+            readme_path.write_text(f"# {repo_name}\nDataset repository managed by DatasetManager")
+            repo.index.add(["README.md"])
+            repo.index.commit("Initial commit")
+
+            # Push to create repository
+            origin = repo.remote("origin")
+            origin.push(refspec="master:master")
+
+        return repo, temp_dir
+
+    async def batch_upload_daily_data(self) -> Tuple[bool, Dict]:
+        """Upload all locally stored data using Git"""
+        try:
+            repo_name = self._get_current_repo_name()
+            repo, temp_dir = self._setup_git_repo(repo_name)
+
+            uploaded_files = []
+            total_rows = 0
+
+            try:
+                # Copy all files from day storage to Git repo
+                for hotkey_dir in self.day_storage.iterdir():
+                    if hotkey_dir.is_dir():
+                        hotkey = hotkey_dir.name
+                        repo_hotkey_dir = temp_dir / hotkey
+                        repo_hotkey_dir.mkdir(exist_ok=True)
+
+                        for file_path in hotkey_dir.glob("*.parquet"):
+                            try:
+                                # Copy file
+                                target_path = repo_hotkey_dir / file_path.name
+                                shutil.copy2(file_path, target_path)
+
+                                # Track file
+                                rel_path = str(target_path.relative_to(temp_dir))
+                                uploaded_files.append(rel_path)
+
+                                # Count rows
+                                table = pq.read_table(file_path)
+                                total_rows += table.num_rows
+
+                                # Stage file
+                                repo.index.add([rel_path])
+
+                            except Exception as e:
+                                bt.logging.error(f"Error processing {file_path}: {str(e)}")
+                                continue
+
+                # Commit and push if there are changes
+                if repo.is_dirty() or len(repo.untracked_files) > 0:
+                    commit_message = f"Batch upload for {self.current_day}"
+                    repo.index.commit(commit_message)
+
+                    origin = repo.remote("origin")
+                    origin.push()
+
+                    bt.logging.success(f"Successfully pushed {len(uploaded_files)} files to {repo_name}")
+                else:
+                    bt.logging.info("No changes to upload")
+
+                return True, {
+                    "repo_id": f"{self.organization}/{repo_name}",
+                    "files_uploaded": len(uploaded_files),
+                    "total_rows": total_rows,
+                    "paths": uploaded_files,
+                }
+
+            finally:
+                # Clean up temporary directory
+                shutil.rmtree(temp_dir)
+
+        except Exception as e:
+            bt.logging.error(f"Error in batch_upload_daily_data: {str(e)}")
             return False, {"error": str(e)}
 
     def decrypt_data(self, data_path: str, decryption_key: bytes) -> Tuple[bool, Dict]:
         """
-        Decrypt and load data from a HuggingFace repository file.
+        Decrypt and load data from a HuggingFace repository file in Parquet format.
 
         Args:
             data_path (str): Full repository path (org/repo_type/hotkey/data/filename)
             decryption_key (bytes): Raw Fernet decryption key
 
         Returns:
-            Tuple[bool, Dict]: Pair containing:
-                - bool: Success status of decryption
-                - Dict: Result data containing:
-                    - data: Decrypted DataFrame
-                    - metadata: Extracted metadata dictionary
-                    - predictions: Extracted predictions dictionary
-                    - error: Error message if failed
-
-        Notes:
-            - Downloads file from HuggingFace hub
-            - Separates CSV data from metadata comments
-            - Parses metadata into structured format
-            - Handles prediction data separately if present
+            Tuple[bool, Dict]: Success status and decrypted data with metadata
         """
         try:
             bt.logging.info(f"Attempting to decrypt data from path: {data_path}")
@@ -282,27 +282,33 @@ class DatasetManager:
             with open(local_path, "rb") as file:
                 encrypted_data = file.read()
 
-            decrypted_data = fernet.decrypt(encrypted_data).decode()
+            decrypted_data = fernet.decrypt(encrypted_data)
 
-            # Split data into CSV and metadata sections
-            parts = decrypted_data.split("\n# Metadata:")
+            # Read Parquet from decrypted data
+            with tempfile.NamedTemporaryFile(suffix=".parquet") as temp_file:
+                temp_file.write(decrypted_data)
+                temp_file.flush()
 
-            # Parse CSV data into DataFrame
-            df = pd.read_csv(StringIO(parts[0]))
+                # Read Parquet file
+                table = pq.read_table(temp_file.name)
+                df = table.to_pandas()
 
-            # Parse metadata
-            metadata = {}
-            predictions = None
-            if len(parts) > 1:
-                for line in parts[1].split("\n"):
-                    if line.startswith("# "):
+                # Extract metadata from Parquet schema
+                metadata = {}
+                predictions = None
+
+                if table.schema.metadata:
+                    for key, value in table.schema.metadata.items():
                         try:
-                            key, value = line[2:].split(": ", 1)
-                            if key == "predictions":
-                                predictions = json.loads(value)
+                            key_str = key.decode() if isinstance(key, bytes) else key
+                            value_str = value.decode() if isinstance(value, bytes) else value
+
+                            if key_str == "predictions":
+                                predictions = json.loads(value_str)
                             else:
-                                metadata[key] = value
-                        except ValueError:
+                                metadata[key_str] = value_str
+                        except Exception as e:
+                            bt.logging.error(f"Error while extracting metadata: {str(e)}")
                             continue
 
             return True, {"data": df, "metadata": metadata, "predictions": predictions}
@@ -318,38 +324,22 @@ class DatasetManager:
         predictions: Dict,
         hotkey: str,
         metadata: Optional[Dict] = None,
-    ) -> None:
-        """
-        Asynchronously store data in the dataset repository without blocking.
-
-        Args:
-            timestamp (str): Current timestamp for data identification
-            miner_data (pd.DataFrame): DataFrame containing market data
-            predictions (Dict): Dictionary of prediction results
-            hotkey (str): Miner's hotkey for data organization
-            metadata (Optional[Dict]): Additional metadata about the collection
-
-        Notes:
-            - Creates background task for storage operation
-            - Uses ThreadPoolExecutor for async execution
-            - Logs success or failure but does not return results
-            - Does not block the calling coroutine
-        """
+    ) -> Tuple[bool, Dict]:
+        """Async wrapper for store_local_data"""
         loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(
+            self.executor, lambda: self.store_local_data(timestamp, miner_data, predictions, hotkey, metadata)
+        )
 
-        async def _store():
-            try:
-                result = await loop.run_in_executor(
-                    self.executor, lambda: self.store_data(timestamp, miner_data, predictions, hotkey, metadata)
-                )
+    def cleanup_local_storage(self, days_to_keep: int = 7):
+        """Clean up old local storage directories"""
+        try:
+            dirs = sorted([d for d in self.local_storage.iterdir() if d.is_dir()])
 
-                success, upload_result = result
-                if success:
-                    bt.logging.success(f"Stored market data in dataset: {upload_result['repo_id']}")
-                else:
-                    bt.logging.error(f"Failed to store market data: {upload_result['error']}")
+            if len(dirs) > days_to_keep:
+                for old_dir in dirs[:-days_to_keep]:
+                    shutil.rmtree(old_dir)
+                bt.logging.success(f"Cleaned up {len(dirs) - days_to_keep} old data directories")
 
-            except Exception as e:
-                bt.logging.error(f"Error in async data storage: {str(e)}")
-
-        asyncio.create_task(_store())
+        except Exception as e:
+            bt.logging.error(f"Error cleaning up local storage: {str(e)}")

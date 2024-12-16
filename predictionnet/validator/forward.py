@@ -42,9 +42,9 @@ def can_process_data(response) -> bool:
     return all([bool(response.repo_id), bool(response.data), bool(response.decryption_key), bool(response.prediction)])
 
 
-async def process_miner_data(response, timestamp: str, organization: str, hotkey: str, uid: int):
+async def process_miner_data(response, timestamp: str, organization: str, hotkey: str, uid: int) -> bool:
     """
-    Decrypt and store unencrypted data from a miner in the organization dataset.
+    Verify that miner's data can be decrypted and attempt to store it.
 
     Args:
         response: Response from miner containing encrypted data
@@ -52,44 +52,38 @@ async def process_miner_data(response, timestamp: str, organization: str, hotkey
         organization: Organization name for HuggingFace
         hotkey: Miner's hotkey for data organization
         uid: Miner's UID
+
+    Returns:
+        bool: True if data was successfully decrypted, False otherwise
     """
     try:
         bt.logging.info(f"Processing data from UID {uid}...")
-
-        # Initialize DatasetManager with explicit organization
         dataset_manager = DatasetManager(organization=organization)
-
-        # Build complete path using repo_id and data path
         data_path = f"{response.repo_id}/{response.data}"
 
-        bt.logging.info(f"Attempting to decrypt data from path: {data_path}")
-
-        # Attempt to decrypt the data
+        # Verify decryption works
         success, result = dataset_manager.decrypt_data(data_path=data_path, decryption_key=response.decryption_key)
 
         if not success:
             bt.logging.error(f"Failed to decrypt data: {result['error']}")
-            return
+            return False
 
-        # Get the decrypted data
-        df = result["data"]
-        metadata = result.get("metadata", {})
-        predictions = result.get("predictions", {})
-
-        bt.logging.info(f"Successfully decrypted data with shape: {df.shape}")
-
-        # Store data using DatasetManager's async storage
-        await dataset_manager.store_data_async(
-            timestamp=timestamp,
-            miner_data=df,
-            predictions=predictions,
-            hotkey=hotkey,
-            metadata={"source_uid": str(uid), "original_repo": response.repo_id, **metadata},
+        # Attempt to store data in background without affecting reward
+        asyncio.create_task(
+            dataset_manager.store_data_async(
+                timestamp=timestamp,
+                miner_data=result["data"],
+                predictions=result.get("predictions", {}),
+                hotkey=hotkey,
+                metadata={"source_uid": str(uid), "original_repo": response.repo_id, **result.get("metadata", {})},
+            )
         )
+
+        return True
 
     except Exception as e:
         bt.logging.error(f"Error processing data from UID {uid}: {str(e)}")
-        bt.logging.error(f"Full data path: {data_path}")
+        return False
 
 
 async def forward(self):
