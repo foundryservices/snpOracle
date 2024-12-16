@@ -180,4 +180,7 @@ async def forward(self):
 
     # Log scores and update
     bt.logging.info(f"Scored responses: {rewards}")
+    models_confirmed = self.confirm_models(responses, miner_uids)
+    bt.logging.info(f"Models Confirmed: {models_confirmed}")
+    rewards = [0 if not model_confirmed else reward for reward, model_confirmed in zip(rewards, models_confirmed)]
     self.update_scores(rewards, miner_uids)
