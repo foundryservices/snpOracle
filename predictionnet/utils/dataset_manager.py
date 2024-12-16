@@ -26,7 +26,6 @@ from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 import bittensor as bt
-import git
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -81,7 +80,7 @@ class DatasetManager:
 
     def _get_current_repo_name(self) -> str:
         """Generate repository name based on current date"""
-        return f"dataset-{datetime.now().strftime('%Y-%m')}"
+        return f"dataset-{datetime.now().strftime('%Y-%m-%d')}"
 
     def _get_local_path(self, hotkey: str) -> Path:
         """Get local storage path for a specific hotkey"""
@@ -163,83 +162,95 @@ class DatasetManager:
         """Set up Git repository for batch upload"""
         temp_dir = Path(tempfile.mkdtemp())
         repo_url = self.git_url_template.format(repo_name=repo_name)
+        repo_id = f"{self.organization}/{repo_name}"
 
         try:
-            # Try to clone existing repo
-            repo = Repo.clone_from(repo_url, temp_dir)
-            bt.logging.success(f"Cloned existing repository: {repo_name}")
-        except git.exc.GitCommandError:
-            # Repository doesn't exist, create new
-            bt.logging.info(f"Creating new repository: {repo_name}")
-            repo = Repo.init(temp_dir)
+            # First check if repo exists
+            try:
+                self.api.repo_info(repo_id=repo_id, repo_type="dataset")
+            except Exception:
+                # Repository doesn't exist, create it via API
+                self.api.create_repo(repo_id=repo_id, repo_type="dataset", private=False)
+                bt.logging.info(f"Created new repository: {repo_name}")
 
-            # Configure Git
+            # Now clone the repository (it should exist)
+            repo = Repo.clone_from(repo_url, temp_dir)
+            bt.logging.success(f"Cloned repository: {repo_name}")
+
+            # Configure Git if needed
             self._configure_git_repo(repo)
 
-            # Set up remote
-            repo.create_remote("origin", repo_url)
+            return repo, temp_dir
 
-            # Create initial commit
-            readme_path = temp_dir / "README.md"
-            readme_path.write_text(f"# {repo_name}\nDataset repository managed by DatasetManager")
-            repo.index.add(["README.md"])
-            repo.index.commit("Initial commit")
-
-            # Push to create repository
-            origin = repo.remote("origin")
-            origin.push(refspec="master:master")
-
-        return repo, temp_dir
+        except Exception as e:
+            # Clean up temp dir if anything fails
+            if temp_dir.exists():
+                shutil.rmtree(temp_dir)
+            raise Exception(f"Failed to setup repository: {str(e)}")
 
     async def batch_upload_daily_data(self) -> Tuple[bool, Dict]:
         """Upload all locally stored data using Git"""
         try:
-            repo_name = self._get_current_repo_name()
+            print("Starting batch upload process...")
+            repo_name = self._get_current_repo_name()  # Use daily repo name
+            print(f"Generated repo name: {repo_name}")
+
+            # Setup the Git repo (clone or create new)
             repo, temp_dir = self._setup_git_repo(repo_name)
+            print(f"Repo setup completed. Temporary directory: {temp_dir}")
 
             uploaded_files = []
             total_rows = 0
 
             try:
-                # Copy all files from day storage to Git repo
+                # Iterate through hotkey directories in the day storage
                 for hotkey_dir in self.day_storage.iterdir():
+                    print(f"Processing directory: {hotkey_dir}")
                     if hotkey_dir.is_dir():
                         hotkey = hotkey_dir.name
                         repo_hotkey_dir = temp_dir / hotkey
                         repo_hotkey_dir.mkdir(exist_ok=True)
+                        print(f"Created directory for hotkey: {repo_hotkey_dir}")
 
+                        # Iterate through Parquet files in the hotkey directory
                         for file_path in hotkey_dir.glob("*.parquet"):
                             try:
-                                # Copy file
+                                print(f"Processing file: {file_path}")
+                                # Copy file to repo hotkey directory
                                 target_path = repo_hotkey_dir / file_path.name
                                 shutil.copy2(file_path, target_path)
+                                print(f"Copied file to {target_path}")
 
-                                # Track file
+                                # Track the file and calculate the total rows
                                 rel_path = str(target_path.relative_to(temp_dir))
                                 uploaded_files.append(rel_path)
 
-                                # Count rows
+                                # Count rows in the Parquet file
                                 table = pq.read_table(file_path)
                                 total_rows += table.num_rows
+                                print(f"File has {table.num_rows} rows. Total rows so far: {total_rows}")
 
-                                # Stage file
+                                # Stage the file in the Git repository
                                 repo.index.add([rel_path])
+                                print(f"Staged file for commit: {rel_path}")
 
                             except Exception as e:
-                                bt.logging.error(f"Error processing {file_path}: {str(e)}")
+                                print(f"Error processing {file_path}: {str(e)}")
                                 continue
 
                 # Commit and push if there are changes
                 if repo.is_dirty() or len(repo.untracked_files) > 0:
+                    print("Changes detected, committing and pushing...")
                     commit_message = f"Batch upload for {self.current_day}"
                     repo.index.commit(commit_message)
+                    print(f"Commit created: {commit_message}")
 
                     origin = repo.remote("origin")
+                    print("Pushing changes to remote repository...")
                     origin.push()
-
-                    bt.logging.success(f"Successfully pushed {len(uploaded_files)} files to {repo_name}")
+                    print(f"Successfully pushed {len(uploaded_files)} files to {repo_name}")
                 else:
-                    bt.logging.info("No changes to upload")
+                    print("No changes to upload")
 
                 return True, {
                     "repo_id": f"{self.organization}/{repo_name}",
@@ -251,9 +262,10 @@ class DatasetManager:
             finally:
                 # Clean up temporary directory
                 shutil.rmtree(temp_dir)
+                print(f"Temporary directory cleaned up: {temp_dir}")
 
         except Exception as e:
-            bt.logging.error(f"Error in batch_upload_daily_data: {str(e)}")
+            print(f"Error in batch_upload_daily_data: {str(e)}")
             return False, {"error": str(e)}
 
     def decrypt_data(self, data_path: str, decryption_key: bytes) -> Tuple[bool, Dict]:
