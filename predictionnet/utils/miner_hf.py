@@ -1,9 +1,11 @@
 import os
+import tempfile
 from datetime import datetime
-from io import StringIO
 
 import bittensor as bt
 import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 from huggingface_hub import HfApi
@@ -92,7 +94,7 @@ class MinerHfInterface:
 
     def upload_data(self, repo_id=None, data: pd.DataFrame = None, hotkey=None, encryption_key=None):
         """
-        Upload encrypted training/validation data to HuggingFace Hub with secure encryption.
+        Upload encrypted training/validation data to HuggingFace Hub using Parquet format.
 
         Args:
             repo_id (str, optional): The HuggingFace repository ID where the data will be uploaded.
@@ -116,13 +118,6 @@ class MinerHfInterface:
         Raises:
             ValueError: If data is not a non-empty DataFrame or if encryption_key is not provided
             Exception: If file operations or upload process fails
-
-        Notes:
-            - Data is encrypted using Fernet symmetric encryption
-            - Creates unique filenames using timestamps
-            - Temporarily stores encrypted data locally before upload
-            - Creates the repository if it doesn't exist
-            - Maintains organized directory structure by hotkey
         """
         if not repo_id:
             repo_id = self.config.hf_repo_id
@@ -134,32 +129,44 @@ class MinerHfInterface:
             raise ValueError("Encryption key must be provided")
 
         try:
-            import tempfile
-
             fernet = Fernet(encryption_key.encode() if isinstance(encryption_key, str) else encryption_key)
 
             # Create unique filename using timestamp
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            data_filename = f"data_{timestamp}.enc"
+            data_filename = f"data_{timestamp}.parquet.enc"
             hotkey_path = f"{hotkey}/data"
             data_full_path = f"{hotkey_path}/{data_filename}"
 
             bt.logging.debug(f"Preparing to upload encrypted data: {data_full_path}")
 
-            # Convert DataFrame to CSV in memory
-            csv_buffer = StringIO()
-            data.to_csv(csv_buffer, index=False)
-
-            # Encrypt the CSV data
-            csv_data = csv_buffer.getvalue().encode()
-            encrypted_data = fernet.encrypt(csv_data)
-
-            # Create temporary directory and file
             with tempfile.TemporaryDirectory() as temp_dir:
-                temp_data_path = os.path.join(temp_dir, data_filename)
+                # First create temporary Parquet file
+                temp_parquet = os.path.join(temp_dir, "temp.parquet")
+                temp_encrypted = os.path.join(temp_dir, data_filename)
+
                 try:
+                    # Convert to PyArrow Table with metadata
+                    table = pa.Table.from_pandas(data)
+                    table = table.replace_schema_metadata(
+                        {
+                            **table.schema.metadata,
+                            b"timestamp": timestamp.encode(),
+                            b"hotkey": hotkey.encode() if hotkey else b"",
+                        }
+                    )
+
+                    # Write Parquet file with compression
+                    pq.write_table(
+                        table, temp_parquet, compression="snappy", use_dictionary=True, use_byte_stream_split=True
+                    )
+
+                    # Read and encrypt the Parquet file
+                    with open(temp_parquet, "rb") as f:
+                        parquet_data = f.read()
+                    encrypted_data = fernet.encrypt(parquet_data)
+
                     # Write encrypted data to temporary file
-                    with open(temp_data_path, "wb") as f:
+                    with open(temp_encrypted, "wb") as f:
                         f.write(encrypted_data)
 
                     # Ensure repository exists
@@ -170,7 +177,7 @@ class MinerHfInterface:
                     # Upload encrypted file
                     bt.logging.debug(f"Uploading encrypted data file: {data_full_path}")
                     self.api.upload_file(
-                        path_or_fileobj=temp_data_path,
+                        path_or_fileobj=temp_encrypted,
                         path_in_repo=data_full_path,
                         repo_id=repo_id,
                         repo_type="model",
