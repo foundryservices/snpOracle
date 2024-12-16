@@ -32,9 +32,18 @@ from huggingface_hub import HfApi, create_repo, hf_hub_download
 class DatasetManager:
     def __init__(self, organization: str):
         """
-        Initialize the DatasetManager.
+        Initialize the DatasetManager for handling HuggingFace dataset operations.
+
         Args:
-            organization: The HuggingFace organization name
+            organization (str): The HuggingFace organization name to store datasets under
+
+        Raises:
+            ValueError: If HF_ACCESS_TOKEN environment variable is not set
+
+        Notes:
+            - Sets up ThreadPoolExecutor for async operations
+            - Configures max repository size limit (300GB)
+            - Requires HF_ACCESS_TOKEN environment variable to be set
         """
         self.token = os.getenv("HF_ACCESS_TOKEN")
         if not self.token:
@@ -46,18 +55,28 @@ class DatasetManager:
         self.executor = ThreadPoolExecutor(max_workers=1)
 
     def _get_current_repo_name(self) -> str:
-        """Generate repository name based on current date."""
+        """
+        Generate repository name based on current date in YYYY-MM format.
+
+        Returns:
+            str: Repository name in format 'dataset-YYYY-MM'
+        """
         return f"dataset-{datetime.now().strftime('%Y-%m')}"
 
     def _get_repo_size(self, repo_id: str) -> int:
         """
-        Calculate total size of repository in bytes.
+        Calculate total size of repository by summing all file sizes.
 
         Args:
-            repo_id: Full repository ID (org/name)
+            repo_id (str): Full repository ID in format 'organization/name'
 
         Returns:
-            Total size in bytes
+            int: Total repository size in bytes
+
+        Notes:
+            - Handles missing files or metadata gracefully
+            - Returns 0 if repository doesn't exist or on error
+            - Logs errors for individual file metadata retrieval failures
         """
         try:
             files = self.api.list_repo_files(repo_id)
@@ -77,13 +96,20 @@ class DatasetManager:
 
     def _create_new_repo(self, repo_name: str) -> str:
         """
-        Create a new dataset repository.
+        Create a new dataset repository in the organization.
 
         Args:
-            repo_name: Name of the repository
+            repo_name (str): Name of the repository to create
 
         Returns:
-            Full repository ID
+            str: Full repository ID in format 'organization/name'
+
+        Raises:
+            Exception: If repository creation fails
+
+        Notes:
+            - Creates public dataset repository
+            - Logs success or failure of creation
         """
         repo_id = f"{self.organization}/{repo_name}"
         try:
@@ -97,13 +123,19 @@ class DatasetManager:
 
     def verify_encryption_key(self, key: bytes) -> bool:
         """
-        Verify that an encryption key is valid for Fernet.
+        Verify that an encryption key is valid for Fernet encryption.
 
         Args:
-            key: The key to verify
+            key (bytes): The encryption key to verify
 
         Returns:
-            bool: True if key is valid
+            bool: True if key is valid Fernet key, False otherwise
+
+        Notes:
+            - Checks base64 encoding
+            - Verifies key length is exactly 32 bytes
+            - Attempts Fernet initialization
+            - Logs specific validation errors
         """
         try:
             # Check if key is valid base64
@@ -130,14 +162,33 @@ class DatasetManager:
         metadata: Optional[Dict] = None,
     ) -> Tuple[bool, Dict]:
         """
-        Store market data in the appropriate dataset repository using HfApi.
+        Store market data and metadata in a HuggingFace dataset repository.
 
         Args:
-            timestamp: Current timestamp
-            miner_data: DataFrame containing market data
-            predictions: Dictionary containing prediction results
-            hotkey: Miner's hotkey for organizing data
-            metadata: Optional metadata about the collection
+            timestamp (str): Current timestamp for data identification
+            miner_data (pd.DataFrame): DataFrame containing market data to store
+            predictions (Dict): Dictionary of prediction results
+            hotkey (str): Miner's hotkey for data organization
+            metadata (Optional[Dict]): Additional metadata about the collection
+
+        Returns:
+            Tuple[bool, Dict]: Pair containing:
+                - bool: Success status of storage operation
+                - Dict: Result data containing:
+                    - repo_id: Full repository ID
+                    - filename: Path to stored file
+                    - rows: Number of data rows
+                    - columns: Number of columns
+                    - error: Error message if failed
+
+        Raises:
+            ValueError: If miner_data is not a non-empty DataFrame
+
+        Notes:
+            - Creates repository if it doesn't exist
+            - Organizes data by hotkey in repository
+            - Includes metadata as CSV comments
+            - Uses standardized filename format
         """
         try:
             if not isinstance(miner_data, pd.DataFrame) or miner_data.empty:
@@ -195,17 +246,26 @@ class DatasetManager:
 
     def decrypt_data(self, data_path: str, decryption_key: bytes) -> Tuple[bool, Dict]:
         """
-        Decrypt data from a HuggingFace repository file using the provided key.
+        Decrypt and load data from a HuggingFace repository file.
 
         Args:
-            data_path: Full repository path (org/repo_type/hotkey/data/filename format)
-            decryption_key: Raw Fernet key in bytes format
+            data_path (str): Full repository path (org/repo_type/hotkey/data/filename)
+            decryption_key (bytes): Raw Fernet decryption key
 
         Returns:
-            Tuple of (success, result) where result contains:
-            - data: pandas DataFrame of the CSV data
-            - metadata: Dictionary of metadata from CSV comments
-            - predictions: Dictionary of predictions if present
+            Tuple[bool, Dict]: Pair containing:
+                - bool: Success status of decryption
+                - Dict: Result data containing:
+                    - data: Decrypted DataFrame
+                    - metadata: Extracted metadata dictionary
+                    - predictions: Extracted predictions dictionary
+                    - error: Error message if failed
+
+        Notes:
+            - Downloads file from HuggingFace hub
+            - Separates CSV data from metadata comments
+            - Parses metadata into structured format
+            - Handles prediction data separately if present
         """
         try:
             bt.logging.info(f"Attempting to decrypt data from path: {data_path}")
@@ -260,8 +320,20 @@ class DatasetManager:
         metadata: Optional[Dict] = None,
     ) -> None:
         """
-        Asynchronously store data in the appropriate dataset repository.
-        Does not block or return results.
+        Asynchronously store data in the dataset repository without blocking.
+
+        Args:
+            timestamp (str): Current timestamp for data identification
+            miner_data (pd.DataFrame): DataFrame containing market data
+            predictions (Dict): Dictionary of prediction results
+            hotkey (str): Miner's hotkey for data organization
+            metadata (Optional[Dict]): Additional metadata about the collection
+
+        Notes:
+            - Creates background task for storage operation
+            - Uses ThreadPoolExecutor for async execution
+            - Logs success or failure but does not return results
+            - Does not block the calling coroutine
         """
         loop = asyncio.get_event_loop()
 

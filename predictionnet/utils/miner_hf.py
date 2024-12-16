@@ -21,7 +21,34 @@ class MinerHfInterface:
         bt.logging.debug(f"Initializing with config: model={config.model}, repo_id={config.hf_repo_id}")
 
     def upload_model(self, repo_id=None, model_path=None, hotkey=None):
-        """Upload a model file to HuggingFace Hub."""
+        """
+        Upload a model file to HuggingFace Hub with organized directory structure.
+
+        Args:
+            repo_id (str, optional): The HuggingFace repository ID where the model will be uploaded.
+                If not provided, uses the default from config.
+            model_path (str, optional): Local file path to the model that will be uploaded.
+                Must have a valid file extension.
+            hotkey (str, optional): Hotkey identifier used to create the model's subdirectory
+                structure in the format '{hotkey}/models/'.
+
+        Returns:
+            tuple: A pair containing:
+                - bool: Success status of the upload
+                - dict: Response data containing:
+                    - 'hotkey': The provided hotkey (if successful with commits)
+                    - 'timestamp': Upload timestamp (if successful with commits)
+                    - 'model_path': Full path where model was uploaded
+                    - 'error': Error message (if upload failed)
+
+        Raises:
+            ValueError: If the model_path lacks a file extension
+
+        Notes:
+            - Creates the repository if it doesn't exist
+            - Organizes models in subdirectories by hotkey
+            - Model files are renamed to 'model{extension}' in the repository
+        """
         bt.logging.debug(f"Trying to upload model: repo_id={repo_id}, model_path={model_path}, hotkey={hotkey}")
 
         try:
@@ -64,7 +91,39 @@ class MinerHfInterface:
             return False, {"error": str(e)}
 
     def upload_data(self, repo_id=None, data: pd.DataFrame = None, hotkey=None, encryption_key=None):
-        """Upload encrypted training/validation data to HuggingFace Hub."""
+        """
+        Upload encrypted training/validation data to HuggingFace Hub with secure encryption.
+
+        Args:
+            repo_id (str, optional): The HuggingFace repository ID where the data will be uploaded.
+                If not provided, uses the default from config.
+            data (pd.DataFrame): DataFrame containing the data to be encrypted and uploaded.
+                Must be non-empty.
+            hotkey (str, optional): Hotkey identifier used to create the data's subdirectory
+                structure in the format '{hotkey}/data/'.
+            encryption_key (str or bytes): Key used for encrypting the data before upload.
+                Must be a valid Fernet encryption key.
+
+        Returns:
+            tuple: A pair containing:
+                - bool: Success status of the upload
+                - dict: Response data containing:
+                    - 'hotkey': The provided hotkey (if successful)
+                    - 'timestamp': Upload timestamp in YYYYMMDD_HHMMSS format
+                    - 'data_path': Full path where encrypted data was uploaded
+                    - 'error': Error message (if upload failed)
+
+        Raises:
+            ValueError: If data is not a non-empty DataFrame or if encryption_key is not provided
+            Exception: If file operations or upload process fails
+
+        Notes:
+            - Data is encrypted using Fernet symmetric encryption
+            - Creates unique filenames using timestamps
+            - Temporarily stores encrypted data locally before upload
+            - Creates the repository if it doesn't exist
+            - Maintains organized directory structure by hotkey
+        """
         if not repo_id:
             repo_id = self.config.hf_repo_id
 
