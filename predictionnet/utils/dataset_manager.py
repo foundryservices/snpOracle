@@ -191,13 +191,13 @@ class DatasetManager:
     async def batch_upload_daily_data(self) -> Tuple[bool, Dict]:
         """Upload all locally stored data using Git"""
         try:
-            print("Starting batch upload process...")
+            bt.logging.info("Starting batch upload process...")
             repo_name = self._get_current_repo_name()  # Use daily repo name
-            print(f"Generated repo name: {repo_name}")
+            bt.logging.info(f"Generated repo name: {repo_name}")
 
             # Setup the Git repo (clone or create new)
             repo, temp_dir = self._setup_git_repo(repo_name)
-            print(f"Repo setup completed. Temporary directory: {temp_dir}")
+            bt.logging.info(f"Repo setup completed. Temporary directory: {temp_dir}")
 
             uploaded_files = []
             total_rows = 0
@@ -205,21 +205,21 @@ class DatasetManager:
             try:
                 # Iterate through hotkey directories in the day storage
                 for hotkey_dir in self.day_storage.iterdir():
-                    print(f"Processing directory: {hotkey_dir}")
+                    bt.logging.debug(f"Processing directory: {hotkey_dir}")
                     if hotkey_dir.is_dir():
                         hotkey = hotkey_dir.name
                         repo_hotkey_dir = temp_dir / hotkey
                         repo_hotkey_dir.mkdir(exist_ok=True)
-                        print(f"Created directory for hotkey: {repo_hotkey_dir}")
+                        bt.logging.debug(f"Created directory for hotkey: {repo_hotkey_dir}")
 
                         # Iterate through Parquet files in the hotkey directory
                         for file_path in hotkey_dir.glob("*.parquet"):
                             try:
-                                print(f"Processing file: {file_path}")
+                                bt.logging.debug(f"Processing file: {file_path}")
                                 # Copy file to repo hotkey directory
                                 target_path = repo_hotkey_dir / file_path.name
                                 shutil.copy2(file_path, target_path)
-                                print(f"Copied file to {target_path}")
+                                bt.logging.debug(f"Copied file to {target_path}")
 
                                 # Track the file and calculate the total rows
                                 rel_path = str(target_path.relative_to(temp_dir))
@@ -228,29 +228,29 @@ class DatasetManager:
                                 # Count rows in the Parquet file
                                 table = pq.read_table(file_path)
                                 total_rows += table.num_rows
-                                print(f"File has {table.num_rows} rows. Total rows so far: {total_rows}")
+                                bt.logging.debug(f"File has {table.num_rows} rows. Total rows so far: {total_rows}")
 
                                 # Stage the file in the Git repository
                                 repo.index.add([rel_path])
-                                print(f"Staged file for commit: {rel_path}")
+                                bt.logging.debug(f"Staged file for commit: {rel_path}")
 
                             except Exception as e:
-                                print(f"Error processing {file_path}: {str(e)}")
+                                bt.logging.error(f"Error processing {file_path}: {str(e)}")
                                 continue
 
                 # Commit and push if there are changes
                 if repo.is_dirty() or len(repo.untracked_files) > 0:
-                    print("Changes detected, committing and pushing...")
+                    bt.logging.info("Changes detected, committing and pushing...")
                     commit_message = f"Batch upload for {self.current_day}"
                     repo.index.commit(commit_message)
-                    print(f"Commit created: {commit_message}")
+                    bt.logging.info(f"Commit created: {commit_message}")
 
                     origin = repo.remote("origin")
-                    print("Pushing changes to remote repository...")
+                    bt.logging.info("Pushing changes to remote repository...")
                     origin.push()
-                    print(f"Successfully pushed {len(uploaded_files)} files to {repo_name}")
+                    bt.logging.success(f"Successfully pushed {len(uploaded_files)} files to {repo_name}")
                 else:
-                    print("No changes to upload")
+                    bt.logging.info("No changes to upload")
 
                 return True, {
                     "repo_id": f"{self.organization}/{repo_name}",
@@ -262,10 +262,10 @@ class DatasetManager:
             finally:
                 # Clean up temporary directory
                 shutil.rmtree(temp_dir)
-                print(f"Temporary directory cleaned up: {temp_dir}")
+                bt.logging.debug(f"Temporary directory cleaned up: {temp_dir}")
 
         except Exception as e:
-            print(f"Error in batch_upload_daily_data: {str(e)}")
+            bt.logging.error(f"Error in batch_upload_daily_data: {str(e)}")
             return False, {"error": str(e)}
 
     def decrypt_data(self, data_path: str, decryption_key: bytes) -> Tuple[bool, Dict]:
