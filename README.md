@@ -3,6 +3,17 @@
 
 # **Bittensor SN28 - S&P 500 Oracle**
 
+<br>
+
+<div align="center">
+  
+| This repository is the official codebase<br>for Bittensor Subnet 28 (SN28) v1.0.0+,<br>which was released on February 20th 2024. | **TestNet UID:**  93 <br> **MainNet UID:**  28 |
+| - | - |
+
+</div>
+
+<br>
+
 |     |     |
 | :-: | :-: |
 | **Status** | <img src="https://img.shields.io/github/v/release/foundryservices/snpOracle?label=Release" height="25"/> <img src="https://img.shields.io/github/actions/workflow/status/foundryservices/snpOracle/ci.yml?label=Build" height="25"/> <br> <a href="https://github.com/pre-commit/pre-commit" target="_blank"> <img src="https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white&label=Pre-Commit" height="25"/> </a> <a href="https://github.com/psf/black" target="_blank"> <img src="https://img.shields.io/badge/code%20style-black-000000.svg?label=Code%20Style" height="25"/> </a> <br> <img src="https://img.shields.io/github/license/foundryservices/snpOracle?label=License" height="25"/> |
@@ -11,16 +22,6 @@
 | **Social** | <a href="https://foundrydigital.com/accelerate/" target="_blank"> <img src="https://img.shields.io/website?url=https%3A%2F%2Ffoundrydigital.com%2Faccelerate%2F&up_message=Foundry%20Accelerate&label=Website" height="25"/> </a> <br> <a href="https://taostats.io/validators/5HEo565WAy4Dbq3Sv271SAi7syBSofyfhhwRNjFNSM2gP9M2" target="_blank"> <img src="https://img.shields.io/website?url=https%3A%2F%2Ftaostats.io%2Fvalidators%2Ffoundry%2F&up_message=Foundry%20Accelerate&label=Validator" height="25"/> </a> <br> <a href="https://x.com/FoundryServices?s=20" target="_blank"> <img src="https://img.shields.io/twitter/follow/FoundryServices" height="25"/> </a> |
 
 </div>
-
----
-
-<br>
-This repository is the official codebase for Bittensor Subnet 28 (SN28) v1.0.0+, which was released on February 20th 2024.
-
-|     | UID |
-| :-: | :-: |
-| TestNet | 93 |
-| MainNet | 28 |
 
 ## Introduction
 
@@ -59,5 +60,3 @@ By tying the rewards mechanism to an external source of truth, the defensibility
 
 #### Adversarial Environment
 The adversarial environment, especially given the rewards mechanism, will allow for significant diversity of models. Miners will be driven to acquire different datasets, implement different training methods, and utilize different Neural Network architectures in order to develop the most performant models.
-
-
