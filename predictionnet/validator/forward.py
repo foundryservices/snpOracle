@@ -93,7 +93,7 @@ async def handle_market_close(self, dataset_manager: DatasetManager) -> None:
         dataset_manager.cleanup_local_storage(days_to_keep=7)
 
         # Upload today's data
-        success, result = await dataset_manager.batch_upload_daily_data()
+        success, result = dataset_manager.batch_upload_daily_data()
         if success:
             bt.logging.success(
                 f"Daily batch upload completed. Uploaded {result.get('files_uploaded', 0)} files "

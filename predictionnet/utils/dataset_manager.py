@@ -117,7 +117,8 @@ class DatasetManager:
             local_path = self._get_local_path(hotkey)
 
             # Create filename
-            filename = f"market_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.parquet"
+            timestamp_dt = datetime.fromisoformat(timestamp)
+            filename = f"market_data_{timestamp_dt.strftime('%Y%m%d_%H%M%S')}.parquet"
             file_path = local_path / filename
 
             # Prepare metadata
@@ -161,6 +162,7 @@ class DatasetManager:
     def _setup_git_repo(self, repo_name: str) -> Tuple[Repo, Path]:
         """Set up Git repository for batch upload"""
         temp_dir = Path(tempfile.mkdtemp())
+        bt.logging.info(f"Created temporary directory: {temp_dir}")
         repo_url = self.git_url_template.format(repo_name=repo_name)
         repo_id = f"{self.organization}/{repo_name}"
 
@@ -186,83 +188,62 @@ class DatasetManager:
             # Clean up temp dir if anything fails
             if temp_dir.exists():
                 shutil.rmtree(temp_dir)
+                bt.logging.info(f"Deleted temporary directory: {temp_dir}")
             raise Exception(f"Failed to setup repository: {str(e)}")
 
-    async def batch_upload_daily_data(self) -> Tuple[bool, Dict]:
-        """Upload all locally stored data using Git"""
+    def batch_upload_daily_data(self) -> Tuple[bool, Dict]:
+        """Optimized version to upload data using Git LFS (for large files) in chunks based on file number."""
         try:
+            # Set up the Git repo and the temporary directory
             bt.logging.info("Starting batch upload process...")
-            repo_name = self._get_current_repo_name()  # Use daily repo name
+            repo_name = self._get_current_repo_name()
             bt.logging.info(f"Generated repo name: {repo_name}")
 
-            # Setup the Git repo (clone or create new)
             repo, temp_dir = self._setup_git_repo(repo_name)
-            bt.logging.info(f"Repo setup completed. Temporary directory: {temp_dir}")
+            bt.logging.info(f"Cloned repository to temporary directory: {temp_dir}")
 
-            uploaded_files = []
-            total_rows = 0
+            # Copy the entire parent folder to the temporary directory
+            bt.logging.info(f"Copying data from {self.day_storage} to {temp_dir}...")
+            shutil.copytree(self.day_storage, temp_dir, dirs_exist_ok=True)
+            bt.logging.info(f"Data successfully copied to {temp_dir}")
 
-            try:
-                # Iterate through hotkey directories in the day storage
-                for hotkey_dir in self.day_storage.iterdir():
-                    bt.logging.debug(f"Processing directory: {hotkey_dir}")
-                    if hotkey_dir.is_dir():
-                        hotkey = hotkey_dir.name
-                        repo_hotkey_dir = temp_dir / hotkey
-                        repo_hotkey_dir.mkdir(exist_ok=True)
-                        bt.logging.debug(f"Created directory for hotkey: {repo_hotkey_dir}")
+            # Track all Parquet files with Git LFS (ensure they are tracked before adding them)
+            bt.logging.info("Tracking all Parquet files with Git LFS...")
+            repo.git.lfs("track", "*.parquet")  # Ensure LFS tracking is enabled
+            bt.logging.info("Successfully tracked Parquet files with Git LFS")
 
-                        # Iterate through Parquet files in the hotkey directory
-                        for file_path in hotkey_dir.glob("*.parquet"):
-                            try:
-                                bt.logging.debug(f"Processing file: {file_path}")
-                                # Copy file to repo hotkey directory
-                                target_path = repo_hotkey_dir / file_path.name
-                                shutil.copy2(file_path, target_path)
-                                bt.logging.debug(f"Copied file to {target_path}")
+            # Collect all files to be added to Git
+            bt.logging.info("Collecting all Parquet files to be added to Git...")
+            files_to_commit = []
+            for file_path in temp_dir.rglob("*.parquet"):
+                rel_path = str(file_path.relative_to(temp_dir))
+                files_to_commit.append(rel_path)
+            bt.logging.info(f"Found {len(files_to_commit)} Parquet files to commit")
 
-                                # Track the file and calculate the total rows
-                                rel_path = str(target_path.relative_to(temp_dir))
-                                uploaded_files.append(rel_path)
+            # Define the chunk size (number of files per commit)
+            chunk_size = 1000
+            chunks = [files_to_commit[i : i + chunk_size] for i in range(0, len(files_to_commit), chunk_size)]
+            bt.logging.info(f"Created {len(chunks)} chunks, each containing up to {chunk_size} files")
 
-                                # Count rows in the Parquet file
-                                table = pq.read_table(file_path)
-                                total_rows += table.num_rows
-                                bt.logging.debug(f"File has {table.num_rows} rows. Total rows so far: {total_rows}")
+            # Commit and push in chunks
+            files_uploaded = 0
+            for chunk in chunks:
+                bt.logging.info(
+                    f"Committing chunk {files_uploaded // chunk_size + 1} of {len(chunks)} with {len(chunk)} files..."
+                )
+                repo.index.add(chunk)
+                commit_message = f"Batch upload for {self.current_day} (Chunk {files_uploaded // chunk_size + 1})"
+                repo.index.commit(commit_message)
+                origin = repo.remote("origin")
+                origin.push()
+                files_uploaded += len(chunk)
+                bt.logging.success(f"Successfully pushed {len(chunk)} files in this chunk to {repo_name}")
 
-                                # Stage the file in the Git repository
-                                repo.index.add([rel_path])
-                                bt.logging.debug(f"Staged file for commit: {rel_path}")
-
-                            except Exception as e:
-                                bt.logging.error(f"Error processing {file_path}: {str(e)}")
-                                continue
-
-                # Commit and push if there are changes
-                if repo.is_dirty() or len(repo.untracked_files) > 0:
-                    bt.logging.info("Changes detected, committing and pushing...")
-                    commit_message = f"Batch upload for {self.current_day}"
-                    repo.index.commit(commit_message)
-                    bt.logging.info(f"Commit created: {commit_message}")
-
-                    origin = repo.remote("origin")
-                    bt.logging.info("Pushing changes to remote repository...")
-                    origin.push()
-                    bt.logging.success(f"Successfully pushed {len(uploaded_files)} files to {repo_name}")
-                else:
-                    bt.logging.info("No changes to upload")
-
-                return True, {
-                    "repo_id": f"{self.organization}/{repo_name}",
-                    "files_uploaded": len(uploaded_files),
-                    "total_rows": total_rows,
-                    "paths": uploaded_files,
-                }
-
-            finally:
-                # Clean up temporary directory
-                shutil.rmtree(temp_dir)
-                bt.logging.debug(f"Temporary directory cleaned up: {temp_dir}")
+            # Return success with the number of files uploaded
+            return True, {
+                "repo_id": f"{self.organization}/{repo_name}",
+                "files_uploaded": files_uploaded,
+            }
 
         except Exception as e:
             bt.logging.error(f"Error in batch_upload_daily_data: {str(e)}")
