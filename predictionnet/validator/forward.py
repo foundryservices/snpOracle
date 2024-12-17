@@ -3,12 +3,12 @@
 # TODO(developer): Set your name
 # Copyright © 2023 <your name>
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-# documentation files (the “Software”), to deal in the Software without restriction, including without limitation
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation
 # the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
 # and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 # The above copyright notice and this permission notice shall be included in all copies or substantial portions of
 # the Software.
-# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
 # THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
 # THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
@@ -68,7 +68,7 @@ async def process_miner_data(response, timestamp: str, organization: str, hotkey
             bt.logging.error(f"Failed to decrypt data: {result['error']}")
             return False
 
-        # Attempt to store data in background without affecting reward
+        # Store data in background without waiting for completion
         asyncio.create_task(
             dataset_manager.store_data_async(
                 timestamp=timestamp,
@@ -162,34 +162,38 @@ async def forward(self):
         deserialize=False,
     )
 
-    # Process responses and initiate background data processing
+    # Process responses and track decryption success
+    # Create tasks for all miners and wait for all decryption results
+    decryption_tasks = []
     for uid, response in zip(miner_uids, responses):
         bt.logging.info(f"UID: {uid} | Predictions: {response.prediction}")
 
-        # Check if response has required data fields
         if can_process_data(response):
-            # Create background task for data processing
-            asyncio.create_task(
-                process_miner_data(
-                    response=response,
-                    timestamp=timestamp,
-                    organization=self.config.neuron.organization,
-                    hotkey=self.metagraph.hotkeys[uid],
-                    uid=uid,
-                )
+            task = process_miner_data(
+                response=response,
+                timestamp=timestamp,
+                organization=self.config.neuron.organization,
+                hotkey=self.metagraph.hotkeys[uid],
+                uid=uid,
             )
+            decryption_tasks.append(task)
+        else:
+            decryption_tasks.append(asyncio.create_task(asyncio.sleep(0)))  # Dummy task that returns immediately
 
-    # Calculate rewards
+    # Wait for all decryption results
+    decryption_success = await asyncio.gather(*decryption_tasks)
+
+    # Calculate initial rewards
     rewards = get_rewards(self, responses=responses, miner_uids=miner_uids)
+
+    # Zero out rewards for failed decryption
+    rewards = [reward if success else 0 for reward, success in zip(rewards, decryption_success)]
 
     # Log results to wandb
     wandb_val_log = {
         "miners_info": {
-            miner_uid: {
-                "miner_response": response.prediction,
-                "miner_reward": reward,
-            }
-            for miner_uid, response, reward in zip(miner_uids, responses, rewards.tolist())
+            miner_uid: {"miner_response": response.prediction, "miner_reward": reward, "decryption_success": success}
+            for miner_uid, response, reward, success in zip(miner_uids, responses, rewards.tolist(), decryption_success)
         }
     }
     wandb.log(wandb_val_log)
