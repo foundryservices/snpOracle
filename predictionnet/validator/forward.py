@@ -67,6 +67,8 @@ async def process_miner_data(response, timestamp: str, organization: str, hotkey
         if not success:
             bt.logging.error(f"Failed to decrypt data: {result['error']}")
             return False
+        else:
+            bt.logging.success(f"Successfully decrypted data for UID {uid} from {data_path}")
 
         # Store data in background without waiting for completion
         asyncio.create_task(
