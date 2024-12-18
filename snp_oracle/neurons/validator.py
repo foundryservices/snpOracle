@@ -12,11 +12,9 @@ from dotenv import load_dotenv
 from numpy import full, nan
 
 from snp_oracle import __version__
-
 from snp_oracle.predictionnet.base.validator import BaseValidatorNeuron
 from snp_oracle.predictionnet.utils.huggingface import HfInterface
 from snp_oracle.predictionnet.utils.uids import check_uid_availability
-
 from snp_oracle.predictionnet.validator import forward
 
 load_dotenv()

@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 import bittensor as bt
 
 from snp_oracle import __spec_version__ as spec_version
-
 from snp_oracle.predictionnet.utils.config import add_args, check_config, config
 from snp_oracle.predictionnet.utils.misc import ttl_get_block
 

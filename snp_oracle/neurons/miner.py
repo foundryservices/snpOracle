@@ -3,17 +3,14 @@ import time
 import typing
 
 import bittensor as bt
-
 from dotenv import load_dotenv
 from huggingface_hub import hf_hub_download
 from tensorflow.keras.models import load_model
 
-import snp_oracle.predictionnet
+import snp_oracle.predictionnet as predictionnet
 from snp_oracle.base_miner.get_data import prep_data, scale_data
 from snp_oracle.base_miner.predict import predict
-
 from snp_oracle.predictionnet.base.miner import BaseMinerNeuron
-
 from snp_oracle.predictionnet.utils.miner_hf import MinerHfInterface
 
 load_dotenv()

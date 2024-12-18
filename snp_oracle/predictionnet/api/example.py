@@ -1,5 +1,4 @@
 import bittensor as bt
-
 from predictionnet.api.get_query_axons import get_query_api_axons
 from predictionnet.api.prediction import PredictionAPI
 
