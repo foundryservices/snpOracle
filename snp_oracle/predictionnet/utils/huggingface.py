@@ -3,7 +3,7 @@ from typing import List
 
 from huggingface_hub import HfApi, errors
 
-from predictionnet.protocol import Challenge
+from snp_oracle.predictionnet.protocol import Challenge
 
 
 class HfInterface:

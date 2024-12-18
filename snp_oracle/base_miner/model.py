@@ -1,9 +1,5 @@
-# developer: Foundry Digital
-# Copyright © 2023 Foundry Digital
-
 import os
 
-# Import necessary modules to use for model creation - can be downloaded using pip
 import joblib
 import numpy as np
 from dotenv import load_dotenv

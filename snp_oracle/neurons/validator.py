@@ -1,27 +1,9 @@
-# The MIT License (MIT)
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-# documentation files (the “Software”), to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
-# and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all copies or substantial portions of
-# the Software.
-
-# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
-# THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
-
-
 import os
 import pathlib
 import time
 from datetime import datetime
 from typing import List
 
-# Bittensor
 import bittensor as bt
 import pandas_market_calendars as mcal
 import pytz
@@ -29,15 +11,13 @@ import wandb
 from dotenv import load_dotenv
 from numpy import full, nan
 
-from predictionnet import __version__
+from snp_oracle import __version__
 
-# import base validator class which takes care of most of the boilerplate
-from predictionnet.base.validator import BaseValidatorNeuron
-from predictionnet.utils.huggingface import HfInterface
-from predictionnet.utils.uids import check_uid_availability
+from snp_oracle.predictionnet.base.validator import BaseValidatorNeuron
+from snp_oracle.predictionnet.utils.huggingface import HfInterface
+from snp_oracle.predictionnet.utils.uids import check_uid_availability
 
-# Bittensor Validator Template:
-from predictionnet.validator import forward
+from snp_oracle.predictionnet.validator import forward
 
 load_dotenv()
 

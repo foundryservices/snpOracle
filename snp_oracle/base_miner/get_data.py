@@ -1,7 +1,3 @@
-# developer: Foundry Digital
-# Copyright © 2023 Foundry Digital
-
-# Import required models
 from datetime import datetime, timedelta
 from typing import Tuple
 

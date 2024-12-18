@@ -1,44 +1,20 @@
-# The MIT License (MIT)
-# Copyright © 2023 Yuma Rao
-# developer: Foundry Digital
-# Copyright © 2023 Foundry Digital
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-# documentation files (the “Software”), to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
-# and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all copies or substantial portions of
-# the Software.
-
-# THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
-# THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
-
 import os
 import time
 import typing
 
 import bittensor as bt
 
-# ML imports
 from dotenv import load_dotenv
 from huggingface_hub import hf_hub_download
 from tensorflow.keras.models import load_model
 
-# import predictionnet
-# Bittensor Miner Template:
-import predictionnet
-from base_miner.get_data import prep_data, scale_data
-from base_miner.predict import predict
+import snp_oracle.predictionnet
+from snp_oracle.base_miner.get_data import prep_data, scale_data
+from snp_oracle.base_miner.predict import predict
 
-# import base miner class which takes care of most of the boilerplate
-from predictionnet.base.miner import BaseMinerNeuron
+from snp_oracle.predictionnet.base.miner import BaseMinerNeuron
 
-# import huggingface upload class
-from predictionnet.utils.miner_hf import MinerHfInterface
+from snp_oracle.predictionnet.utils.miner_hf import MinerHfInterface
 
 load_dotenv()
 
