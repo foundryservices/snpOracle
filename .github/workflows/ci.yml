@@ -1,9 +1,9 @@
-name: Continuous Integration
+name: CI
 
 on:
   pull_request:
   push:
-    branches: [main, dev]
+    branches: [main, staging, dev]
 
 jobs:
   #----------------------------------------------
@@ -15,9 +15,10 @@ jobs:
     with:
       name: Cache
       command: |
-        python -m pip list
-        python --version
-        echo "Build successful"
+        poetry run python -m pip list
+        poetry run python --version
+        poetry --version
+        poetry run echo "Build successful"
 
   #----------------------------------------------
   #                 Run Linters
@@ -28,14 +29,14 @@ jobs:
     uses: ./.github/workflows/build.yml
     with:
       name: Black
-      command: python -m black --check .
+      command: poetry run python -m black --check .
   lint-isort:
     name: Linter
     needs: build
     uses: ./.github/workflows/build.yml
     with:
       name: Isort
-      command: python -m isort --check-only .
+      command: poetry run python -m isort --check-only .
   lint-mypy:
     name: Linter
     needs: build
@@ -43,14 +44,14 @@ jobs:
     uses: ./.github/workflows/build.yml
     with:
       name: Mypy
-      command: python -m mypy --verbose 0 .
+      command: poetry run python -m mypy --verbose 0 .
   lint-flake8:
     name: Linter
     needs: build
     uses: ./.github/workflows/build.yml
     with:
       name: Flake8
-      command: python -m flake8 .
+      command: poetry run python -m flake8 .
 
   #----------------------------------------------
   #                 Run Tests
@@ -63,9 +64,8 @@ jobs:
       lint-mypy,
       lint-flake8,
     ]
-    # `${{ always() }}` will run the tests regardless of linting success
-    if: false # This condition ensures the job is never executed
+    if: ${{ always() }} # will run the tests regardless of linting success
     uses: ./.github/workflows/build.yml
     with:
       name: Unittests
-      command: pytest tests/
+      command: poetry run pytest tests/
