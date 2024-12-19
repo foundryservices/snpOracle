@@ -15,7 +15,7 @@ starlette
 statsmodels
 ta
 template
-tensorflow==2.17.0
+tensorflow==2.18.0
 torch
 transformers
 wandb==0.16.6
