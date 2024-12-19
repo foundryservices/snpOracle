@@ -37,13 +37,13 @@ Validators store price forecasts for the S&P 500 and compare these predictions a
 
 | Miners | Validators |
 | :----: | :--------: |
-| [TestNet Docs]() | [TestNet Docs]() |
-| [MainNet Docs]() | [MainNet Docs]() |
+| [TestNet Docs](https://github.com/foundryservices/snpOracle/blob/266-enhance-readme/docs/miners/testnet.md) | [TestNet Docs](https://github.com/foundryservices/snpOracle/blob/266-enhance-readme/docs/validators/testnet.md) |
+| [MainNet Docs](https://github.com/foundryservices/snpOracle/blob/266-enhance-readme/docs/miners/mainnet.md) | [MainNet Docs](https://github.com/foundryservices/snpOracle/blob/266-enhance-readme/docs/validators/mainnet.md) |
 
 </div>
 
 ## Incentive Mechanism
-Please read the [incentive mechanism white paper]() to understand exactly how miners are scored and ranked.
+Please read the [incentive mechanism white paper](https://github.com/foundryservices/snpOracle/blob/266-enhance-readme/docs/SN28%20Incentive%20Mechanism.pdf) to understand exactly how miners are scored and ranked.
 
 For transparency, there are two key metrics detailed in the white paper that will be calculated to score each miner:
 1. **Directional Accuracy** - was the prediction in the same direction of the true price?
