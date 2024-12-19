@@ -81,7 +81,7 @@ async def forward(self):
         timestamp=timestamp,
     )
 
-    responses = self.dendrite.query(
+    responses = self.dendrite.forward(
         # Send the query to selected miner axons in the network.
         axons=[self.metagraph.axons[uid] for uid in miner_uids],
         # Construct a dummy query. This simply contains a single integer.
