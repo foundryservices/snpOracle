@@ -5,7 +5,8 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-from predictionnet.utils.dataset_manager import DatasetManager
+
+from snp_oracle.predictionnet.utils.dataset_manager import DatasetManager
 
 
 @pytest.fixture
