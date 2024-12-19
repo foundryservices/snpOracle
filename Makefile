@@ -52,6 +52,6 @@ miner:
 		--netuid $(netuid) \
 		--logging.level $(logging_level) \
 		--vpermit_tao_limit 2 \
-		--hf_repo_id foundryservices/bittensor-sn28-base-lstm
+		--hf_repo_id foundryservices/bittensor-sn28-base-lstm \
 		--model mining_models/base_lstm_new.h5
 
