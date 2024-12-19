@@ -37,8 +37,8 @@ Validators store price forecasts for the S&P 500 and compare these predictions a
 
 | Miners | Validators |
 | :----: | :--------: |
-| [TestNet Docs](https://github.com/foundryservices/snpOracle/blob/266-enhance-readme/docs/miners/testnet.md) | [TestNet Docs](https://github.com/foundryservices/snpOracle/blob/266-enhance-readme/docs/validators/testnet.md) |
-| [MainNet Docs](https://github.com/foundryservices/snpOracle/blob/266-enhance-readme/docs/miners/mainnet.md) | [MainNet Docs](https://github.com/foundryservices/snpOracle/blob/266-enhance-readme/docs/validators/mainnet.md) |
+| [Testnet Docs](https://github.com/foundryservices/snpOracle/blob/266-enhance-readme/docs/miners/testnet.md) | [Testnet Docs](https://github.com/foundryservices/snpOracle/blob/266-enhance-readme/docs/validators/testnet.md) |
+| [Mainnet Docs](https://github.com/foundryservices/snpOracle/blob/266-enhance-readme/docs/miners/mainnet.md) | [Mainnet Docs](https://github.com/foundryservices/snpOracle/blob/266-enhance-readme/docs/validators/mainnet.md) |
 
 </div>
 
