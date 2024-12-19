@@ -1,20 +1,3 @@
-# The MIT License (MIT)
-# Copyright © 2024 Foundry Digital
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-# documentation files (the "Software"), to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
-# and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all copies or substantial portions of
-# the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
-# THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
-
 import asyncio
 import json
 import os
@@ -27,8 +10,6 @@ from typing import Dict, Optional, Tuple
 
 import bittensor as bt
 import pandas as pd
-import pyarrow as pa
-import pyarrow.parquet as pq
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 from git import Repo
@@ -132,13 +113,9 @@ class DatasetManager:
             if metadata:
                 full_metadata.update(metadata)
 
-            # Convert to PyArrow Table with metadata
-            table = pa.Table.from_pandas(miner_data)
-            for key, value in full_metadata.items():
-                table = table.replace_schema_metadata({**table.schema.metadata, key.encode(): str(value).encode()})
-
-            # Write Parquet file with compression
-            pq.write_table(table, file_path, compression="snappy", use_dictionary=True, use_byte_stream_split=True)
+            # Add metadata to DataFrame and save to parquet
+            miner_data.attrs.update(full_metadata)
+            miner_data.to_parquet(file_path, engine="pyarrow", compression="snappy", index=False)
 
             return True, {
                 "local_path": str(file_path),
@@ -282,27 +259,9 @@ class DatasetManager:
                 temp_file.write(decrypted_data)
                 temp_file.flush()
 
-                # Read Parquet file
-                table = pq.read_table(temp_file.name)
-                df = table.to_pandas()
-
-                # Extract metadata from Parquet schema
-                metadata = {}
-                predictions = None
-
-                if table.schema.metadata:
-                    for key, value in table.schema.metadata.items():
-                        try:
-                            key_str = key.decode() if isinstance(key, bytes) else key
-                            value_str = value.decode() if isinstance(value, bytes) else value
-
-                            if key_str == "predictions":
-                                predictions = json.loads(value_str)
-                            else:
-                                metadata[key_str] = value_str
-                        except Exception as e:
-                            bt.logging.error(f"Error while extracting metadata: {str(e)}")
-                            continue
+                df = pd.read_parquet(temp_file.name)
+                metadata = df.attrs.copy()
+                predictions = json.loads(metadata.pop("predictions", "null"))
 
             return True, {"data": df, "metadata": metadata, "predictions": predictions}
 

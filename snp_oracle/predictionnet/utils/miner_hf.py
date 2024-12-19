@@ -4,8 +4,6 @@ from datetime import datetime
 
 import bittensor as bt
 import pandas as pd
-import pyarrow as pa
-import pyarrow.parquet as pq
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 from huggingface_hub import HfApi
@@ -92,7 +90,7 @@ class MinerHfInterface:
             bt.logging.debug(f"Error in upload_model: {str(e)}")
             return False, {"error": str(e)}
 
-    def upload_data(self, repo_id=None, data: pd.DataFrame = None, hotkey=None, encryption_key=None):
+    def upload_data(self, repo_id, data: pd.DataFrame, hotkey=None, encryption_key=None):
         """
         Upload encrypted training/validation data to HuggingFace Hub using Parquet format.
 
@@ -145,22 +143,14 @@ class MinerHfInterface:
                 temp_encrypted = os.path.join(temp_dir, data_filename)
 
                 try:
-                    # Convert to PyArrow Table with metadata
-                    table = pa.Table.from_pandas(data)
-                    table = table.replace_schema_metadata(
-                        {
-                            **table.schema.metadata,
-                            b"timestamp": timestamp.encode(),
-                            b"hotkey": hotkey.encode() if hotkey else b"",
-                        }
-                    )
+                    # Add metadata to the DataFrame
+                    data.attrs["timestamp"] = timestamp
+                    data.attrs["hotkey"] = hotkey if hotkey else ""
 
-                    # Write Parquet file with compression
-                    pq.write_table(
-                        table, temp_parquet, compression="snappy", use_dictionary=True, use_byte_stream_split=True
-                    )
+                    # Write to parquet with compression
+                    data.to_parquet(temp_parquet, compression="snappy", engine="pyarrow")
 
-                    # Read and encrypt the Parquet file
+                    # Read and encrypt the temporary Parquet file
                     with open(temp_parquet, "rb") as f:
                         parquet_data = f.read()
                     encrypted_data = fernet.encrypt(parquet_data)
