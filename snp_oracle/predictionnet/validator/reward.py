@@ -240,7 +240,7 @@ def get_rewards(
         prediction_times.append(rounded_up_time - timedelta(minutes=(i + 1) * prediction_interval))
     bt.logging.info(f"Prediction times: {prediction_times}")
     data = yf.download(tickers=ticker_symbol, period="5d", interval="5m", progress=False)
-    close_price = data.iloc[data.index.tz_localize(None).isin(prediction_times)]["Close"].tolist()
+    close_price = data.iloc[data.index.tz_localize(None).isin(prediction_times)]["Close"].values.tolist()
     if len(close_price) < (N_TIMEPOINTS + 1):
         # edge case where its between 9:30am and 10am
         close_price = data.iloc[-N_TIMEPOINTS - 1 :]["Close"].tolist()
