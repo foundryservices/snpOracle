@@ -138,6 +138,13 @@ def add_args(cls, parser):
             default=4096,
         )
 
+        parser.add_argument(
+            "--neuron.organization",
+            type=str,
+            help="HuggingFace organization name for dataset storage",
+            default="foundryservices",
+        )
+
     # MINER ONLY CONFIG
     else:
         bt.logging.debug("Adding miner-specific arguments")
