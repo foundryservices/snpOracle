@@ -18,5 +18,5 @@ template
 tensorflow==2.18.0
 torch
 transformers
-wandb==0.16.6
+wandb==0.19.1
 yfinance==0.2.37
