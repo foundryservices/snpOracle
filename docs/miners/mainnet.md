@@ -101,7 +101,7 @@ miner_hotkey = miner
 We highly recommend that you run your miners on testnet before deploying on mainnet.
 
 **IMPORTANT**
-> Make sure your have activated your virtual environment before running your validator.
+> Make sure your have activated your virtual environment before running your miner.
 
 1. Run the command:
     ```shell
@@ -112,7 +112,7 @@ We highly recommend that you run your miners on testnet before deploying on main
 We highly recommend that you run your miners on testnet before deploying on mainnet.
 
 **IMPORTANT**
-> Make sure your have activated your virtual environment before running your validator.
+> Make sure your have activated your virtual environment before running your miner.
 
 1. Run the Command:
     ```
