@@ -6,6 +6,7 @@ validator_hotkey = validator
 miner_hotkey = miner
 netuid = $(testnet_netuid)
 network = $(testnet)
+logging_level = info # options= ['info', 'debug', 'trace']
 
 
 ################################################################################
@@ -18,7 +19,6 @@ locanet = ws://127.0.0.1:9944
 finney_netuid = 28
 testnet_netuid = 93
 localnet_netuid = 1
-logging_level = info # options= ['info', 'debug', 'trace']
 
 
 ################################################################################
@@ -54,4 +54,3 @@ miner:
 		--vpermit_tao_limit 2 \
 		--hf_repo_id foundryservices/bittensor-sn28-base-lstm \
 		--model mining_models/base_lstm_new.h5
-
