@@ -1,4 +1,4 @@
-# Mainnet Miners
+# Miners
 
 # **DO NOT RUN THE BASE MINER ON MAINNET!**
 
@@ -102,7 +102,12 @@ We highly recommend that you run your miners on testnet before deploying on main
 
 ### Custom Miner
 
-1. Run the Command:
+1. Write custom logic inside the existing `forward` function located in the file `snp_oracle/neurons/miner.py`
+2. This function should handle how the miner responds to requests from the validator.
+   1. See `base_miner.py` for an example.
+3. Edit the command in the Makefile.
+   1. Add values for `hf_repo_id` and so forth.
+4. Run the Command:
     ```
-    make miner_custom
+    make miner
     ```
