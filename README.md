@@ -27,7 +27,7 @@
 
 Foundry Digital is launching the Foundry S&P 500 Oracle. This subnet incentivizes accurate short term price forecasts of the S&P 500 during market trading hours.
 
-Miners use Neural Network model architectures to perform short term price predictions on the S&P 500.
+Miners use Neural Network model architectures to perform short term price predictions on the S&P 500. All models and input data must be open sourced on HuggingFace to receive emissions.
 
 Validators store price forecasts for the S&P 500 and compare these predictions against the true price of the S&P 500 as the predictions mature.
 
