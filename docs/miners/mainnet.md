@@ -56,52 +56,37 @@ First copy the `.env.template` file to `.env`
 cp .env.template .env
 ```
 
-Update the `.env` file with your miner's values.
+Update the `.env` file with your miner's values for the following properties.
 
 ```text
-WANDB_API_KEY='REPLACE_WITH_WANDB_API_KEY'
 MINER_HF_ACCESS_TOKEN='REPLACE_WITH_HUGGINGFACE_ACCESS_KEY'
-HF_ACCESS_TOKEN='REPLACE_WITH_HUGGINGFACE_ACCESS_KEY'
-HF_ACCESS_TOKEN = 'REPLACE_WITH_HUGGINGFACE_ACCESS_KEY'
-WANDB_API_KEY = 'REPLACE_WITH_WANDB_API_KEY'
-GIT_TOKEN='REPLACE_WITH_GIT_TOKEN'
-GIT_USERNAME='REPLACE_WITH_GIT_USERNAME'
-GIT_NAME="REPLACE_WITH_GIT_NAME"
-GIT_EMAIL="REPLACE_WITH_GIT_EMAIL"
 ```
 
 #### HuggingFace Access Token
 A huggingface access token can be procured from the huggingface platform. Follow the <a href='https://huggingface.co/docs/hub/en/security-tokens'>steps mentioned here</a> to get your huggingface access token.
 
 #### Makefile
-Edit the Makefile with you wallet and network information.
+Edit the Makefile with you wallet information.
 
 ```text
-## Network Parameters ##
-finney = wss://entrypoint-finney.opentensor.ai:443
-testnet = wss://test.finney.opentensor.ai:443
-locanet = ws://127.0.0.1:9944
-
-testnet_netuid = 93
-localnet_netuid = 1
-logging_level = trace # options= ['info', 'debug', 'trace']
-
-netuid = $(testnet_netuid)
-network = $(testnet)
-
-## User Parameters
+################################################################################
+#                               User Parameters                                #
+################################################################################
 coldkey = default
-validator_hotkey = validator
 miner_hotkey = miner
+logging_level = info # options = [info, debug, trace]
 ```
 
-## Deploying a Miner
+#### Ports
+In the Makefile, we have default ports set to `8091` for validator and `8092` for miner. Please change as-needed.
 
-### Base miner
+## Deploying a Miner
 We highly recommend that you run your miners on testnet before deploying on mainnet.
 
 **IMPORTANT**
-> Make sure your have activated your virtual environment before running your miner.
+> Make sure you have activated your virtual environment before running your miner.
+
+### Base miner
 
 1. Run the command:
     ```shell
@@ -109,10 +94,6 @@ We highly recommend that you run your miners on testnet before deploying on main
     ```
 
 ### Custom Miner
-We highly recommend that you run your miners on testnet before deploying on mainnet.
-
-**IMPORTANT**
-> Make sure your have activated your virtual environment before running your miner.
 
 1. Run the Command:
     ```
