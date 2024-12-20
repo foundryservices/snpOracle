@@ -1,4 +1,11 @@
-# Mainnet Validators
+# Validators
+
+<div align="center">
+
+| This repository is the official codebase<br>for Bittensor Subnet 28 (SN28) v1.0.0+,<br>which was released on February 20th 2024. | **Testnet UID:**  93 <br> **Mainnet UID:**  28 |
+| - | - |
+
+</div>
 
 ## Compute Requirements
 
