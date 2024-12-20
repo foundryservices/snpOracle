@@ -82,7 +82,7 @@ class DatasetManager:
         # Calculate size in memory
         size_bytes = df.memory_usage(deep=True).sum()
         size_mb = size_bytes / (1024 * 1024)  # Convert to MB
-        max_size_mb = float(os.getenv("MAX_FILE_SIZE_MB", "100"))
+        max_size_mb = float(os.getenv("MAX_FILE_SIZE_MB", "10"))
 
         return size_mb <= max_size_mb, size_mb
 
@@ -114,7 +114,7 @@ class DatasetManager:
             # Check data size before proceeding
             is_size_ok, size_mb = self._check_data_size(miner_data)
             if not is_size_ok:
-                max_size_mb = float(os.getenv("MAX_FILE_SIZE_MB", "100"))
+                max_size_mb = float(os.getenv("MAX_FILE_SIZE_MB", "10"))
                 return False, {"error": f"Data size ({size_mb:.2f}MB) exceeds maximum allowed size ({max_size_mb}MB)"}
 
             # Get local storage path for this hotkey
