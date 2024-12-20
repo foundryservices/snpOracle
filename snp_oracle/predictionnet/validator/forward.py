@@ -76,7 +76,7 @@ async def handle_market_close(self, dataset_manager: DatasetManager) -> None:
     """Handle data management operations when market is closed."""
     try:
         # Clean up old data
-        dataset_manager.cleanup_local_storage(days_to_keep=7)
+        dataset_manager.cleanup_local_storage(days_to_keep=2)
 
         # Upload today's data
         success, result = dataset_manager.batch_upload_daily_data()

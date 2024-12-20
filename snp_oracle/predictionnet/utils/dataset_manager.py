@@ -69,6 +69,23 @@ class DatasetManager:
         path.mkdir(parents=True, exist_ok=True)
         return path
 
+    def _check_data_size(self, df: pd.DataFrame) -> Tuple[bool, float]:
+        """
+        Check if DataFrame size is within allowed limits.
+
+        Args:
+            df (pd.DataFrame): DataFrame to check
+
+        Returns:
+            Tuple[bool, float]: (is_within_limit, size_in_mb)
+        """
+        # Calculate size in memory
+        size_bytes = df.memory_usage(deep=True).sum()
+        size_mb = size_bytes / (1024 * 1024)  # Convert to MB
+        max_size_mb = float(os.getenv("MAX_FILE_SIZE_MB", "100"))
+
+        return size_mb <= max_size_mb, size_mb
+
     def store_local_data(
         self,
         timestamp: str,
@@ -78,7 +95,7 @@ class DatasetManager:
         metadata: Optional[Dict] = None,
     ) -> Tuple[bool, Dict]:
         """
-        Store data locally in Parquet format.
+        Store data locally in Parquet format with size validation.
 
         Args:
             timestamp (str): Current timestamp
@@ -93,6 +110,12 @@ class DatasetManager:
         try:
             if not isinstance(miner_data, pd.DataFrame) or miner_data.empty:
                 raise ValueError("miner_data must be a non-empty pandas DataFrame")
+
+            # Check data size before proceeding
+            is_size_ok, size_mb = self._check_data_size(miner_data)
+            if not is_size_ok:
+                max_size_mb = float(os.getenv("MAX_FILE_SIZE_MB", "100"))
+                return False, {"error": f"Data size ({size_mb:.2f}MB) exceeds maximum allowed size ({max_size_mb}MB)"}
 
             # Get local storage path for this hotkey
             local_path = self._get_local_path(hotkey)
@@ -109,6 +132,7 @@ class DatasetManager:
                 "shape": f"{miner_data.shape[0]},{miner_data.shape[1]}",
                 "hotkey": hotkey,
                 "predictions": json.dumps(predictions) if predictions else "",
+                "size_mb": f"{size_mb:.2f}",  # Add size information to metadata
             }
             if metadata:
                 full_metadata.update(metadata)
@@ -121,6 +145,7 @@ class DatasetManager:
                 "local_path": str(file_path),
                 "rows": miner_data.shape[0],
                 "columns": miner_data.shape[1],
+                "size_mb": round(size_mb, 2),
             }
 
         except Exception as e:
@@ -283,7 +308,7 @@ class DatasetManager:
             self.executor, lambda: self.store_local_data(timestamp, miner_data, predictions, hotkey, metadata)
         )
 
-    def cleanup_local_storage(self, days_to_keep: int = 7):
+    def cleanup_local_storage(self, days_to_keep: int = 2):
         """Clean up old local storage directories"""
         try:
             dirs = sorted([d for d in self.local_storage.iterdir() if d.is_dir()])

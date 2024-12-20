@@ -131,7 +131,7 @@ class MinerHfInterface:
 
             # Create unique filename using timestamp
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            data_filename = f"data_{timestamp}.parquet.enc"
+            data_filename = "data.parquet.enc"
             hotkey_path = f"{hotkey}/data"
             data_full_path = f"{hotkey_path}/{data_filename}"
 
