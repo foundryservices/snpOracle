@@ -91,7 +91,7 @@ In the Makefile, we have default ports set to `8091` for validator and `8092` fo
 In the Makefile, ensure that the `--model` flag points to the local location of the model you would like validators to evaluate. By default, the Makefile is populated with the base miner model:
 `--model mining_models/base_lstm_new.h5`
 
-The `--hf_repo_id` flag will determine which hugging face repository your miner models and data will be uploaded to. This repository must be public in order to ensure validator access. A hugging face repository will be created at the provided path under your hugging face user assuming you provide a valid username and valid.`MINER_HF_ACCESS_TOKEN`  in your  `.env` file.
+The `--hf_repo_id` flag will determine which hugging face repository your miner models and data will be uploaded to. This repository must be public in order to ensure validator access. A hugging face repository will be created at the provided path under your hugging face user assuming you provide a valid username and valid `MINER_HF_ACCESS_TOKEN` in your `.env` file.
 
 #### Data
 The data your model utilizes will be automatically uploaded to hugging face, in the same repository as your model, defined here: `--hf_repo_id`. The data will be encrypted initially. Once the model is evaluated by validators, the data will be decrypted and published on hugging face.
