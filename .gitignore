@@ -128,6 +128,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+# branch specific environments that start with issue number
+.\d*-*
 
 # Spyder project settings
 .spyderproject
