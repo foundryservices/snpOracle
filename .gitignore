@@ -168,3 +168,5 @@ timestamp.txt
 # localnet config
 miner.config.local.js
 validator.config.local.js
+
+local_data/

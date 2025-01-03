@@ -1,12 +1,13 @@
 ################################################################################
 #                               User Parameters                                #
 ################################################################################
-coldkey = default
-validator_hotkey = validator
-miner_hotkey = miner
-netuid = $(testnet_netuid)
-network = $(testnet)
-logging_level = info # options= ['info', 'debug', 'trace']
+# coldkey = validator
+coldkey = miner
+validator_hotkey = default
+miner_hotkey = default
+netuid = $(localnet_netuid)
+network = $(localnet)
+logging_level = debug # options= ['info', 'debug', 'trace']
 
 
 ################################################################################
@@ -14,7 +15,7 @@ logging_level = info # options= ['info', 'debug', 'trace']
 ################################################################################
 finney = wss://entrypoint-finney.opentensor.ai:443
 testnet = wss://test.finney.opentensor.ai:443
-locanet = ws://127.0.0.1:9944
+localnet = ws://127.0.0.1:9945
 
 finney_netuid = 28
 testnet_netuid = 93
@@ -41,16 +42,17 @@ validator:
 		--subtensor.chain_endpoint $(network) \
 		--axon.port 8091 \
 		--netuid $(netuid) \
-		--logging.level $(logging_level)
+		--logging.$(logging_level)
 
 miner:
-	pm2 start python --name miner  -- ./snp_oracle/neurons/miner.py \
+	pm2 start python --name miner  -- ./snp_oracle/neurons/miner.py --no-autorestart \
 		--wallet.name $(coldkey) \
 		--wallet.hotkey $(miner_hotkey) \
 		--subtensor.chain_endpoint $(network) \
 		--axon.port 8092 \
 		--netuid $(netuid) \
-		--logging.level $(logging_level) \
+		--logging.$(logging_level) \
 		--vpermit_tao_limit 2 \
-		--hf_repo_id foundryservices/bittensor-sn28-base-lstm \
+		--blacklist.force_validator_permit true \
+		--hf_repo_id pcarlson-foundry-digital/localnet \
 		--model mining_models/base_lstm_new.h5
