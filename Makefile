@@ -18,7 +18,7 @@ testnet = wss://test.finney.opentensor.ai:443
 localnet = ws://127.0.0.1:9945
 
 finney_netuid = 28
-testnet_netuid = 93
+testnet_netuid = 272
 localnet_netuid = 1
 
 
