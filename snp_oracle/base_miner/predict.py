@@ -10,7 +10,7 @@ from snp_oracle.base_miner.get_data import prep_data, round_down_time, scale_dat
 from snp_oracle.base_miner.model import create_and_save_base_model_lstm
 
 
-def predict(timestamp: datetime, scaler: MinMaxScaler, model, type) -> float:
+def predict(timestamp: datetime, scaler: MinMaxScaler, model, type) -> tuple[float, pd.DataFrame]:
     """
     Predicts the close price of the next 5m interval
 
@@ -29,8 +29,8 @@ def predict(timestamp: datetime, scaler: MinMaxScaler, model, type) -> float:
         :type model: A keras model instance
 
     Output:
-        :returns: The close price of the 5m period that ends at the timestamp passed by the validator
-        :rtype: float
+        :returns: A tuple containing (prediction value, input data used for prediction)
+        :rtype: tuple[float, pd.DataFrame]
     """
     # calling this to get the data - the information passed by the validator contains
     # only a timestamp, it is on the miners to get the data and prepare is according to their requirements
@@ -50,7 +50,7 @@ def predict(timestamp: datetime, scaler: MinMaxScaler, model, type) -> float:
     # Check if matching_row is empty
     if matching_row.empty:
         print("No matching row found for the given timestamp.")
-        return 0.0
+        return 0.0, pd.DataFrame()
 
     # data.to_csv('mining_models/base_miner_data.csv')
     input = matching_row[
@@ -67,6 +67,8 @@ def predict(timestamp: datetime, scaler: MinMaxScaler, model, type) -> float:
         ]
     ]
 
+    input_df = input.copy()
+
     if type != "regression":
         input = np.array(input, dtype=np.float32).reshape(1, -1)
         input = np.reshape(input, (1, 1, input.shape[1]))
@@ -76,8 +78,7 @@ def predict(timestamp: datetime, scaler: MinMaxScaler, model, type) -> float:
     if type != "regression":
         prediction = scaler.inverse_transform(prediction.reshape(1, -1))
 
-    print(prediction)
-    return prediction
+    return prediction[0][0], input_df
 
 
 # Uncomment this section if you wanna do a local test without having to run the miner
@@ -95,5 +96,7 @@ if __name__ == "__main__":
 
     mse = create_and_save_base_model_lstm(scaler, X, y)
     model = load_model("mining_models/base_lstm_new.h5")
-    prediction = predict(timestamp, scaler, model, type="lstm")
-    print(prediction[0])
+    prediction, input_data = predict(timestamp, scaler, model, type="lstm")
+    print("Prediction:", prediction)
+    print("\nInput data used:")
+    print(input_data)
