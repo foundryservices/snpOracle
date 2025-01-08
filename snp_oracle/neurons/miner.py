@@ -3,12 +3,12 @@ import time
 import typing
 
 import bittensor as bt
+import tensorflow as tf
 from cryptography.fernet import Fernet
 
 # ML imports
 from dotenv import load_dotenv
 from huggingface_hub import hf_hub_download
-from tensorflow.keras.models import load_model
 
 import snp_oracle.predictionnet as predictionnet
 from snp_oracle.base_miner.get_data import prep_data, scale_data
@@ -29,8 +29,13 @@ class Miner(BaseMinerNeuron):
     """
 
     def __init__(self, config=None):
+        bt.logging.info("Initializing Miner...")
+        bt.logging.info(f"Initial config: {config}")
+
         super(Miner, self).__init__(config=config)
-        print(config)
+
+        bt.logging.info(f"Config after super init: {self.config}")
+        bt.logging.info(f"Config model path: {self.config.model if self.config else 'No config'}")
         # TODO(developer): Anything specific to your use case you can do here
         self.model_loc = self.config.model
         if self.config.neuron.device == "cpu":
@@ -162,7 +167,7 @@ class Miner(BaseMinerNeuron):
             f"👈 Received prediction request from: {synapse.dendrite.hotkey} for timestamp: {synapse.timestamp}"
         )
 
-        model_filename = f"{self.wallet.hotkey.ss58_address}{os.path.splitext(self.config.model)[1]}"
+        model_filename = f"{self.wallet.hotkey.ss58_address}/models/model{os.path.splitext(self.config.model)[1]}"
 
         timestamp = synapse.timestamp
         synapse.repo_id = self.config.hf_repo_id
@@ -184,8 +189,15 @@ class Miner(BaseMinerNeuron):
             )
             bt.logging.info(f"Model downloaded from huggingface at {model_path}")
 
-        model = load_model(model_path)
+        model = tf.keras.models.load_model(model_path)
         data = prep_data()
+
+        scaler, _, _ = scale_data(data)
+        # mse = create_and_save_base_model_lstm(scaler, X, y)
+
+        # type needs to be changed based on the algo you're running
+        # any algo specific change logic can be added to predict function in predict.py
+        prediction, input_df = predict(timestamp, scaler, model, type="lstm")
 
         # Generate encryption key for this request
         encryption_key = Fernet.generate_key()
@@ -194,7 +206,7 @@ class Miner(BaseMinerNeuron):
         hf_interface = MinerHfInterface(self.config)
         success, metadata = hf_interface.upload_data(
             hotkey=self.wallet.hotkey.ss58_address,
-            data=data,
+            data=input_df,
             repo_id=self.config.hf_repo_id,
             encryption_key=encryption_key,
         )
@@ -208,12 +220,6 @@ class Miner(BaseMinerNeuron):
         else:
             bt.logging.error(f"Data upload failed: {metadata['error']}")
 
-        scaler, _, _ = scale_data(data)
-        # mse = create_and_save_base_model_lstm(scaler, X, y)
-
-        # type needs to be changed based on the algo you're running
-        # any algo specific change logic can be added to predict function in predict.py
-        prediction = predict(timestamp, scaler, model, type="lstm")
         bt.logging.info(f"Prediction: {prediction}")
         # pred_np_array = np.array(prediction).reshape(-1, 1)
 
@@ -237,17 +243,27 @@ class Miner(BaseMinerNeuron):
         metagraph = self.metagraph
         self.uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
 
-        log = (
-            "Miner | "
-            f"Step:{self.step} | "
-            f"UID:{self.uid} | "
-            f"Block:{self.block} | "
-            f"Stake:{metagraph.S[self.uid]:.4f} | "
-            f"Trust:{metagraph.T[self.uid]:.4f} | "
-            f"Incentive:{metagraph.I[self.uid]:.4f} | "
-            f"Emission:{metagraph.E[self.uid]:.4f}"
-        )
-        bt.logging.info(log)
+        # Get all values in one go to avoid multiple concurrent requests
+        try:
+            current_block = self.block  # Single websocket call
+            stake = float(metagraph.S[self.uid])
+            trust = float(metagraph.T[self.uid])
+            incentive = float(metagraph.I[self.uid])
+            emission = float(metagraph.E[self.uid])
+
+            log = (
+                "Miner | "
+                f"Step:{self.step} | "
+                f"UID:{self.uid} | "
+                f"Block:{current_block} | "
+                f"Stake:{stake:.4f} | "
+                f"Trust:{trust:.4f} | "
+                f"Incentive:{incentive:.4f} | "
+                f"Emission:{emission:.4f}"
+            )
+            bt.logging.info(log)
+        except Exception as e:
+            bt.logging.error(f"Error getting miner info: {e}")
 
 
 # This is the main function, which runs the miner.

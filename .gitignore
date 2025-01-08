@@ -128,6 +128,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+# branch specific environments that start with issue number
+.[0-9]*-*
 
 # Spyder project settings
 .spyderproject
@@ -166,3 +168,5 @@ timestamp.txt
 # localnet config
 miner.config.local.js
 validator.config.local.js
+
+local_data/
