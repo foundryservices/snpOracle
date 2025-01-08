@@ -129,17 +129,27 @@ class Validator(BaseValidatorNeuron):
         metagraph = self.metagraph
         self.uid = self.metagraph.hotkeys.index(self.wallet.hotkey.ss58_address)
 
-        log = (
-            "Validator | "
-            f"Step:{self.step} | "
-            f"UID:{self.uid} | "
-            f"Block:{self.block} | "
-            f"Stake:{metagraph.S[self.uid]} | "
-            f"VTrust:{metagraph.Tv[self.uid]} | "
-            f"Dividend:{metagraph.D[self.uid]} | "
-            f"Emission:{metagraph.E[self.uid]}"
-        )
-        bt.logging.info(log)
+        # Get all values in one go to avoid multiple concurrent requests
+        try:
+            current_block = self.block  # Single websocket call
+            stake = float(metagraph.S[self.uid])
+            vtrust = float(metagraph.Tv[self.uid])
+            dividend = float(metagraph.D[self.uid])
+            emission = float(metagraph.E[self.uid])
+
+            log = (
+                "Validator | "
+                f"Step:{self.step} | "
+                f"UID:{self.uid} | "
+                f"Block:{current_block} | "
+                f"Stake:{stake:.4f} | "
+                f"VTrust:{vtrust:.4f} | "
+                f"Dividend:{dividend:.4f} | "
+                f"Emission:{emission:.4f}"
+            )
+            bt.logging.info(log)
+        except Exception as e:
+            bt.logging.error(f"Error getting validator info: {e}")
 
 
 # The main function parses the configuration and runs the validator.
