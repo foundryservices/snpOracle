@@ -45,7 +45,7 @@ validator:
 		--logging.$(logging_level)
 
 miner:
-	pm2 start python --name miner  -- ./snp_oracle/neurons/miner.py --no-autorestart \
+	pm2 start python --name miner  -- ./snp_oracle/neurons/miner.py \
 		--wallet.name $(coldkey) \
 		--wallet.hotkey $(miner_hotkey) \
 		--subtensor.chain_endpoint $(network) \
@@ -54,5 +54,5 @@ miner:
 		--logging.$(logging_level) \
 		--vpermit_tao_limit 2 \
 		--blacklist.force_validator_permit true \
-		--hf_repo_id pcarlson-foundry-digital/localnet \
+		--hf_repo_id foundryservices/mining_models \
 		--model mining_models/base_lstm_new.h5
