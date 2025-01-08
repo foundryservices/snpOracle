@@ -42,7 +42,7 @@ class BaseMinerNeuron(BaseNeuron):
             forward_fn=self.forward,
             blacklist_fn=self.blacklist,
             priority_fn=self.priority,
-            verify_fn=self.verify,
+            # verify_fn=self.verify,
         )
         bt.logging.info(f"Axon created: {self.axon}")
         self.nonces = {}
