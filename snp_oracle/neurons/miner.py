@@ -162,7 +162,7 @@ class Miner(BaseMinerNeuron):
             f"👈 Received prediction request from: {synapse.dendrite.hotkey} for timestamp: {synapse.timestamp}"
         )
 
-        model_filename = f"{self.wallet.hotkey.ss58_address}/models/model.{os.path.splitext(self.config.model)[1]}"
+        model_filename = f"{self.wallet.hotkey.ss58_address}/models/model{os.path.splitext(self.config.model)[1]}"
 
         timestamp = synapse.timestamp
         synapse.repo_id = self.config.hf_repo_id
