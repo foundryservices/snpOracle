@@ -42,8 +42,8 @@ class HfInterface:
         id_list = [x.item_id for x in self.collection.items]
         for response in responses:
             either_none = response.repo_id is None or response.model is None
-            if f"{response.repo_id}/{response.model}" not in id_list and not either_none:
-                self.add_model_to_collection(repo_id=f"{response.repo_id}/{response.model}")
+            if f"{response.repo_id}" not in id_list and not either_none:
+                self.add_model_to_collection(repo_id=f"{response.repo_id}")
         self.collection = self.get_models()
 
     def hotkeys_match(self, synapse, hotkey) -> bool:
