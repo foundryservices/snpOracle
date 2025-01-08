@@ -10,7 +10,7 @@
 
 <div align="center">
 
-| This repository is the official codebase<br>for Bittensor Subnet 28 (SN28) v1.0.0+,<br>which was released on February 20th 2024. | **Testnet UID:**  272 <br> **Mainnet UID:**  28 |
+| This repository is the official codebase<br>for Bittensor Subnet 28 (SN28) v1.0.0+,<br>which was released on February 20th 2024. | **Testnet UID:**  93 <br> **Mainnet UID:**  28 |
 | - | - |
 
 </div>
@@ -87,15 +87,6 @@ logging_level = info # options = [info, debug, trace]
 #### Ports
 In the Makefile, we have default ports set to `8091` for validator and `8092` for miner. Please change as-needed.
 
-#### Models
-In the Makefile, ensure that the `--model` flag points to the local location of the model you would like validators to evaluate. By default, the Makefile is populated with the base miner model:
-`--model mining_models/base_lstm_new.h5`
-
-The `--hf_repo_id` flag will determine which hugging face repository your miner models and data will be uploaded to. This repository must be public in order to ensure validator access. A hugging face repository will be created at the provided path under your hugging face user assuming you provide a valid username and valid `MINER_HF_ACCESS_TOKEN` in your `.env` file.
-
-#### Data
-The data your model utilizes will be automatically uploaded to hugging face, in the same repository as your model, defined here: `--hf_repo_id`. The data will be encrypted initially. Once the model is evaluated by validators, the data will be decrypted and published on hugging face.
-
 ## Deploying a Miner
 We highly recommend that you run your miners on testnet before deploying on mainnet.
 
@@ -105,9 +96,9 @@ We highly recommend that you run your miners on testnet before deploying on main
 ### Base miner
 
 1. Run the command:
-   ```shell
-   make miner
-   ```
+    ```shell
+    make miner
+    ```
 
 ### Custom Miner
 
@@ -117,6 +108,6 @@ We highly recommend that you run your miners on testnet before deploying on main
 3. Edit the command in the Makefile.
    1. Add values for `hf_repo_id` and so forth.
 4. Run the Command:
-   ```
-   make miner
-   ```
+    ```
+    make miner
+    ```
