@@ -49,10 +49,10 @@ class HfInterface:
     def hotkeys_match(self, synapse, hotkey) -> bool:
         if synapse.model is None:
             return False
-        model_hotkey = synapse.model.split(".")[0]
+        model_hotkey = synapse.model.split("/")[0]
         return hotkey == model_hotkey
 
     def get_model_timestamp(self, repo_id, model):
-        commits = self.api.list_repo_commits(repo_id=f"{repo_id}/{model}", repo_type="model")
+        commits = self.api.list_repo_commits(repo_id=f"{repo_id}", repo_type="model")
         initial_commit = commits[-1]
         return initial_commit.created_at
