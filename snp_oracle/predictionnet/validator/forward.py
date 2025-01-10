@@ -7,9 +7,12 @@ import wandb
 from numpy import full, nan
 from pytz import timezone
 
+from snp_oracle.predictionnet.protocol import Challenge
+from snp_oracle.predictionnet.utils.timestamp import datetime_to_iso8601, get_now
+
 import snp_oracle.predictionnet as predictionnet
 from snp_oracle.predictionnet.utils.dataset_manager import DatasetManager
-from snp_oracle.predictionnet.utils.uids import check_uid_availability
+from snp_oracle.predictionnet.utils.bittensor import check_uid_availability
 from snp_oracle.predictionnet.validator.reward import get_rewards
 
 
@@ -26,7 +29,7 @@ def can_process_data(response) -> bool:
     return all([bool(response.repo_id), bool(response.data), bool(response.decryption_key), bool(response.prediction)])
 
 
-async def process_miner_data(response, timestamp: str, organization: str, hotkey: str, uid: int) -> bool:
+async def process_miner_data(self, response, timestamp: str, organization: str, hotkey: str, uid: int) -> bool:
     """
     Verify that miner's data can be decrypted and attempt to store it.
 
@@ -42,11 +45,10 @@ async def process_miner_data(response, timestamp: str, organization: str, hotkey
     """
     try:
         bt.logging.info(f"Processing data from UID {uid}...")
-        dataset_manager = DatasetManager(organization=organization)
         data_path = f"{response.repo_id}/{response.data}"
 
         # Verify decryption works
-        success, result = dataset_manager.decrypt_data(data_path=data_path, decryption_key=response.decryption_key)
+        success, result = self.dataset_manager.decrypt_data(data_path=data_path, decryption_key=response.decryption_key)
 
         if not success:
             bt.logging.error(f"Failed to decrypt data: {result['error']}")
@@ -56,7 +58,7 @@ async def process_miner_data(response, timestamp: str, organization: str, hotkey
 
         # Store data in background without waiting for completion
         asyncio.create_task(
-            dataset_manager.store_data_async(
+            self.dataset_manager.store_data_async(
                 timestamp=timestamp,
                 miner_data=result["data"],
                 predictions=result.get("predictions", {}),
@@ -72,78 +74,20 @@ async def process_miner_data(response, timestamp: str, organization: str, hotkey
         return False
 
 
-async def handle_market_close(self, dataset_manager: DatasetManager) -> None:
-    """Handle data management operations when market is closed."""
-    try:
-        # Clean up old data
-        dataset_manager.cleanup_local_storage(days_to_keep=2)
-
-        # Upload today's data
-        success, result = dataset_manager.batch_upload_daily_data()
-        if success:
-            bt.logging.success(
-                f"Daily batch upload completed. Uploaded {result.get('files_uploaded', 0)} files "
-                f"with {result.get('total_rows', 0)} rows to {result.get('repo_id')}"
-            )
-        else:
-            bt.logging.error(f"Daily batch upload failed: {result.get('error')}")
-
-    except Exception as e:
-        bt.logging.error(f"Error during market close operations: {str(e)}")
-
-
 async def forward(self):
     """
     The forward function is called by the validator every time step.
     It queries the network and scores responses when market is open,
     and handles data management when market is closed.
     """
-    ny_timezone = timezone("America/New_York")
-    current_time_ny = datetime.now(ny_timezone)
-    dataset_manager = DatasetManager(organization=self.config.neuron.organization)
-    daily_ops_done = False
-
-    while True:
-        if await self.is_valid_time():
-            daily_ops_done = False  # Reset flag when market opens
-            break
-
-        if not daily_ops_done:
-            await handle_market_close(self, dataset_manager)
-            daily_ops_done = True
-
-        # Check metagraph every hour
-        if datetime.now(ny_timezone) - current_time_ny >= timedelta(hours=1):
-            self.resync_metagraph()
-            self.set_weights()
-            self.past_predictions = [full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)] * len(self.hotkeys)
-            current_time_ny = datetime.now(ny_timezone)
-
-        time.sleep(120)  # Sleep for 2 minutes
-
-        if datetime.now(ny_timezone) - current_time_ny >= timedelta(hours=1):
-            self.resync_metagraph()
-            self.set_weights()
-            self.past_predictions = [full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)] * len(self.hotkeys)
-            current_time_ny = datetime.now(ny_timezone)
-
-    # Get available miner UIDs
-    miner_uids = []
-    for uid in range(len(self.metagraph.S)):
-        uid_is_available = check_uid_availability(self.metagraph, uid, self.config.neuron.vpermit_tao_limit)
-        if uid_is_available:
-            miner_uids.append(uid)
-
     # Get current timestamp
-    current_time_ny = datetime.now(ny_timezone)
-    timestamp = current_time_ny.isoformat()
-
+    timestamp = datetime_to_iso8601(get_now())
     # Build synapse for request
-    synapse = predictionnet.protocol.Challenge(timestamp=timestamp)
+    synapse = Challenge(timestamp=timestamp)
 
     # Query miners
     responses = self.dendrite.query(
-        axons=[self.metagraph.axons[uid] for uid in miner_uids],
+        axons=[self.metagraph.axons[uid] for uid in self.available_uids],
         synapse=synapse,
         deserialize=False,
     )
@@ -151,7 +95,7 @@ async def forward(self):
     # Process responses and track decryption success
     # Create tasks for all miners and wait for all decryption results
     decryption_tasks = []
-    for uid, response in zip(miner_uids, responses):
+    for uid, response in zip(self.available_uids, responses):
         bt.logging.info(f"UID: {uid} | Predictions: {response.prediction}")
 
         if can_process_data(response):
@@ -170,7 +114,7 @@ async def forward(self):
     decryption_success = await asyncio.gather(*decryption_tasks)
 
     # Calculate initial rewards
-    rewards = get_rewards(self, responses=responses, miner_uids=miner_uids)
+    rewards = get_rewards(self, responses=responses)
 
     # Zero out rewards for failed decryption
     rewards = [reward if success else 0 for reward, success in zip(rewards, decryption_success)]
@@ -179,14 +123,14 @@ async def forward(self):
     wandb_val_log = {
         "miners_info": {
             miner_uid: {"miner_response": response.prediction, "miner_reward": reward, "decryption_success": success}
-            for miner_uid, response, reward, success in zip(miner_uids, responses, rewards, decryption_success)
+            for miner_uid, response, reward, success in zip(self.available_uids, responses, rewards, decryption_success)
         }
     }
     wandb.log(wandb_val_log)
 
     # Log scores and update
     bt.logging.info(f"Scored responses: {rewards}")
-    models_confirmed = self.confirm_models(responses, miner_uids)
+    models_confirmed = self.confirm_models(responses)
     bt.logging.info(f"Models Confirmed: {models_confirmed}")
     rewards = [0 if not model_confirmed else reward for reward, model_confirmed in zip(rewards, models_confirmed)]
-    self.update_scores(rewards, miner_uids)
+    self.update_scores(rewards)

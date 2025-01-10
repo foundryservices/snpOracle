@@ -44,7 +44,7 @@ def setup_bittensor_objects(self):
     self.config.full_path = str(full_path)
 
 
-def print_info(self) -> None:
+def print_info(self, additional_info: str = "") -> None:
     if self.config.neuron.type == "Validator":
         weight_timing = self.hyperparameters.weights_rate_limit - self.blocks_since_last_update
         if weight_timing <= 0:
@@ -71,6 +71,8 @@ def print_info(self) -> None:
         )
     else:
         log = f"Unknown Neuron Type: {self.config.neuron.type}\nPlease choose from: [Validator, Miner]"
+    if additional_info:
+        log += f" | {additional_info}"
     bt.logging.info(log)
 
 

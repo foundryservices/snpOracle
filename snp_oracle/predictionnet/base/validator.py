@@ -7,7 +7,11 @@ from traceback import print_exception
 from typing import List
 
 import bittensor as bt
-from numpy import array, full, isnan, nan, nan_to_num, ndarray
+from numpy import array, full, isnan, nan_to_num, ndarray
+
+from snp_oracle.predictionnet.base.neuron import BaseNeuron
+from snp_oracle.predictionnet.utils.bittensor import get_available_uids
+from snp_oracle.predictionnet.utils.classes import MinerHistory
 
 from snp_oracle.predictionnet.base.neuron import BaseNeuron
 
@@ -181,7 +185,7 @@ class BaseValidatorNeuron(BaseNeuron):
             self.is_running = False
             bt.logging.debug("Stopped")
 
-    def set_weights(self):
+    async def set_weights(self):
         """
         Sets the validator weights to the metagraph hotkeys based on the scores it has received from the miners. The weights determine the trust and incentive level the validator assigns to miner nodes on the network.
         """
@@ -236,40 +240,30 @@ class BaseValidatorNeuron(BaseNeuron):
         else:
             bt.logging.debug("Failed to set weights this iteration with message:", msg)
 
-    def resync_metagraph(self):
+    async def resync_metagraph(self):
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
-        bt.logging.info("resync_metagraph()")
+        try:
+            self.blocks_since_sync = self.current_block - self.last_sync
+            if self.blocks_since_sync >= self.resync_metagraph_rate:
+                bt.logging.info("Syncing Metagraph...")
+                self.metagraph.sync(subtensor=self.subtensor)
+                bt.logging.info("Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages")
+                # Zero out all hotkeys that have been replaced.
+                self.available_uids = asyncio.run(get_available_uids(self))
+                for uid, hotkey in enumerate(self.metagraph.hotkeys):
+                    if (uid not in self.MinerHistory and uid in self.available_uids) or self.hotkeys[uid] != hotkey:
+                        bt.logging.info(f"Replacing hotkey on {uid} with {self.metagraph.hotkeys[uid]}")
+                        self.hotkeys[uid] = hotkey
+                        self.MinerHistory[uid] = MinerHistory(uid)
+                        self.moving_average_scores[uid] = 0
+                        self.scores = array(list(self.moving_average_scores.values()))
+                self.last_sync = self.subtensor.get_current_block()
+                self.save_state()
+        except Exception as e:
+            bt.logging.error(f"Resync metagraph error: {e}")
+            raise e
 
-        # Copies state of metagraph before syncing.
-        previous_metagraph = copy.deepcopy(self.metagraph)
-
-        # Sync the metagraph.
-        self.metagraph.sync(subtensor=self.subtensor)
-
-        # Check if the metagraph axon info has changed.
-        if previous_metagraph.axons == self.metagraph.axons:
-            return
-
-        bt.logging.info("Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages")
-        # Zero out all hotkeys that have been replaced.
-        for uid, hotkey in enumerate(self.hotkeys):
-            if hotkey != self.metagraph.hotkeys[uid]:
-                self.scores[uid] = 0  # hotkey has been replaced
-                self.past_predictions[uid] = full((self.N_TIMEPOINTS, self.N_TIMEPOINTS), nan)  # reset past predictions
-
-        # Check to see if the metagraph has changed size.
-        # If so, we need to add new hotkeys and moving averages.
-        if len(self.hotkeys) < len(self.metagraph.hotkeys):
-            # Update the size of the moving average scores.
-            new_moving_average = full(len(self.metagraph.S), 0)
-            min_len = min(len(self.hotkeys), len(self.scores))
-            new_moving_average[:min_len] = self.scores[:min_len]
-            self.scores = new_moving_average
-
-        # Update the hotkeys.
-        self.hotkeys = copy.deepcopy(self.metagraph.hotkeys)
-
-    def update_scores(self, rewards: ndarray, uids: List[int]):
+    def update_scores(self, rewards: ndarray):
         """Performs exponential moving average on the scores based on the rewards received from the miners."""
         # Check if rewards contains NaN values.
         if isnan(rewards).any():
@@ -278,7 +272,7 @@ class BaseValidatorNeuron(BaseNeuron):
             rewards = nan_to_num(rewards, 0)
         # Compute forward pass rewards, assumes uids are mutually exclusive.
         # shape: [ metagraph.n ]
-        for i, value in zip(uids, rewards):
+        for i, value in zip(self.available_uids, rewards):
             self.moving_avg_scores[i] = (1 - self.alpha) * self.scores[i] + self.alpha * value
         self.scores = array(list(self.moving_avg_scores.values()))
         bt.logging.info(f"New Average Scores: {self.scores}")

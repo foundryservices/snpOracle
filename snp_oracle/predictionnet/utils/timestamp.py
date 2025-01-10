@@ -13,7 +13,7 @@ def get_timezone() -> timezone:
     """
     Set the Global shared timezone for all timestamp manipulation
     """
-    return timezone("UTC")
+    return timezone("America/New_York")
 
 
 def get_now() -> datetime:
