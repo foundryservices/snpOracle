@@ -1,5 +1,3 @@
-.python-version
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -130,6 +128,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+# branch specific environments that start with issue number
+.[0-9]*-*
 
 # Spyder project settings
 .spyderproject
@@ -164,3 +164,9 @@ cython_debug/
 
 testing/
 timestamp.txt
+
+# localnet config
+miner.config.local.js
+validator.config.local.js
+
+local_data/

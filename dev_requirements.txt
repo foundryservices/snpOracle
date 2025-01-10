@@ -1,6 +1,0 @@
-black
-flake8
-isort
-mypy
-pre-commit
-pre-commit-hooks==5.0.0
