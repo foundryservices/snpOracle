@@ -3,7 +3,7 @@ Release Notes
 
 3.0.0
 -----
-Released on Testnet December 20th 2024
+Released on January 10th 2025
 - Require open sourcing on HuggingFace
 - Leverage Poetry for dependency management
 - Enhance README instructions
