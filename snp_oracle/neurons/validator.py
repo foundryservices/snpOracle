@@ -3,7 +3,6 @@ import os
 import pathlib
 import pickle
 import time
-from datetime import datetime
 from typing import List
 
 import bittensor as bt
@@ -12,10 +11,10 @@ from dotenv import load_dotenv
 
 from snp_oracle import __version__
 from snp_oracle.predictionnet.base.validator import BaseValidatorNeuron
-from snp_oracle.predictionnet.utils.dataset_manager import DatasetManager
-from snp_oracle.predictionnet.utils.huggingface import HfInterface
 from snp_oracle.predictionnet.utils.bittensor import get_available_uids, print_info
 from snp_oracle.predictionnet.utils.classes import MinerHistory
+from snp_oracle.predictionnet.utils.dataset_manager import DatasetManager
+from snp_oracle.predictionnet.utils.huggingface import HfInterface
 from snp_oracle.predictionnet.utils.timestamp import elapsed_seconds, get_before, get_now, is_query_time, market_is_open
 from snp_oracle.predictionnet.validator import forward
 
@@ -43,7 +42,7 @@ class Validator(BaseValidatorNeuron):
         self.MinerHistory = {uid: MinerHistory(uid) for uid in self.available_uids}
         self.DatasetManager = DatasetManager(organization=self.config.neuron.organization)
         self.timestamp = get_before(minutes=60)
-        self.first_closed_call = True # handles market close events
+        self.first_closed_call = True  # handles market close events
         if self.config.reset_state:
             self.scores = [0.0] * len(self.metagraph.S)
             self.moving_average_scores = {uid: 0 for uid in self.metagraph.uids}
@@ -70,7 +69,6 @@ class Validator(BaseValidatorNeuron):
             dir=self.config.neuron.full_path,
             reinit=True,
         )
-
 
     async def forward(self):
         """

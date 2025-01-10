@@ -4,7 +4,6 @@ import os
 import pickle
 import threading
 from traceback import print_exception
-from typing import List
 
 import bittensor as bt
 from numpy import array, full, isnan, nan_to_num, ndarray
@@ -12,8 +11,6 @@ from numpy import array, full, isnan, nan_to_num, ndarray
 from snp_oracle.predictionnet.base.neuron import BaseNeuron
 from snp_oracle.predictionnet.utils.bittensor import get_available_uids
 from snp_oracle.predictionnet.utils.classes import MinerHistory
-
-from snp_oracle.predictionnet.base.neuron import BaseNeuron
 
 
 class BaseValidatorNeuron(BaseNeuron):

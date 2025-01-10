@@ -1,18 +1,10 @@
 import asyncio
-import time
-from datetime import datetime, timedelta
 
 import bittensor as bt
 import wandb
-from numpy import full, nan
-from pytz import timezone
 
 from snp_oracle.predictionnet.protocol import Challenge
 from snp_oracle.predictionnet.utils.timestamp import datetime_to_iso8601, get_now
-
-import snp_oracle.predictionnet as predictionnet
-from snp_oracle.predictionnet.utils.dataset_manager import DatasetManager
-from snp_oracle.predictionnet.utils.bittensor import check_uid_availability
 from snp_oracle.predictionnet.validator.reward import get_rewards
 
 

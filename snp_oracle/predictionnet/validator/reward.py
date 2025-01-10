@@ -1,11 +1,7 @@
-import time
-from datetime import datetime, timedelta
 from typing import List
 
-import bittensor as bt
 import numpy as np
 import yfinance as yf
-from pytz import timezone
 
 from snp_oracle.predictionnet.protocol import Challenge
 from snp_oracle.predictionnet.utils.general import (
