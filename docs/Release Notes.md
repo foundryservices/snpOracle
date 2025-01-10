@@ -1,12 +1,12 @@
 Release Notes
 =============
 
-2.3.0
+3.0.0
 -----
-Released on
-- Reduce dependencies required to deploy miners and validators
-- Move top level files to sensible locations
-- Enahnce README with badges and other cosmetic updates
+Released on Testnet December 20th 2024
+- Require open sourcing on HuggingFace
+- Leverage Poetry for dependency management
+- Enhance README instructions
 
 
 2.2.1
