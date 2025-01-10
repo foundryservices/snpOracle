@@ -5,6 +5,7 @@ Release Notes
 -----
 Released on January 10th 2025
 - Require open sourcing on HuggingFace
+- Update to Bittensor v8.5.1 and leverage CR3
 - Leverage Poetry for dependency management
 - Enhance README instructions
 
