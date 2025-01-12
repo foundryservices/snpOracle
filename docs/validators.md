@@ -80,7 +80,7 @@ Before starting the process, validators would be required to procure a WANDB API
 - Finally, run `wandb login` and paste your API key. Now you're all set with weights & biases.
 
 #### HuggingFace Access Token
-A huggingface access token can be procured from the huggingface platform. Follow the <a href='https://huggingface.co/docs/hub/en/security-tokens'>steps mentioned here</a> to get your huggingface access token.
+A huggingface access token can be procured from the huggingface platform. Follow the <a href='https://huggingface.co/docs/hub/en/security-tokens'>steps mentioned here</a> to get your huggingface access token. Ensure that your access token has all repository permissions and collection permissions checked.
 
 #### HuggingFace Collection Slug
 A Hugging Face collection is where the references to miner models will be stored. In order to create one, follow the <a href='https://huggingface.co/docs/hub/en/collections'>steps mentioned here</a>.

@@ -9,7 +9,6 @@ netuid = $(localnet_netuid)
 network = $(localnet)
 logging_level = debug # options= ['info', 'debug', 'trace']
 
-
 ################################################################################
 #                             Network Parameters                               #
 ################################################################################
@@ -43,6 +42,7 @@ validator:
 		--axon.port 8091 \
 		--netuid $(netuid) \
 		--logging.$(logging_level)
+
 
 miner:
 	pm2 start python --name miner  -- ./snp_oracle/neurons/miner.py \
