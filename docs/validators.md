@@ -49,17 +49,19 @@ poetry install
 ## Configuration
 
 #### Environment Variables
-First copy the `.env.template` file to `.env`
+First copy the `.env.validator.template` file to `.env`
 
 ```shell
-cp .env.template .env
+cp .env.validator.template .env
 ```
 
 Update the `.env` file with your validator's values.
 
 ```text
 WANDB_API_KEY='REPLACE_WITH_WANDB_API_KEY'
+
 HF_ACCESS_TOKEN='REPLACE_WITH_HUGGINGFACE_ACCESS_KEY'
+HF_COLLECTION_SLUG='REPLACE_WITH_HUGGINGFACE_COLLECTION_SLUG'
 
 (Optional - See Miner Data Upload to Hugging Face section)
 GIT_TOKEN='REPLACE_WITH_GIT_TOKEN'
@@ -79,6 +81,11 @@ Before starting the process, validators would be required to procure a WANDB API
 
 #### HuggingFace Access Token
 A huggingface access token can be procured from the huggingface platform. Follow the <a href='https://huggingface.co/docs/hub/en/security-tokens'>steps mentioned here</a> to get your huggingface access token.
+
+#### HuggingFace Collection Slug
+A Hugging Face collection is where the references to miner models will be stored. In order to create one, follow the <a href='https://huggingface.co/docs/hub/en/collections'>steps mentioned here</a>.
+
+Once you have created a collection, copy and paste the <a href='https://huggingface.co/docs/huggingface_hub/main/en/guides/collections#fetch-a-collection'>collection slug</a> into the HF_COLLECTION_SLUG environment variable.
 
 #### (Optional) Miner Data Upload to Hugging Face
 Optionally, validators can choose to upload miner data at the end of each day to Hugging Face. The goal of this is to increase the transparency of our subnet. In order to participate, validators will need to create a <a href='https://huggingface.co/docs/hub/en/organizations'>Hugging Face organization</a>.
