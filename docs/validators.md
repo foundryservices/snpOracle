@@ -78,6 +78,13 @@ Before starting the process, validators would be required to procure a WANDB API
 #### HuggingFace Access Token
 A huggingface access token can be procured from the huggingface platform. Follow the <a href='https://huggingface.co/docs/hub/en/security-tokens'>steps mentioned here</a> to get your huggingface access token.
 
+#### Optional Miner Data Upload to Hugging Face
+Optionally, validators can choose to upload miner data at the end of each day to Hugging Face. The goal of this is to increase the transparency of our subnet. In order to participate, validators will need to create a Hugging Face organization: <a href='https://huggingface.co/docs/hub/en/organizations'>. 
+
+Once you have created an organization, pass the organization namespace into the ```--neuron.organization``` argument in the Makefile with your organizations namespace.
+
+To turn on this feature, you will also need to add the ```--neuron.data_upload_on``` argument to the Makefile and set it to ```True```.
+
 #### Git Access Token
 A git token can be procured from the huggingface platform. Follow the <a href='https://huggingface.co/docs/hub/en/security-tokens'>steps mentioned here</a> to get your huggingface access token. Be sure to scope this token to the organization repository. The `username`, `name`, and `email` environment variable properties are all tied to your HuggingFace account.
 

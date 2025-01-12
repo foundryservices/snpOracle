@@ -177,7 +177,7 @@ async def forward(self):
     rewards = get_rewards(self, responses=responses, miner_uids=miner_uids)
 
     # Zero out rewards for failed decryption
-    rewards = [reward if success else 0 for reward, success in zip(rewards, decryption_success)]
+    #rewards = [reward if success else 0 for reward, success in zip(rewards, decryption_success)]
 
     wandb_on = self.config.neuron.wandb_on
 
