@@ -70,7 +70,7 @@ GIT_EMAIL='REPLACE_WITH_GIT_EMAIL'
 
 See WandB API Key and HuggingFace setup below.
 
-#### (Optional) Obtain & Setup WandB API Key
+#### Obtain & Setup WandB API Key
 Before starting the process, validators would be required to procure a WANDB API Key. Please follow the instructions mentioned below:<br>
 
 - Log in to <a href="https://wandb.ai">Weights & Biases</a> and generate an API key in your account settings.
