@@ -62,8 +62,8 @@ WANDB_API_KEY='REPLACE_WITH_WANDB_API_KEY'
 HF_ACCESS_TOKEN='REPLACE_WITH_HUGGINGFACE_ACCESS_KEY'
 
 (Optional - See Miner Data Upload to Hugging Face section)
-GIT_TOKEN='REPLACE_WITH_GIT_TOKEN' 
-GIT_USERNAME='REPLACE_WITH_GIT_USERNAME' 
+GIT_TOKEN='REPLACE_WITH_GIT_TOKEN'
+GIT_USERNAME='REPLACE_WITH_GIT_USERNAME'
 GIT_NAME='REPLACE_WITH_GIT_NAME'
 GIT_EMAIL='REPLACE_WITH_GIT_EMAIL'
 ```
@@ -81,7 +81,7 @@ Before starting the process, validators would be required to procure a WANDB API
 A huggingface access token can be procured from the huggingface platform. Follow the <a href='https://huggingface.co/docs/hub/en/security-tokens'>steps mentioned here</a> to get your huggingface access token.
 
 #### (Optional) Miner Data Upload to Hugging Face
-Optionally, validators can choose to upload miner data at the end of each day to Hugging Face. The goal of this is to increase the transparency of our subnet. In order to participate, validators will need to create a Hugging Face organization: <a href='https://huggingface.co/docs/hub/en/organizations'>. 
+Optionally, validators can choose to upload miner data at the end of each day to Hugging Face. The goal of this is to increase the transparency of our subnet. In order to participate, validators will need to create a Hugging Face organization: <a href='https://huggingface.co/docs/hub/en/organizations'>.
 
 Once you have created an organization, pass the organization namespace into the ```--neuron.organization``` argument in the Makefile with your organizations namespace.
 

@@ -145,18 +145,13 @@ def add_args(cls, parser):
             default="your_hugging_face_org",
         )
 
-        parser.add_argument(
-            "--neuron.wandb_on",
-            type=bool,
-            help="Boolean toggle for wandb integration",
-            default=False
-        )
+        parser.add_argument("--neuron.wandb_on", type=bool, help="Boolean toggle for wandb integration", default=False)
 
         parser.add_argument(
             "--neuron.data_upload_on",
             type=bool,
             help="Boolean toggle for validator HuggingFace data upload",
-            default=False
+            default=False,
         )
 
     # MINER ONLY CONFIG
