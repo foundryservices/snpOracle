@@ -26,22 +26,17 @@ def can_process_data(response) -> bool:
     return all([bool(response.repo_id), bool(response.data), bool(response.decryption_key), bool(response.prediction)])
 
 
-async def process_miner_data(response, timestamp: str, organization: str, hotkey: str, uid: int) -> bool:
+async def process_miner_data(response, timestamp: str, organization: str, hotkey: str, uid: int, data_upload_on: bool = False) -> bool:
     """
-    Verify that miner's data can be decrypted and attempt to store it.
-
-    Args:
-        response: Response from miner containing encrypted data
-        timestamp: Current timestamp
-        organization: Organization name for HuggingFace
-        hotkey: Miner's hotkey for data organization
-        uid: Miner's UID
-
-    Returns:
-        bool: True if data was successfully decrypted, False otherwise
+    Verify that miner's data can be decrypted and optionally store it.
     """
     try:
         bt.logging.info(f"Processing data from UID {uid}...")
+        
+        if not data_upload_on:
+            bt.logging.info(f"Data upload disabled, skipping storage for UID {uid}")
+            return True  # Return True since this isn't a failure case
+            
         dataset_manager = DatasetManager(organization=organization)
         data_path = f"{response.repo_id}/{response.data}"
 
@@ -72,9 +67,13 @@ async def process_miner_data(response, timestamp: str, organization: str, hotkey
         return False
 
 
-async def handle_market_close(self, dataset_manager: DatasetManager) -> None:
+async def handle_market_close(self, dataset_manager: DatasetManager, data_upload_on: bool) -> None:
     """Handle data management operations when market is closed."""
     try:
+        if not data_upload_on:
+            bt.logging.info("Data upload disabled, skipping market close operations")
+            return
+
         # Clean up old data
         dataset_manager.cleanup_local_storage(days_to_keep=2)
 
@@ -100,16 +99,20 @@ async def forward(self):
     """
     ny_timezone = timezone("America/New_York")
     current_time_ny = datetime.now(ny_timezone)
-    dataset_manager = DatasetManager(organization=self.config.neuron.organization)
     daily_ops_done = False
+    dataset_manager = None
+    data_upload_on = getattr(self.config.neuron, 'data_upload_on', False)
+
+    if data_upload_on:
+        dataset_manager = DatasetManager(organization=self.config.neuron.organization)
 
     while True:
         if await self.is_valid_time():
             daily_ops_done = False  # Reset flag when market opens
             break
 
-        if not daily_ops_done:
-            await handle_market_close(self, dataset_manager)
+        if not daily_ops_done and data_upload_on and dataset_manager:
+            await handle_market_close(self, dataset_manager, data_upload_on)
             daily_ops_done = True
 
         # Check metagraph every hour
@@ -161,6 +164,7 @@ async def forward(self):
                 organization=self.config.neuron.organization,
                 hotkey=self.metagraph.hotkeys[uid],
                 uid=uid,
+                data_upload_on=data_upload_on
             )
             decryption_tasks.append(task)
         else:
@@ -175,14 +179,17 @@ async def forward(self):
     # Zero out rewards for failed decryption
     rewards = [reward if success else 0 for reward, success in zip(rewards, decryption_success)]
 
-    # Log results to wandb
-    wandb_val_log = {
-        "miners_info": {
-            miner_uid: {"miner_response": response.prediction, "miner_reward": reward, "decryption_success": success}
-            for miner_uid, response, reward, success in zip(miner_uids, responses, rewards, decryption_success)
+    wandb_on = self.config.neuron.wandb_on
+
+    if wandb_on:
+        # Log results to wandb
+        wandb_val_log = {
+            "miners_info": {
+                miner_uid: {"miner_response": response.prediction, "miner_reward": reward, "decryption_success": success}
+                for miner_uid, response, reward, success in zip(miner_uids, responses, rewards, decryption_success)
+            }
         }
-    }
-    wandb.log(wandb_val_log)
+        wandb.log(wandb_val_log)
 
     # Log scores and update
     bt.logging.info(f"Scored responses: {rewards}")
