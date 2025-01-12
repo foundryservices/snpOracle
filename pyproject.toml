@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "snp_oracle"
-version = "3.0.0"
+version = "3.0.1"
 description = ""
 authors = ["Foundry Digital"]
 readme = "README.md"
