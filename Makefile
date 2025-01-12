@@ -54,5 +54,5 @@ miner:
 		--logging.$(logging_level) \
 		--vpermit_tao_limit 2 \
 		--blacklist.force_validator_permit true \
-		--hf_repo_id foundryservices/mining_models \
+		--hf_repo_id your_repo_id \
 		--model mining_models/base_lstm_new.h5
