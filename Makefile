@@ -9,7 +9,6 @@ netuid = $(localnet_netuid)
 network = $(localnet)
 logging_level = debug # options= ['info', 'debug', 'trace']
 
-
 ################################################################################
 #                             Network Parameters                               #
 ################################################################################
@@ -44,6 +43,7 @@ validator:
 		--netuid $(netuid) \
 		--logging.$(logging_level)
 
+
 miner:
 	pm2 start python --name miner  -- ./snp_oracle/neurons/miner.py \
 		--wallet.name $(coldkey) \
@@ -54,5 +54,5 @@ miner:
 		--logging.$(logging_level) \
 		--vpermit_tao_limit 2 \
 		--blacklist.force_validator_permit true \
-		--hf_repo_id foundryservices/mining_models \
+		--hf_repo_id your_repo_id \
 		--model mining_models/base_lstm_new.h5

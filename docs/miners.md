@@ -57,10 +57,10 @@ poetry install
 ## Configuration
 
 #### Environment Variables
-First copy the `.env.template` file to `.env`
+First copy the `.env.miner.template` file to `.env`
 
 ```shell
-cp .env.template .env
+cp .env.miner.template .env
 ```
 
 Update the `.env` file with your miner's values for the following properties.

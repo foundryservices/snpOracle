@@ -1,6 +1,13 @@
 Release Notes
 =============
 
+3.0.1
+-----
+Released on January 12 2025
+- Improvements in validator README instructions
+- Add flags to opt into additional functionality
+
+
 3.0.0
 -----
 Released on January 10th 2025
