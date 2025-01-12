@@ -88,7 +88,7 @@ Once you have created an organization, pass the organization namespace into the 
 To turn on this feature, you will also need to add the ```--neuron.data_upload_on``` argument to the Makefile and set it to ```True```.
 
 #### (Optional) Git Access Token
-A git token can be procured from the huggingface platform. Follow the <a href='https://huggingface.co/docs/hub/en/security-tokens'>steps mentioned here</a> to get your huggingface access token. Be sure to scope this token to the organization repository set with the argument above. The `username`, `name`, and `email` environment variable properties are all tied to your HuggingFace account.
+A git token can be procured from the huggingface platform. Follow the <a href='https://huggingface.co/docs/hub/en/security-tokens'>steps mentioned here</a> to get your huggingface access token. Be sure to scope this token to the organization repository set with the argument above. The `GIT_TOKEN`, `GIT_USERNAME`, `GIT_EMAIL` and `GIT_NAME` environment variable properties are all tied to your HuggingFace account.
 
 ## Deploying a Validator
 **IMPORTANT**
