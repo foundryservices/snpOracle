@@ -80,12 +80,12 @@ Before starting the process, validators would be required to procure a WANDB API
 - Finally, run `wandb login` and paste your API key. Now you're all set with weights & biases.
 
 #### HuggingFace Access Token
-A huggingface access token can be procured from the huggingface platform. Follow the <a href='https://huggingface.co/docs/hub/en/security-tokens'>steps mentioned here</a> to get your huggingface access token. Ensure that your access token has all repository permissions and collection permissions checked.
+A huggingface access token can be procured from the huggingface platform. Follow the <a href='https://huggingface.co/docs/hub/en/security-tokens'>steps mentioned here</a> to get your huggingface access token and add it to the ```HF_ACCESS_TOKEN``` environment variable. Ensure that your access token has all repository permissions and collection permissions checked.
 
 #### HuggingFace Collection Slug
 A Hugging Face collection is where the references to miner models will be stored. In order to create one, follow the <a href='https://huggingface.co/docs/hub/en/collections'>steps mentioned here</a>.
 
-Once you have created a collection, copy and paste the <a href='https://huggingface.co/docs/huggingface_hub/main/en/guides/collections#fetch-a-collection'>collection slug</a> into the HF_COLLECTION_SLUG environment variable.
+Once you have created a collection, copy and paste the <a href='https://huggingface.co/docs/huggingface_hub/main/en/guides/collections#fetch-a-collection'>collection slug</a> into the ```HF_COLLECTION_SLUG``` environment variable.
 
 #### (Optional) Miner Data Upload to Hugging Face
 Optionally, validators can choose to upload miner data at the end of each day to Hugging Face. The goal of this is to increase the transparency of our subnet. In order to participate, validators will need to create a <a href='https://huggingface.co/docs/hub/en/organizations'>Hugging Face organization</a>.
