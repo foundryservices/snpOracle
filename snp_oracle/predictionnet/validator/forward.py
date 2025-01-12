@@ -30,7 +30,15 @@ async def process_miner_data(
     response, timestamp: str, organization: str, hotkey: str, uid: int, data_upload_on: bool = False
 ) -> bool:
     """
-    Verify that miner's data can be decrypted and optionally store it.
+        Verify that miner's data can be decrypted and attempt to store it.
+    Args:
+        response: Response from miner containing encrypted data
+        timestamp: Current timestamp
+        organization: Organization name for HuggingFace
+        hotkey: Miner's hotkey for data organization
+        uid: Miner's UID
+    Returns:
+        bool: True if data was successfully decrypted, False otherwise
     """
     try:
         bt.logging.info(f"Processing data from UID {uid}...")
@@ -190,8 +198,6 @@ async def forward(self):
 
     # Zero out rewards for failed decryption
     # rewards = [reward if success else 0 for reward, success in zip(rewards, decryption_success)]
-
-    wandb_on = self.config.neuron.wandb_on
 
     wandb_on = self.config.neuron.wandb_on
     log_to_wandb(wandb_on, miner_uids, responses, rewards, decryption_success)
