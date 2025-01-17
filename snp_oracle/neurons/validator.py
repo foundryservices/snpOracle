@@ -43,6 +43,8 @@ class Validator(BaseValidatorNeuron):
         self.DatasetManager = DatasetManager(organization=self.config.neuron.organization)
         self.timestamp = get_before(minutes=60)
         self.first_closed_call = True  # handles market close events
+        self.current_block = self.subtensor.get_current_block()
+        self.should_exit = False
         if self.config.reset_state:
             self.scores = [0.0] * len(self.metagraph.S)
             self.moving_average_scores = {uid: 0 for uid in self.metagraph.uids}
@@ -77,21 +79,26 @@ class Validator(BaseValidatorNeuron):
         - Updating the scores
         """
         # TODO(developer): Rewrite this function based on your protocol definition.
-        if market_is_open():
-            if not self.first_closed_call:
-                self.first_closed_call = True
-            query_lag = elapsed_seconds(get_now() - self.timestamp)
-            if is_query_time(self.prediction_interval, self.timestamp) or query_lag >= 60 * self.prediction_interval:
-                await forward(self)
+        try:
+            self.current_block = self.subtensor.get_current_block()
+        except Exception as e:
+            bt.logging.debug(f"Error getting current block, skipping: {e}")
+        while self.should_exit is False:
+            if market_is_open():
+                if not self.first_closed_call:
+                    self.first_closed_call = True
+                query_lag = elapsed_seconds(get_now() - self.timestamp)
+                if is_query_time(self.prediction_interval, self.timestamp) or query_lag >= 60 * self.prediction_interval:
+                    await forward(self)
+                else:
+                    print_info(self, "Market Open")
+                    asyncio.sleep(12)
             else:
-                print_info(self, "Market Open")
-                asyncio.sleep(12)
-        else:
-            if self.first_closed_call:
-                self.first_closed_call = False
-                await self.handle_market_close(self.DatasetManager)
-            print_info(self, "Market Closed")
-            asyncio.sleep(120)
+                if self.first_closed_call:
+                    self.first_closed_call = False
+                    await self.handle_market_close(self.DatasetManager)
+                print_info(self, "Market Closed")
+                asyncio.sleep(120)
         return
 
     def confirm_models(self, responses) -> List[bool]:
