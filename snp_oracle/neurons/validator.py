@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 from snp_oracle import __version__
 from snp_oracle.predictionnet.base.validator import BaseValidatorNeuron
-from snp_oracle.predictionnet.utils.bittensor import check_uid_availability, print_info
+from snp_oracle.predictionnet.utils.bittensor import get_available_uids, print_info
 from snp_oracle.predictionnet.utils.classes import MinerHistory
 from snp_oracle.predictionnet.utils.dataset_manager import DatasetManager
 from snp_oracle.predictionnet.utils.huggingface import HfInterface
@@ -119,14 +119,6 @@ class Validator(BaseValidatorNeuron):
 
         except Exception as e:
             bt.logging.error(f"Error during market close operations: {str(e)}")
-
-    async def get_available_uids(self):
-        miner_uids = []
-        for uid in range(len(self.metagraph.S)):
-            uid_is_available = check_uid_availability(self.metagraph, uid, self.config.neuron.vpermit_tao_limit)
-            if uid_is_available:
-                miner_uids.append(uid)
-        return miner_uids
 
     def save_state(self):
         """Saves the state of the validator to a file."""
