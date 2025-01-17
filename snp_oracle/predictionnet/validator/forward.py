@@ -5,7 +5,7 @@ import wandb
 
 from snp_oracle.predictionnet.protocol import Challenge
 from snp_oracle.predictionnet.utils.timestamp import datetime_to_iso8601, get_now
-from snp_oracle.predictionnet.validator.reward import get_rewards
+from snp_oracle.predictionnet.validator.reward import calc_rewards
 
 
 def can_process_data(response) -> bool:
@@ -119,7 +119,7 @@ async def forward(self):
     decryption_success = await asyncio.gather(*decryption_tasks)
 
     # Calculate initial rewards
-    rewards = get_rewards(self, responses=responses)
+    rewards = calc_rewards(self, responses=responses)
 
     # Zero out rewards for failed decryption
     # rewards = [reward if success else 0 for reward, success in zip(rewards, decryption_success)]
