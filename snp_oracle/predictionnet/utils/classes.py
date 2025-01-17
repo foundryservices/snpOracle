@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from predictionnet.utils.timestamp import get_before, get_now, get_timezone, iso8601_to_datetime, round_minute_down
+from snp_oracle.predictionnet.utils.timestamp import get_before, get_now, get_timezone, iso8601_to_datetime, round_minute_down
 
 
 class MinerHistory:

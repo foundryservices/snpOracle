@@ -6,7 +6,7 @@ import git
 import requests
 from numpy import argsort, array, concatenate, copy, cumsum, empty_like, full, nan, nanmax, ndarray, repeat
 from pandas import DataFrame
-from predictionnet.utils.timestamp import get_mature_timestamps, get_now, iso8601_to_datetime, round_minute_down
+from snp_oracle.predictionnet.utils.timestamp import get_mature_timestamps, get_now, iso8601_to_datetime, round_minute_down
 
 
 
