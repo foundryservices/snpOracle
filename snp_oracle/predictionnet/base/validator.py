@@ -33,8 +33,6 @@ class BaseValidatorNeuron(BaseNeuron):
         self.scores = full(len(self.metagraph.S), 0.0)
         self.moving_avg_scores = {uid: 0 for uid in self.metagraph.uids}
         self.alpha = self.config.neuron.moving_average_alpha
-        self.current_block = self.subtensor.get_current_block()
-        self.last_sync = 0
         # Load state because self.sync() will overwrite it
         # self.load_state()
         # Init sync with the network. Updates the metagraph.
@@ -242,22 +240,20 @@ class BaseValidatorNeuron(BaseNeuron):
     def resync_metagraph(self):
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
         try:
-            self.blocks_since_sync = self.current_block - self.last_sync
-            if self.blocks_since_sync >= self.resync_metagraph_rate:
-                bt.logging.info("Syncing Metagraph...")
-                self.metagraph.sync(subtensor=self.subtensor)
-                bt.logging.info("Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages")
-                # Zero out all hotkeys that have been replaced.
-                self.available_uids = asyncio.run(get_available_uids(self))
-                for uid, hotkey in enumerate(self.metagraph.hotkeys):
-                    if (uid not in self.MinerHistory and uid in self.available_uids) or self.hotkeys[uid] != hotkey:
-                        bt.logging.info(f"Replacing hotkey on {uid} with {self.metagraph.hotkeys[uid]}")
-                        self.hotkeys[uid] = hotkey
-                        self.MinerHistory[uid] = MinerHistory(uid)
-                        self.moving_average_scores[uid] = 0
-                        self.scores = array(list(self.moving_average_scores.values()))
-                self.last_sync = self.subtensor.get_current_block()
-                self.save_state()
+            bt.logging.info("Syncing Metagraph...")
+            self.metagraph.sync(subtensor=self.subtensor)
+            bt.logging.info("Metagraph updated, re-syncing hotkeys, dendrite pool and moving averages")
+            # Zero out all hotkeys that have been replaced.
+            self.available_uids = asyncio.run(get_available_uids(self))
+            for uid, hotkey in enumerate(self.metagraph.hotkeys):
+                if (uid not in self.MinerHistory and uid in self.available_uids) or self.hotkeys[uid] != hotkey:
+                    bt.logging.info(f"Replacing hotkey on {uid} with {self.metagraph.hotkeys[uid]}")
+                    self.hotkeys[uid] = hotkey
+                    self.MinerHistory[uid] = MinerHistory(uid)
+                    self.moving_average_scores[uid] = 0
+                    self.scores = array(list(self.moving_average_scores.values()))
+            self.last_sync = self.subtensor.get_current_block()
+            self.save_state()
         except Exception as e:
             bt.logging.error(f"Resync metagraph error: {e}")
             raise e
