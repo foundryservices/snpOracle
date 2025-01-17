@@ -38,12 +38,12 @@ wandb = "^0.19.1"
 cryptography = ">=43.0.1,<43.1.0"
 
 [tool.poetry.group.dev.dependencies]
+pre-commit = "^4.0.1"
 pre-commit-hooks = "5.0.0"
 black = "^24.10.0"
 flake8 = "^7.1.1"
 isort = "^5.13.2"
 mypy = "^1.13.0"
-pre-commit = "^4.0.1"
 rich = "^13.9.4"
 transformers = "^4.47.1"
 template = "^0.7.6"
