@@ -33,6 +33,7 @@ class BaseValidatorNeuron(BaseNeuron):
         self.scores = full(len(self.metagraph.S), 0.0)
         self.moving_avg_scores = {uid: 0 for uid in self.metagraph.uids}
         self.alpha = self.config.neuron.moving_average_alpha
+        self.current_block = self.subtensor.get_current_block()
         # Load state because self.sync() will overwrite it
         # self.load_state()
         # Init sync with the network. Updates the metagraph.

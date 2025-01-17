@@ -43,7 +43,6 @@ class Validator(BaseValidatorNeuron):
         self.DatasetManager = DatasetManager(organization=self.config.neuron.organization)
         self.timestamp = get_before(minutes=60)
         self.first_closed_call = True  # handles market close events
-        self.current_block = self.subtensor.get_current_block()
         self.should_exit = False
         if self.config.reset_state:
             self.scores = [0.0] * len(self.metagraph.S)
