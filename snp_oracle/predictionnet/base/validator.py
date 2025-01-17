@@ -36,7 +36,6 @@ class BaseValidatorNeuron(BaseNeuron):
         # Load state because self.sync() will overwrite it
         # self.load_state()
         # Init sync with the network. Updates the metagraph.
-        self.resync_metagraph()  # this ensures that the state file is up to date with the metagraph
         self.sync()
 
         # Serve axon to enable external connections.
