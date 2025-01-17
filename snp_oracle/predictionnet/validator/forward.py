@@ -23,15 +23,13 @@ def can_process_data(response) -> bool:
 
 async def process_miner_data(self, response, timestamp: str, organization: str, hotkey: str, uid: int) -> bool:
     """
-    Verify that miner's data can be decrypted and attempt to store it.
-
+        Verify that miner's data can be decrypted and attempt to store it.
     Args:
         response: Response from miner containing encrypted data
         timestamp: Current timestamp
         organization: Organization name for HuggingFace
         hotkey: Miner's hotkey for data organization
         uid: Miner's UID
-
     Returns:
         bool: True if data was successfully decrypted, False otherwise
     """
@@ -65,6 +63,19 @@ async def process_miner_data(self, response, timestamp: str, organization: str, 
         bt.logging.error(f"Error processing data from UID {uid}: {str(e)}")
         return False
 
+def log_to_wandb(miner_uids, responses, rewards, decryption_success):
+    # Log results to wandb
+    wandb_val_log = {
+        "miners_info": {
+            miner_uid: {
+                "miner_response": response.prediction,
+                "miner_reward": reward,
+                "decryption_success": success,
+            }
+            for miner_uid, response, reward, success in zip(miner_uids, responses, rewards, decryption_success)
+        }
+    }
+    wandb.log(wandb_val_log)
 
 async def forward(self):
     """
@@ -87,6 +98,7 @@ async def forward(self):
     # Process responses and track decryption success
     # Create tasks for all miners and wait for all decryption results
     decryption_tasks = []
+    data_upload_on = getattr(self.config.neuron, "data_upload_on", False)
     for uid, response in zip(self.available_uids, responses):
         bt.logging.info(f"UID: {uid} | Predictions: {response.prediction}")
 
@@ -97,6 +109,7 @@ async def forward(self):
                 organization=self.config.neuron.organization,
                 hotkey=self.metagraph.hotkeys[uid],
                 uid=uid,
+                data_upload_on=data_upload_on,
             )
             decryption_tasks.append(task)
         else:
@@ -109,17 +122,11 @@ async def forward(self):
     rewards = get_rewards(self, responses=responses)
 
     # Zero out rewards for failed decryption
-    rewards = [reward if success else 0 for reward, success in zip(rewards, decryption_success)]
+    # rewards = [reward if success else 0 for reward, success in zip(rewards, decryption_success)]
 
-    # Log results to wandb
-    wandb_val_log = {
-        "miners_info": {
-            miner_uid: {"miner_response": response.prediction, "miner_reward": reward, "decryption_success": success}
-            for miner_uid, response, reward, success in zip(self.available_uids, responses, rewards, decryption_success)
-        }
-    }
-    wandb.log(wandb_val_log)
-
+    if self.config.neuron.wandb_on:
+        log_to_wandb(self.available_uids, responses, rewards, decryption_success)
+    
     # Log scores and update
     bt.logging.info(f"Scored responses: {rewards}")
     models_confirmed = self.confirm_models(responses)

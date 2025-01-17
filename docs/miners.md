@@ -57,10 +57,10 @@ poetry install
 ## Configuration
 
 #### Environment Variables
-First copy the `.env.template` file to `.env`
+First copy the `.env.miner.template` file to `.env`
 
 ```shell
-cp .env.template .env
+cp .env.miner.template .env
 ```
 
 Update the `.env` file with your miner's values for the following properties.
@@ -97,7 +97,7 @@ The `--hf_repo_id` flag will determine which hugging face repository your miner 
 The data your model utilizes will be automatically uploaded to hugging face, in the same repository as your model, defined here: `--hf_repo_id`. The data will be encrypted initially. Once the model is evaluated by validators, the data will be decrypted and published on hugging face.
 
 ## Deploying a Miner
-We highly recommend that you run your miners on testnet before deploying on mainnet.
+We highly recommend that you run your miners on testnet before deploying on mainnet. Be sure to reference our [Registration Fee Schedule](https://github.com/foundryservices/snpOracle/wiki/Registration-Fee-Schedule) to decide when to register your miner.
 
 **IMPORTANT**
 > Make sure you have activated your virtual environment before running your miner.

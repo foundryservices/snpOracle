@@ -49,21 +49,25 @@ poetry install
 ## Configuration
 
 #### Environment Variables
-First copy the `.env.template` file to `.env`
+First copy the `.env.validator.template` file to `.env`
 
 ```shell
-cp .env.template .env
+cp .env.validator.template .env
 ```
 
 Update the `.env` file with your validator's values.
 
 ```text
 WANDB_API_KEY='REPLACE_WITH_WANDB_API_KEY'
+
 HF_ACCESS_TOKEN='REPLACE_WITH_HUGGINGFACE_ACCESS_KEY'
+HF_COLLECTION_SLUG='REPLACE_WITH_HUGGINGFACE_COLLECTION_SLUG'
+
+(Optional - See Miner Data Upload to Hugging Face section)
 GIT_TOKEN='REPLACE_WITH_GIT_TOKEN'
 GIT_USERNAME='REPLACE_WITH_GIT_USERNAME'
-GIT_NAME="REPLACE_WITH_GIT_NAME"
-GIT_EMAIL="REPLACE_WITH_GIT_EMAIL"
+GIT_NAME='REPLACE_WITH_GIT_NAME'
+GIT_EMAIL='REPLACE_WITH_GIT_EMAIL'
 ```
 
 See WandB API Key and HuggingFace setup below.
@@ -76,10 +80,22 @@ Before starting the process, validators would be required to procure a WANDB API
 - Finally, run `wandb login` and paste your API key. Now you're all set with weights & biases.
 
 #### HuggingFace Access Token
-A huggingface access token can be procured from the huggingface platform. Follow the <a href='https://huggingface.co/docs/hub/en/security-tokens'>steps mentioned here</a> to get your huggingface access token.
+A huggingface access token can be procured from the huggingface platform. Follow the <a href='https://huggingface.co/docs/hub/en/security-tokens'>steps mentioned here</a> to get your huggingface access token and add it to the ```HF_ACCESS_TOKEN``` environment variable. Ensure that your access token has all repository permissions and collection permissions checked.
 
-#### Git Access Token
-A git token can be procured from the huggingface platform. Follow the <a href='https://huggingface.co/docs/hub/en/security-tokens'>steps mentioned here</a> to get your huggingface access token. Be sure to scope this token to the organization repository. The `username`, `name`, and `email` environment variable properties are all tied to your HuggingFace account.
+#### HuggingFace Collection Slug
+A Hugging Face collection is where the references to miner models will be stored. In order to create one, follow the <a href='https://huggingface.co/docs/hub/en/collections'>steps mentioned here</a>.
+
+Once you have created a collection, copy and paste the <a href='https://huggingface.co/docs/huggingface_hub/main/en/guides/collections#fetch-a-collection'>collection slug</a> into the ```HF_COLLECTION_SLUG``` environment variable.
+
+#### (Optional) Miner Data Upload to Hugging Face
+Optionally, validators can choose to upload miner data at the end of each day to Hugging Face. The goal of this is to increase the transparency of our subnet. In order to participate, validators will need to create a <a href='https://huggingface.co/docs/hub/en/organizations'>Hugging Face organization</a>.
+
+Once you have created an organization, pass the organization namespace into the ```--neuron.organization``` argument in the Makefile with your organizations namespace.
+
+To turn on this feature, you will also need to add the ```--neuron.data_upload_on``` argument to the Makefile and set it to ```True```.
+
+#### (Optional) Git Access Token
+A git token can be procured from the huggingface platform. Follow the <a href='https://huggingface.co/docs/hub/en/security-tokens'>steps mentioned here</a> to get your huggingface access token. Be sure to scope this token to the organization repository set with the argument above. The `GIT_TOKEN`, `GIT_USERNAME`, `GIT_EMAIL` and `GIT_NAME` environment variable properties are all tied to your HuggingFace account.
 
 ## Deploying a Validator
 **IMPORTANT**
