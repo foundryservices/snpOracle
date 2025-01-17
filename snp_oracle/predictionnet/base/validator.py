@@ -36,6 +36,7 @@ class BaseValidatorNeuron(BaseNeuron):
         # Load state because self.sync() will overwrite it
         # self.load_state()
         # Init sync with the network. Updates the metagraph.
+        self.resync_metagraph()  # this ensures that the state file is up to date with the metagraph
         self.sync()
 
         # Serve axon to enable external connections.
@@ -236,7 +237,7 @@ class BaseValidatorNeuron(BaseNeuron):
         else:
             bt.logging.debug("Failed to set weights this iteration with message:", msg)
 
-    async def resync_metagraph(self):
+    def resync_metagraph(self):
         """Resyncs the metagraph and updates the hotkeys and moving averages based on the new metagraph."""
         try:
             self.blocks_since_sync = self.current_block - self.last_sync
