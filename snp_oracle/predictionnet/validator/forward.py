@@ -101,7 +101,7 @@ async def handle_market_close(self, dataset_manager: DatasetManager, data_upload
         bt.logging.error(f"Error during market close operations: {str(e)}")
 
 
-def log_to_wandb(wandb_on, miner_uids, responses, rewards, decryption_success):
+def log_to_wandb(wandb_on, miner_uids, responses, rewards):
     if wandb_on:
         # Log results to wandb
         wandb_val_log = {
@@ -109,11 +109,11 @@ def log_to_wandb(wandb_on, miner_uids, responses, rewards, decryption_success):
                 miner_uid: {
                     "miner_response": response.prediction,
                     "miner_reward": reward,
-                    "decryption_success": success,
                 }
-                for miner_uid, response, reward, success in zip(miner_uids, responses, rewards, decryption_success)
+                for miner_uid, response, reward in zip(miner_uids, responses, rewards.tolist())
             }
         }
+
         wandb.log(wandb_val_log)
 
 
@@ -191,7 +191,7 @@ async def forward(self):
             decryption_tasks.append(asyncio.create_task(asyncio.sleep(0)))  # Dummy task that returns immediately
 
     # Wait for all decryption results
-    decryption_success = await asyncio.gather(*decryption_tasks)
+    # decryption_success = await asyncio.gather(*decryption_tasks)
 
     # Calculate initial rewards
     rewards = get_rewards(self, responses=responses, miner_uids=miner_uids)
@@ -200,7 +200,7 @@ async def forward(self):
     # rewards = [reward if success else 0 for reward, success in zip(rewards, decryption_success)]
 
     wandb_on = self.config.neuron.wandb_on
-    log_to_wandb(wandb_on, miner_uids, responses, rewards, decryption_success)
+    log_to_wandb(wandb_on, miner_uids, responses, rewards)
 
     # Log scores and update
     bt.logging.info(f"Scored responses: {rewards}")
