@@ -165,10 +165,11 @@ async def forward(self):
     synapse = predictionnet.protocol.Challenge(timestamp=timestamp)
 
     # Query miners
-    responses = self.dendrite.query(
+    responses = await self.dendrite.forward(
         axons=[self.metagraph.axons[uid] for uid in miner_uids],
         synapse=synapse,
         deserialize=False,
+        timeout=self.config.neuron.timeout,
     )
 
     # Process responses and track decryption success
