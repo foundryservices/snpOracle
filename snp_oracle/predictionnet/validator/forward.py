@@ -169,7 +169,7 @@ async def forward(self):
         axons=[self.metagraph.axons[uid] for uid in miner_uids],
         synapse=synapse,
         deserialize=False,
-        timeout=20,
+        timeout=self.config.timeout,
     )
 
     # Process responses and track decryption success
