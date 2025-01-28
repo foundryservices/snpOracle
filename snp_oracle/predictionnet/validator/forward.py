@@ -103,7 +103,6 @@ async def handle_market_close(self, dataset_manager: DatasetManager, data_upload
 
 def log_to_wandb(wandb_on, miner_uids, responses, rewards, decryption_success):
     if wandb_on:
-        # Log results to wandb
         wandb_val_log = {
             "miners_info": {
                 miner_uid: {
@@ -112,7 +111,7 @@ def log_to_wandb(wandb_on, miner_uids, responses, rewards, decryption_success):
                 }
                 for miner_uid, response, reward, success in zip(miner_uids, responses, rewards.tolist())
             },
-            "meta": {"prediction_timestamp": responses[0].timestamp}
+            "meta": {"prediction_timestamp": responses[0].timestamp},
         }
         wandb.log(wandb_val_log)
 
