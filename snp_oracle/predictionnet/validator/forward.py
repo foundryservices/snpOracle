@@ -103,16 +103,15 @@ async def handle_market_close(self, dataset_manager: DatasetManager, data_upload
 
 def log_to_wandb(wandb_on, miner_uids, responses, rewards, decryption_success):
     if wandb_on:
-        # Log results to wandb
         wandb_val_log = {
             "miners_info": {
                 miner_uid: {
                     "miner_response": response.prediction,
                     "miner_reward": reward,
-                    "decryption_success": success,
                 }
-                for miner_uid, response, reward, success in zip(miner_uids, responses, rewards, decryption_success)
-            }
+                for miner_uid, response, reward, success in zip(miner_uids, responses, rewards.tolist())
+            },
+            "meta": {"prediction_timestamp": responses[0].timestamp},
         }
         wandb.log(wandb_val_log)
 
@@ -165,10 +164,11 @@ async def forward(self):
     synapse = predictionnet.protocol.Challenge(timestamp=timestamp)
 
     # Query miners
-    responses = self.dendrite.query(
+    responses = await self.dendrite.forward(
         axons=[self.metagraph.axons[uid] for uid in miner_uids],
         synapse=synapse,
         deserialize=False,
+        timeout=self.config.timeout,
     )
 
     # Process responses and track decryption success
