@@ -109,10 +109,10 @@ def log_to_wandb(wandb_on, miner_uids, responses, rewards, decryption_success):
                 miner_uid: {
                     "miner_response": response.prediction,
                     "miner_reward": reward,
-                    "decryption_success": success,
                 }
-                for miner_uid, response, reward, success in zip(miner_uids, responses, rewards, decryption_success)
-            }
+                for miner_uid, response, reward, success in zip(miner_uids, responses, rewards.tolist())
+            },
+            "meta": {"prediction_timestamp": responses[0].timestamp}
         }
         wandb.log(wandb_val_log)
 
@@ -165,10 +165,11 @@ async def forward(self):
     synapse = predictionnet.protocol.Challenge(timestamp=timestamp)
 
     # Query miners
-    responses = self.dendrite.query(
+    responses = await self.dendrite.forward(
         axons=[self.metagraph.axons[uid] for uid in miner_uids],
         synapse=synapse,
         deserialize=False,
+        timeout=20,
     )
 
     # Process responses and track decryption success
