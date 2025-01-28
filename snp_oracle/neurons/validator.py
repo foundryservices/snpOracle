@@ -51,7 +51,6 @@ class Validator(BaseValidatorNeuron):
 
         wandb.init(
             project=f"sn{self.config.netuid}-validators",
-            mode="disabled" if not getattr(self.config.neuron, "wandb_on", False) else "online",
             entity="foundryservices",
             config={
                 "hotkey": self.wallet.hotkey.ss58_address,
