@@ -1,9 +1,14 @@
 Release Notes
 =============
+3.0.2
+-----
+Released on January 29th 2025
+- Implement dendrite.forward and increase the default timeout for validator neurons to be 20s to allow miners more time to respond
+- Enable wandb by default for validators
 
 3.0.1
 -----
-Released on January 12 2025
+Released on January 12th 2025
 - Improvements in validator README instructions
 - Add flags to opt into additional functionality
 
