@@ -41,7 +41,8 @@ validator:
 		--subtensor.chain_endpoint $(network) \
 		--axon.port 8091 \
 		--netuid $(netuid) \
-		--logging.$(logging_level)
+		--logging.$(logging_level) \
+		--timeout 20
 
 
 miner:
